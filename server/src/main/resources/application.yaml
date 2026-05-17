@@ -14,3 +14,14 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+security:
+  jwt:
+    access:
+      timeout: 300 # minute
+      secretKey: YWhzZGFzZHNkc2Rpd2VyOTU5NDM1ODQzOTU4NDM5NTQzNTQ2NTQ0NTc2Njc=
+    refresh:
+      timeout: 30 # day
+      secretKey: YWhzZGFzZHNkc2RpNzIzNDI1NDA1NDNrYWZqYWRma2RhZmpkYWY=
+    reset:
+      timeout: 15 # minute
+      secretKey: YWhzZGFzZHNkc2RpNzIzNDI1NDA1NDNrYWZqYWRma2RhMjM0NDI0
