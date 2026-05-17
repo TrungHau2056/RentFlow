@@ -46,4 +46,8 @@ public class HoaHong {
 
     @Column(name = "ngay_chi")
     private LocalDateTime ngayChi;
+
+    @ManyToOne
+    @JoinColumn(name = "ma_ke_toan")
+    private KeToan keToan;
 }
