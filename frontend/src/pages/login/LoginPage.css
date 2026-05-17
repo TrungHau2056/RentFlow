@@ -1,0 +1,272 @@
+/* Custom styles for the login page */
+
+.login-page-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Premium deep blue gradient with corner glow effects */
+  background: radial-gradient(circle at 15% 15%, #184dbd 0%, #0d2c80 45%, #03143c 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.login-content-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Left Column: Branding text */
+.login-brand-section {
+  flex: 1;
+  color: #ffffff;
+  text-align: left;
+  max-width: 480px;
+}
+
+.brand-title {
+  font-size: 52px;
+  font-weight: 800;
+  margin: 0 0 12px 0;
+  letter-spacing: -1.5px;
+  color: #ffffff;
+}
+
+.brand-subtitle {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 24px 0;
+  color: #79a6fe; /* Bright accent light blue */
+  letter-spacing: -0.5px;
+}
+
+.brand-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #b0c6e9; /* Muted aesthetic blue-gray */
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Right Column: Card Container */
+.login-card-container {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  max-width: 480px;
+}
+
+.login-card {
+  width: 100%;
+  background: #f4f6f9; /* Light off-white container background from picture */
+  border-radius: 20px;
+  padding: 44px 40px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+/* Lock circle icon */
+.lock-icon-container {
+  width: 56px;
+  height: 56px;
+  background-color: #1e70d4; /* Padlock blue */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px auto;
+  box-shadow: 0 4px 10px rgba(30, 112, 212, 0.25);
+}
+
+.lock-svg {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+}
+
+.card-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #212529;
+  margin: 0 0 28px 0;
+  letter-spacing: -0.5px;
+}
+
+/* Auth Alerts (success/error) */
+.auth-alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.alert-error {
+  background-color: #ffeef0;
+  color: #d32f2f;
+  border: 1px solid #ffccd3;
+}
+
+.alert-success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+/* Form Styles */
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.input-label {
+  position: absolute;
+  left: 14px;
+  top: -9px;
+  background-color: #f4f6f9; /* Must match the card background to block the border */
+  padding: 0 6px;
+  font-size: 12px;
+  color: #707782;
+  font-weight: 500;
+  pointer-events: none;
+  transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+.outlined-input {
+  width: 100%;
+  background-color: transparent;
+  border: 1.5px solid #d0d7e2;
+  border-radius: 8px;
+  padding: 16px 16px;
+  font-size: 15px;
+  color: #1a202c;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Material Outlined Input Focus Effects */
+.outlined-input:focus {
+  border-color: #1e70d4;
+  box-shadow: 0 0 0 3px rgba(30, 112, 212, 0.12);
+}
+
+.outlined-input:hover:not(:focus) {
+  border-color: #aeb9cc;
+}
+
+.input-group:focus-within .input-label {
+  color: #1e70d4;
+  font-weight: 600;
+}
+
+/* Submit Button */
+.login-submit-btn {
+  background-color: #1e70d4;
+  color: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(30, 112, 212, 0.2);
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  background-color: #1a62bd;
+  box-shadow: 0 6px 16px rgba(30, 112, 212, 0.3);
+}
+
+.login-submit-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.login-submit-btn:disabled {
+  background-color: #a3c2e8;
+  color: #f1f5fa;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+  .login-content-container {
+    flex-direction: column;
+    gap: 40px;
+    padding: 20px;
+  }
+  
+  .login-brand-section {
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .brand-title {
+    font-size: 40px;
+  }
+
+  .brand-subtitle {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .brand-description {
+    font-size: 14px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .login-card-container {
+    max-width: 100%;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .login-card {
+    max-width: 440px;
+    padding: 36px 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page-wrapper {
+    padding: 12px;
+  }
+
+  .login-card {
+    border-radius: 12px;
+    padding: 30px 20px;
+  }
+
+  .brand-title {
+    font-size: 32px;
+  }
+
+  .brand-subtitle {
+    font-size: 18px;
+  }
+}
