@@ -3,7 +3,8 @@ package com.rentflow.server.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Builder
 @Setter
@@ -15,39 +16,22 @@ import java.time.LocalDateTime;
 public class HoaHong {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ma_hoa_hong")
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "ma_hop_dong_thue")
+    @JoinColumn(name = "hop_dong_thue_id")
     private HopDongThue hopDongThue;
 
     @ManyToOne
-    @JoinColumn(name = "ma_moi_gioi")
-    private MoiGioi moiGioi;
+    @JoinColumn(name = "nhan_vien_moi_gioi_id")
+    private NhanVien nhanVienMoiGioi;
 
-    @Column(name = "ty_le_hoa_hong")
-    private Double tyLeHoaHong;
+    @Column(name = "so_tien")
+    private BigDecimal soTien;
 
-    @Column(name = "gia_tri_hop_dong")
-    private Double giaTriHopDong;
+    @Column(name = "ngay_tinh")
+    private LocalDate ngayTinh;
 
-    @Column(name = "so_tien_hoa_hong")
-    private Double soTienHoaHong;
-
-    @Column(name = "tien_dam_bao_tru")
-    private Double tienDamBaoTru;
-
-    @Column(name = "thuc_nhan")
-    private Double thucNhan;
-
-    @Column(name = "trang_thai")
-    private String trangThai;
-
-    @Column(name = "ngay_chi")
-    private LocalDateTime ngayChi;
-
-    @ManyToOne
-    @JoinColumn(name = "ma_ke_toan")
-    private KeToan keToan;
+    @Column(name = "trang_thai_thanh_toan")
+    private String trangThaiThanhToan;
 }

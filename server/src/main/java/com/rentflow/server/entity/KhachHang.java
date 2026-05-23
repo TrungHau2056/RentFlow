@@ -1,10 +1,10 @@
 package com.rentflow.server.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Builder
 @Setter
@@ -12,18 +12,31 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@DiscriminatorValue("KHACH_HANG")
-public class KhachHang extends NguoiDung {
-    @Column(name = "loai_khach_hang")
-    private String loaiKhachHang;
+@Table(name = "khach_hang")
+public class KhachHang {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "ma_moi_gioi")
-    private MoiGioi moiGioi;
+    @JoinColumn(name = "tai_khoan_id")
+    private TaiKhoan taiKhoan;
 
-    @Column(name = "ngay_dang_ky")
-    private LocalDateTime ngayDangKy;
+    @Column(name = "ho_ten", nullable = false)
+    private String hoTen;
 
-    @Column(name = "ngay_nang_cap")
-    private LocalDateTime ngayNangCap;
+    @Column(name = "so_dien_thoai")
+    private String soDienThoai;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "nhu_cau_thue")
+    private String nhuCauThue;
+
+    @OneToMany(mappedBy = "khachHang")
+    private Set<LichHenXemNha> lichHenXemNhaSet = new HashSet<>();
+
+    @OneToMany(mappedBy = "khachHang")
+    private Set<HopDongThue> hopDongThueSet = new HashSet<>();
 }

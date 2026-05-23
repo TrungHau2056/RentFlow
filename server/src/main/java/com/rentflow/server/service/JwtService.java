@@ -5,7 +5,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.rentflow.server.entity.NguoiDung;
+import com.rentflow.server.entity.TaiKhoan;
 import com.rentflow.server.exception.AuthException;
 import com.rentflow.server.util.enums.ErrorCode;
 import com.rentflow.server.util.enums.TokenType;
@@ -18,7 +18,6 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -37,7 +36,7 @@ public class JwtService {
     @Value("${security.jwt.reset.secretKey}")
     private String resetKey;
 
-    public String generateToken(NguoiDung user, TokenType type) {
+    public String generateToken(TaiKhoan user, TokenType type) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
         long ttl = 0;
         String secretKey;
@@ -52,13 +51,12 @@ public class JwtService {
             secretKey = resetKey;
         }
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
+                .subject(user.getUsername())
                 .issuer("volunteer-hub")
                 .issueTime(new Date(System.currentTimeMillis()))
                 .expirationTime(new Date(System.currentTimeMillis() + ttl))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope",buildScope(user))
-                .claim("name", user.getHoTen())
+                .claim("scope", buildScope(user))
                 .build();
         Payload payload = new Payload(claimsSet.toJSONObject());
         JWSObject jwsObject = new JWSObject(header, payload);
@@ -73,20 +71,16 @@ public class JwtService {
 
     public void checkValid(String token, TokenType type) {
         try {
-            // check signature
             SignedJWT signedJWT = SignedJWT.parse(token);
             String secretKey = getSecretKey(type);
             JWSVerifier verifier = new MACVerifier(secretKey);
             if (!signedJWT.verify(verifier)) {
                 throw new AuthException(ErrorCode.TOKEN_SIGNATURE_INVALID);
             }
-            // check expiration
             Date expiration = extractExpiration(token);
             if (expiration == null || new Date().after(expiration)) {
                 throw new AuthException(ErrorCode.TOKEN_EXPIRED);
             }
-            // check disable or token black list
-//            checkDisabled(token);
         } catch (ParseException e) {
             throw new AuthException(ErrorCode.TOKEN_INVALID);
         } catch (JOSEException e) {
@@ -98,11 +92,7 @@ public class JwtService {
         return extractFieldFromPayload(token, JWTClaimsSet::getExpirationTime);
     }
 
-    public String extractFullName(String token) {
-        return extractFieldFromPayload(token, e -> e.getClaim("name").toString());
-    }
-
-    public String extractEmail(String token) {
+    public String extractUsername(String token) {
         return extractFieldFromPayload(token, JWTClaimsSet::getSubject);
     }
 
@@ -132,13 +122,10 @@ public class JwtService {
         }
     }
 
-
-    private String buildScope(NguoiDung user) {
-        if (user.getVaiTros() == null || user.getVaiTros().isEmpty()) {
+    private String buildScope(TaiKhoan user) {
+        if (user.getVaiTro() == null) {
             return "";
         }
-        return user.getVaiTros().stream()
-                .map(vaiTro -> "ROLE_" + vaiTro.getTenVaiTro().toUpperCase())
-                .collect(Collectors.joining(" "));
+        return "ROLE_" + user.getVaiTro().getTenVaiTro().toUpperCase();
     }
 }
