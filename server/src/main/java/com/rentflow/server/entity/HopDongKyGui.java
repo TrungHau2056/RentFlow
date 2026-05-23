@@ -14,23 +14,23 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "hop_dong_thue")
-public class HopDongThue {
+@Table(name = "hop_dong_ky_gui")
+public class HopDongKyGui {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "khach_hang_id")
-    private KhachHang khachHang;
+    @JoinColumn(name = "chu_nha_id")
+    private ChuNha chuNha;
 
     @ManyToOne
     @JoinColumn(name = "bat_dong_san_id")
     private BatDongSan batDongSan;
 
     @ManyToOne
-    @JoinColumn(name = "nhan_vien_moi_gioi_id")
-    private NhanVien nhanVienMoiGioi;
+    @JoinColumn(name = "nhan_vien_id")
+    private NhanVien nhanVien;
 
     @Column(name = "ngay_ky")
     private LocalDate ngayKy;
@@ -41,18 +41,12 @@ public class HopDongThue {
     @Column(name = "ngay_ket_thuc")
     private LocalDate ngayKetThuc;
 
-    @Column(name = "tien_thue")
-    private BigDecimal tienThue;
-
-    @Column(name = "tien_coc")
-    private BigDecimal tienCoc;
+    @Column(name = "tien_dam_bao")
+    private BigDecimal tienDamBao;
 
     @Column(name = "trang_thai")
     private String trangThai;
 
-    @OneToMany(mappedBy = "hopDongThue")
-    private Set<HoaHong> hoaHongSet = new HashSet<>();
-
-    @OneToMany(mappedBy = "hopDongThue")
+    @OneToMany(mappedBy = "hopDongKyGui")
     private Set<GiaoDichTaiChinh> giaoDichTaiChinhSet = new HashSet<>();
 }
