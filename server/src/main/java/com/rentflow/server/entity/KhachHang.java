@@ -1,5 +1,6 @@
 package com.rentflow.server.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -39,6 +40,11 @@ public class KhachHang {
 
     @Column(name = "nhu_cau_thue_chi_tiet", columnDefinition = "TEXT")
     private String nhuCauThueChiTiet;
+
+    @ManyToOne
+    @JoinColumn(name = "nhan_vien_moi_gioi_id")
+    @JsonIgnore
+    private NhanVien nhanVienMoiGioi;
 
     @OneToMany(mappedBy = "khachHang")
     private Set<LichHenXemNha> lichHenXemNhaSet = new HashSet<>();
