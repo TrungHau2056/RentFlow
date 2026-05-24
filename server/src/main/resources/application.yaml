@@ -30,3 +30,8 @@ security:
     reset:
       timeout: 15
       secretKey: YWhzZGFzZHNkc2RpNzIzNDI1NDA1NDNrYWZqYWRma2RhMjM0NDI0
+rentflow:
+  tai-chinh:
+    tien-dam-bao: 1000000
+    ty-le-hoa-hong: 0.05
+    thoi-han-ky-gui-thang: 6
