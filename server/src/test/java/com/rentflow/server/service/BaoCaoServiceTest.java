@@ -1,0 +1,165 @@
+package com.rentflow.server.service;
+
+import com.rentflow.server.dto.response.baocao.DoanhThuHoaHongResponseDTO;
+import com.rentflow.server.dto.response.baocao.HieuSuatMoiGioiResponseDTO;
+import com.rentflow.server.dto.response.baocao.ThongKeBatDongSanResponseDTO;
+import com.rentflow.server.entity.NhanVien;
+import com.rentflow.server.repository.HoaHongRepository;
+import com.rentflow.server.repository.HopDongKyGuiRepository;
+import com.rentflow.server.repository.HopDongThueRepository;
+import com.rentflow.server.repository.NhanVienRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class BaoCaoServiceTest {
+
+    @Mock
+    private HopDongKyGuiRepository hopDongKyGuiRepo;
+    @Mock
+    private HopDongThueRepository hopDongThueRepo;
+    @Mock
+    private HoaHongRepository hoaHongRepo;
+    @Mock
+    private NhanVienRepository nhanVienRepo;
+
+    @InjectMocks
+    private BaoCaoService service;
+
+    private final int currentThang = LocalDate.now().getMonthValue();
+    private final int currentNam = LocalDate.now().getYear();
+
+    @Test
+    void thongKeBatDongSan_shouldReturn_whenDefaultMonthYear() {
+        when(hopDongKyGuiRepo.countByTrangThai("DANG_HOAT_DONG")).thenReturn(5L);
+        when(hopDongKyGuiRepo.countByTrangThai("DA_CO_KHACH_THUE")).thenReturn(3L);
+        when(hopDongThueRepo.countHopDongSapHetHan(any(), any(), eq(currentThang), eq(currentNam)))
+                .thenReturn(2L);
+
+        ThongKeBatDongSanResponseDTO result = service.thongKeBatDongSan(currentThang, currentNam);
+
+        assertThat(result)
+                .hasFieldOrPropertyWithValue("thang", currentThang)
+                .hasFieldOrPropertyWithValue("nam", currentNam)
+                .hasFieldOrPropertyWithValue("soNhaDangKyGui", 5L)
+                .hasFieldOrPropertyWithValue("soNhaDaChoThue", 3L)
+                .hasFieldOrPropertyWithValue("soHopDongSapHetHan", 2L);
+    }
+
+    @Test
+    void thongKeBatDongSan_shouldReturn_whenCustomMonthYear() {
+        int thang = 3;
+        int nam = 2025;
+        when(hopDongKyGuiRepo.countByTrangThai("DANG_HOAT_DONG")).thenReturn(2L);
+        when(hopDongKyGuiRepo.countByTrangThai("DA_CO_KHACH_THUE")).thenReturn(1L);
+        when(hopDongThueRepo.countHopDongSapHetHan(any(), any(), eq(thang), eq(nam)))
+                .thenReturn(0L);
+
+        ThongKeBatDongSanResponseDTO result = service.thongKeBatDongSan(thang, nam);
+
+        assertThat(result)
+                .hasFieldOrPropertyWithValue("thang", thang)
+                .hasFieldOrPropertyWithValue("nam", nam)
+                .hasFieldOrPropertyWithValue("soNhaDangKyGui", 2L);
+    }
+
+    @Test
+    void doanhThuHoaHong_shouldReturn_whenHasData() {
+        int thang = 6;
+        int nam = 2025;
+        when(hoaHongRepo.sumHoaHongByThangNam(thang, nam)).thenReturn(new BigDecimal("50000000"));
+        when(hoaHongRepo.sumHoaHongByThangNamAndTrangThai(thang, nam, "DA_THANH_TOAN"))
+                .thenReturn(new BigDecimal("30000000"));
+        when(hoaHongRepo.sumHoaHongByThangNamAndTrangThai(thang, nam, "CHUA_THANH_TOAN"))
+                .thenReturn(new BigDecimal("15000000"));
+        when(hoaHongRepo.sumHoaHongByThangNamAndTrangThai(thang, nam, "KHAU_TRU"))
+                .thenReturn(new BigDecimal("5000000"));
+        when(hoaHongRepo.countByThangNam(thang, nam)).thenReturn(10L);
+
+        DoanhThuHoaHongResponseDTO result = service.doanhThuHoaHong(thang, nam);
+
+        assertThat(result)
+                .hasFieldOrPropertyWithValue("thang", thang)
+                .hasFieldOrPropertyWithValue("nam", nam)
+                .hasFieldOrPropertyWithValue("soLuongHopDong", 10L)
+                .satisfies(r -> assertThat(r.getTongHoaHong()).isEqualByComparingTo("50000000"))
+                .satisfies(r -> assertThat(r.getTongDaThanhToan()).isEqualByComparingTo("30000000"))
+                .satisfies(r -> assertThat(r.getTongChuaThanhToan()).isEqualByComparingTo("15000000"))
+                .satisfies(r -> assertThat(r.getTongKhauTru()).isEqualByComparingTo("5000000"));
+    }
+
+    @Test
+    void doanhThuHoaHong_shouldReturnZero_whenNoData() {
+        int thang = 7;
+        int nam = 2025;
+        when(hoaHongRepo.sumHoaHongByThangNam(thang, nam)).thenReturn(BigDecimal.ZERO);
+        when(hoaHongRepo.sumHoaHongByThangNamAndTrangThai(thang, nam, "DA_THANH_TOAN"))
+                .thenReturn(BigDecimal.ZERO);
+        when(hoaHongRepo.sumHoaHongByThangNamAndTrangThai(thang, nam, "CHUA_THANH_TOAN"))
+                .thenReturn(BigDecimal.ZERO);
+        when(hoaHongRepo.sumHoaHongByThangNamAndTrangThai(thang, nam, "KHAU_TRU"))
+                .thenReturn(BigDecimal.ZERO);
+        when(hoaHongRepo.countByThangNam(thang, nam)).thenReturn(0L);
+
+        DoanhThuHoaHongResponseDTO result = service.doanhThuHoaHong(thang, nam);
+
+        assertThat(result)
+                .hasFieldOrPropertyWithValue("soLuongHopDong", 0L)
+                .satisfies(r -> assertThat(r.getTongHoaHong()).isEqualByComparingTo(BigDecimal.ZERO))
+                .satisfies(r -> assertThat(r.getTongDaThanhToan()).isEqualByComparingTo(BigDecimal.ZERO))
+                .satisfies(r -> assertThat(r.getTongChuaThanhToan()).isEqualByComparingTo(BigDecimal.ZERO))
+                .satisfies(r -> assertThat(r.getTongKhauTru()).isEqualByComparingTo(BigDecimal.ZERO));
+    }
+
+    @Test
+    void hieuSuatMoiGioi_shouldReturnList_whenHasBrokers() {
+        int thang = 8;
+        int nam = 2025;
+        NhanVien nv1 = NhanVien.builder().id(1L).hoTen("Nguyen Van A").email("a@test.com").build();
+        NhanVien nv2 = NhanVien.builder().id(2L).hoTen("Tran Thi B").email("b@test.com").build();
+        when(nhanVienRepo.findByChucVu("MOI_GIOI")).thenReturn(List.of(nv1, nv2));
+        when(hopDongThueRepo.countByMoiGioiAndThangNam(1L, thang, nam)).thenReturn(3L);
+        when(hopDongThueRepo.countByMoiGioiAndThangNam(2L, thang, nam)).thenReturn(5L);
+        when(hoaHongRepo.sumHoaHongByMoiGioiAndThangNam(1L, thang, nam))
+                .thenReturn(new BigDecimal("15000000"));
+        when(hoaHongRepo.sumHoaHongByMoiGioiAndThangNam(2L, thang, nam))
+                .thenReturn(new BigDecimal("25000000"));
+        when(hoaHongRepo.sumHoaHongByMoiGioiAndThangNamAndTrangThai(1L, thang, nam, "DA_THANH_TOAN"))
+                .thenReturn(new BigDecimal("10000000"));
+        when(hoaHongRepo.sumHoaHongByMoiGioiAndThangNamAndTrangThai(2L, thang, nam, "DA_THANH_TOAN"))
+                .thenReturn(new BigDecimal("20000000"));
+
+        List<HieuSuatMoiGioiResponseDTO> result = service.hieuSuatMoiGioi(thang, nam);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0))
+                .hasFieldOrPropertyWithValue("nhanVienId", 1L)
+                .hasFieldOrPropertyWithValue("hoTen", "Nguyen Van A")
+                .hasFieldOrPropertyWithValue("soHopDongDaChot", 3L);
+        assertThat(result.get(1))
+                .hasFieldOrPropertyWithValue("nhanVienId", 2L)
+                .hasFieldOrPropertyWithValue("hoTen", "Tran Thi B")
+                .hasFieldOrPropertyWithValue("soHopDongDaChot", 5L);
+    }
+
+    @Test
+    void hieuSuatMoiGioi_shouldReturnEmpty_whenNoBrokers() {
+        when(nhanVienRepo.findByChucVu("MOI_GIOI")).thenReturn(List.of());
+
+        List<HieuSuatMoiGioiResponseDTO> result = service.hieuSuatMoiGioi(1, 2025);
+
+        assertThat(result).isEmpty();
+    }
+}

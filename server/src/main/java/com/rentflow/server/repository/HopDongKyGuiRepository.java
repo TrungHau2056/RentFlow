@@ -15,6 +15,8 @@ public interface HopDongKyGuiRepository extends JpaRepository<HopDongKyGui, Long
 
     List<HopDongKyGui> findByTrangThai(String trangThai);
 
+    long countByTrangThai(String trangThai);
+
     Optional<HopDongKyGui> findByBatDongSanIdAndTrangThai(Long batDongSanId, String trangThai);
 
     @Query("SELECT h FROM HopDongKyGui h WHERE h.trangThai = :trangThai AND h.ngayBatDau <= :ngayNguong")

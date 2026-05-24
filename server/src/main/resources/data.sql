@@ -32,6 +32,18 @@ SELECT 'QUAN_TRI_VIEN'
     SELECT 1 FROM vai_tro WHERE ten_vai_tro = 'QUAN_TRI_VIEN'
 );
 
+INSERT INTO vai_tro (ten_vai_tro)
+SELECT 'NHAN_VIEN_DAI_LY'
+    WHERE NOT EXISTS (
+    SELECT 1 FROM vai_tro WHERE ten_vai_tro = 'NHAN_VIEN_DAI_LY'
+);
+
+INSERT INTO vai_tro (ten_vai_tro)
+SELECT 'TU_VAN_PHAP_LUAT'
+    WHERE NOT EXISTS (
+    SELECT 1 FROM vai_tro WHERE ten_vai_tro = 'TU_VAN_PHAP_LUAT'
+);
+
 -- =========================================================
 -- TAI_KHOAN + CHU_NHA
 -- =========================================================

@@ -12,4 +12,6 @@ public interface NhanVienRepository extends JpaRepository<NhanVien, Long> {
     List<NhanVien> findByChucVu(String chucVu);
 
     Optional<NhanVien> findByTaiKhoanUsername(String username);
+
+    Optional<NhanVien> findByTaiKhoanId(Long taiKhoanId);
 }

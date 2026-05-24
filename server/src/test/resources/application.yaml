@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: server
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  sql:
+    init:
+      mode: never
+security:
+  jwt:
+    access:
+      timeout: 300
+      secretKey: YWhzZGFzZHNkc2Rpd2VyOTU5NDM1ODQzOTU4NDM5NTQzNTQ2NTQ0NTc2Njc=
+    refresh:
+      timeout: 30
+      secretKey: YWhzZGFzZHNkc2RpNzIzNDI1NDA1NDNrYWZqYWRma2RhZmpkYWY=
+    reset:
+      timeout: 15
+      secretKey: YWhzZGFzZHNkc2RpNzIzNDI1NDA1NDNrYWZqYWRma2RhMjM0NDI0
+rentflow:
+  tai-chinh:
+    tien-dam-bao: 5000000
+    ty-le-hoa-hong: 0.5
+    thoi-han-ky-gui-thang: 12

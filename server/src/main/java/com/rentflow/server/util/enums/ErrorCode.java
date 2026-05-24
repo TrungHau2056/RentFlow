@@ -29,7 +29,13 @@ public enum ErrorCode {
     HOA_HONG_DA_THANH_TOAN(400, "Hoa hồng đã được thanh toán", HttpStatus.BAD_REQUEST),
     HOP_DONG_CHUA_DU_DIEU_KIEN(400, "Hợp đồng ký gửi chưa đủ điều kiện hoàn trả", HttpStatus.BAD_REQUEST),
     HOP_DONG_KHONG_HOP_LE(400, "Hợp đồng ký gửi không ở trạng thái hợp lệ", HttpStatus.BAD_REQUEST),
-    DA_HOAN_TRA(400, "Đã xuất lệnh hoàn trả cho hợp đồng này", HttpStatus.BAD_REQUEST)
+    DA_HOAN_TRA(400, "Đã xuất lệnh hoàn trả cho hợp đồng này", HttpStatus.BAD_REQUEST),
+
+    TAI_KHOAN_NOT_FOUND(404, "Không tìm thấy tài khoản", HttpStatus.NOT_FOUND),
+    USERNAME_DA_TON_TAI(400, "Username đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST),
+    VAI_TRO_NOT_FOUND(404, "Không tìm thấy vai trò", HttpStatus.NOT_FOUND),
+    VAI_TRO_KHONG_HOP_LE(400, "Vai trò không thuộc danh sách nội bộ", HttpStatus.BAD_REQUEST),
+    TRANG_THAI_KHONG_HOP_LE(400, "Giá trị trạng thái không hợp lệ", HttpStatus.BAD_REQUEST)
      ;
 
     private final int code;
