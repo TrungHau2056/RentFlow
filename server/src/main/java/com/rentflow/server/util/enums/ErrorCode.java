@@ -28,8 +28,24 @@ TOKEN_INVALID(401,"your token was invalid",HttpStatus.UNAUTHORIZED),
       DUPLICATE_LICH_HEN(400, "There is already an appointment at this time", HttpStatus.BAD_REQUEST),
       INVALID_LICH_HEN(400, "Appointment is not in valid state for this action", HttpStatus.BAD_REQUEST),
       INVALID_BAT_DONG_SAN(400, "Property is not in valid state for this action", HttpStatus.BAD_REQUEST),
-      INVALID_HOP_DONG(400, "Contract is not in valid state for this action", HttpStatus.BAD_REQUEST)
-      ;
+      INVALID_HOP_DONG(400, "Contract is not in valid state for this action", HttpStatus.BAD_REQUEST),
+    HOP_DONG_KY_GUI_NOT_FOUND(404, "Không tìm thấy hợp đồng ký gửi", HttpStatus.NOT_FOUND),
+    HOP_DONG_THUE_NOT_FOUND(404, "Không tìm thấy hợp đồng thuê", HttpStatus.NOT_FOUND),
+    HOA_HONG_NOT_FOUND(404, "Không tìm thấy hoa hồng", HttpStatus.NOT_FOUND),
+    GIAO_DICH_NOT_FOUND(404, "Không tìm thấy giao dịch tài chính", HttpStatus.NOT_FOUND),
+    TIEN_DAM_BAO_DA_THU(400, "Tiền đảm bảo đã được ghi nhận cho hợp đồng này", HttpStatus.BAD_REQUEST),
+    HOA_HONG_DA_TINH(400, "Hoa hồng đã được tính cho hợp đồng thuê này", HttpStatus.BAD_REQUEST),
+    HOA_HONG_DA_THANH_TOAN(400, "Hoa hồng đã được thanh toán", HttpStatus.BAD_REQUEST),
+    HOP_DONG_CHUA_DU_DIEU_KIEN(400, "Hợp đồng ký gửi chưa đủ điều kiện hoàn trả", HttpStatus.BAD_REQUEST),
+    HOP_DONG_KHONG_HOP_LE(400, "Hợp đồng ký gửi không ở trạng thái hợp lệ", HttpStatus.BAD_REQUEST),
+    DA_HOAN_TRA(400, "Đã xuất lệnh hoàn trả cho hợp đồng này", HttpStatus.BAD_REQUEST),
+
+    TAI_KHOAN_NOT_FOUND(404, "Không tìm thấy tài khoản", HttpStatus.NOT_FOUND),
+    USERNAME_DA_TON_TAI(400, "Username đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST),
+    VAI_TRO_NOT_FOUND(404, "Không tìm thấy vai trò", HttpStatus.NOT_FOUND),
+    VAI_TRO_KHONG_HOP_LE(400, "Vai trò không thuộc danh sách nội bộ", HttpStatus.BAD_REQUEST),
+    TRANG_THAI_KHONG_HOP_LE(400, "Giá trị trạng thái không hợp lệ", HttpStatus.BAD_REQUEST)
+     ;
 
     private final int code;
     private final String message;
