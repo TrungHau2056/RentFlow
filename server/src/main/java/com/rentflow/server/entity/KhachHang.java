@@ -34,6 +34,12 @@ public class KhachHang {
     @Column(name = "nhu_cau_thue")
     private String nhuCauThue;
 
+    @Column(name = "tieu_chi_tim_nha", columnDefinition = "TEXT")
+    private String tieuChiTimNha;
+
+    @Column(name = "nhu_cau_thue_chi_tiet", columnDefinition = "TEXT")
+    private String nhuCauThueChiTiet;
+
     @OneToMany(mappedBy = "khachHang")
     private Set<LichHenXemNha> lichHenXemNhaSet = new HashSet<>();
 

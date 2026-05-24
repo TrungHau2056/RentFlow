@@ -1,7 +1,10 @@
 package com.rentflow.server.service;
 
+import com.rentflow.server.dto.request.BatDongSanChiTietRequestDTO;
 import com.rentflow.server.dto.request.BatDongSanRequestDTO;
+import com.rentflow.server.dto.response.BatDongSanDetailDTO;
 import com.rentflow.server.dto.response.BatDongSanResponseDTO;
+import com.rentflow.server.dto.response.BatDongSanSummaryDTO;
 import com.rentflow.server.entity.BatDongSan;
 import com.rentflow.server.entity.ChuNha;
 import com.rentflow.server.entity.TaiKhoan;
@@ -12,6 +15,8 @@ import com.rentflow.server.util.SecurityUtils;
 import com.rentflow.server.util.enums.ErrorCode;
 import com.rentflow.server.util.enums.TrangThaiBatDongSan;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -83,6 +88,53 @@ public class BatDongSanService {
         batDongSanRepository.delete(bds);
     }
 
+    public List<BatDongSanSummaryDTO> getAllPublic() {
+        return batDongSanRepository.findByTrangThai(TrangThaiBatDongSan.SAN_SANG_CHO_THUE.name())
+                .stream().map(this::toSummaryDTO).toList();
+    }
+
+    public Object getByIdPublic(Long id) {
+        BatDongSan bds = batDongSanRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAuthenticated = auth != null && auth.isAuthenticated()
+                && !"anonymousUser".equals(auth.getPrincipal());
+        if (isAuthenticated) {
+            return toDetailDTO(bds);
+        }
+        return toSummaryDTO(bds);
+    }
+
+    public BatDongSanDetailDTO getDetail(Long id) {
+        BatDongSan bds = batDongSanRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        return toDetailDTO(bds);
+    }
+
+    public List<BatDongSanSummaryDTO> search(String loaiNha, Double giaMin, Double giaMax, Double dienTichMin, Double dienTichMax, String huong) {
+        return batDongSanRepository.findAll().stream()
+                .filter(b -> TrangThaiBatDongSan.SAN_SANG_CHO_THUE.name().equals(b.getTrangThai()))
+                .filter(b -> loaiNha == null || loaiNha.equals(b.getLoaiNha()))
+                .filter(b -> giaMin == null || b.getGiaThue() >= giaMin)
+                .filter(b -> giaMax == null || b.getGiaThue() <= giaMax)
+                .filter(b -> dienTichMin == null || b.getDienTich() >= dienTichMin)
+                .filter(b -> dienTichMax == null || b.getDienTich() <= dienTichMax)
+                .filter(b -> huong == null || huong.equals(b.getHuong()))
+                .map(this::toSummaryDTO)
+                .toList();
+    }
+
+    public BatDongSanDetailDTO updateChiTiet(Long id, BatDongSanChiTietRequestDTO dto) {
+        BatDongSan bds = batDongSanRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        if (dto.getLoaiNha() != null) bds.setLoaiNha(dto.getLoaiNha());
+        if (dto.getHuong() != null) bds.setHuong(dto.getHuong());
+        if (dto.getSoPhongNgu() != null) bds.setSoPhongNgu(dto.getSoPhongNgu());
+        if (dto.getSoPhongVeSinh() != null) bds.setSoPhongVeSinh(dto.getSoPhongVeSinh());
+        if (dto.getGiaDeXuat() != null) bds.setGiaDeXuat(dto.getGiaDeXuat());
+        return toDetailDTO(batDongSanRepository.save(bds));
+    }
+
     public BatDongSanResponseDTO updateTrangThai(Long id, String trangThaiMoi) {
         BatDongSan bds = batDongSanRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
@@ -109,6 +161,36 @@ public class BatDongSanService {
                 throw new AppException(ErrorCode.ACCESS_DENIED);
             }
         }
+    }
+
+    private BatDongSanSummaryDTO toSummaryDTO(BatDongSan bds) {
+        return BatDongSanSummaryDTO.builder()
+                .id(bds.getId())
+                .diaChi(bds.getDiaChi())
+                .dienTich(bds.getDienTich())
+                .giaThue(bds.getGiaThue())
+                .loaiNha(bds.getLoaiNha())
+                .huong(bds.getHuong())
+                .trangThai(bds.getTrangThai())
+                .build();
+    }
+
+    private BatDongSanDetailDTO toDetailDTO(BatDongSan bds) {
+        return BatDongSanDetailDTO.builder()
+                .id(bds.getId())
+                .chuNhaId(bds.getChuNha().getId())
+                .tenChuNha(bds.getChuNha().getHoTen())
+                .diaChi(bds.getDiaChi())
+                .dienTich(bds.getDienTich())
+                .giaThue(bds.getGiaThue())
+                .giaDeXuat(bds.getGiaDeXuat())
+                .loaiNha(bds.getLoaiNha())
+                .huong(bds.getHuong())
+                .soPhongNgu(bds.getSoPhongNgu())
+                .soPhongVeSinh(bds.getSoPhongVeSinh())
+                .moTa(bds.getMoTa())
+                .trangThai(bds.getTrangThai())
+                .build();
     }
 
     private BatDongSanResponseDTO toResponseDTO(BatDongSan bds) {
