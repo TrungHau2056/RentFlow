@@ -52,7 +52,7 @@ public class JwtService {
         }
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getUsername())
-                .issuer("volunteer-hub")
+                .issuer("rentflow")
                 .issueTime(new Date(System.currentTimeMillis()))
                 .expirationTime(new Date(System.currentTimeMillis() + ttl))
                 .jwtID(UUID.randomUUID().toString())

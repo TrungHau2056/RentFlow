@@ -10,4 +10,6 @@ import java.util.List;
 @Repository
 public interface BatDongSanRepository extends JpaRepository<BatDongSan, Long> {
     List<BatDongSan> findByChuNhaAndTrangThai(ChuNha chuNha, String trangThai);
+    List<BatDongSan> findByTrangThai(String trangThai);
+    List<BatDongSan> findByChuNha(ChuNha chuNha);
 }
