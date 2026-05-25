@@ -6,6 +6,8 @@ import com.rentflow.server.dto.request.TaoNhanVienRequestDTO;
 import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.quantri.TaiKhoanNhanVienResponseDTO;
 import com.rentflow.server.service.QuanTriTaiKhoanService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,11 +22,13 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+@Tag(name = "11. Quản trị", description = "Quản lý tài khoản nhân viên (chỉ QUAN_TRI_VIEN)")
 public class QuanTriController {
 
     private final QuanTriTaiKhoanService service;
 
     @GetMapping
+    @Operation(summary = "Danh sách tài khoản", description = "Lấy danh sách tất cả tài khoản nhân viên")
     public ApiSuccessResponse<List<TaiKhoanNhanVienResponseDTO>> layDanhSach() {
         return ApiSuccessResponse.<List<TaiKhoanNhanVienResponseDTO>>builder()
                 .status(HttpStatus.OK.value())
@@ -34,6 +38,7 @@ public class QuanTriController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Chi tiết tài khoản", description = "Lấy chi tiết tài khoản nhân viên theo ID")
     public ApiSuccessResponse<TaiKhoanNhanVienResponseDTO> layChiTiet(@PathVariable Long id) {
         return ApiSuccessResponse.<TaiKhoanNhanVienResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -43,6 +48,7 @@ public class QuanTriController {
     }
 
     @PostMapping
+    @Operation(summary = "Tạo tài khoản nhân viên", description = "Tạo tài khoản nhân viên mới")
     public ApiSuccessResponse<TaiKhoanNhanVienResponseDTO> taoTaiKhoan(
             @RequestBody @Valid TaoNhanVienRequestDTO dto) {
         return ApiSuccessResponse.<TaiKhoanNhanVienResponseDTO>builder()
@@ -53,6 +59,7 @@ public class QuanTriController {
     }
 
     @PutMapping("/{id}/trang-thai")
+    @Operation(summary = "Đổi trạng thái tài khoản", description = "Khoá/Mở khoá tài khoản nhân viên")
     public ApiSuccessResponse<TaiKhoanNhanVienResponseDTO> doiTrangThai(
             @PathVariable Long id,
             @RequestBody @Valid DoiTrangThaiTaiKhoanRequestDTO dto) {
@@ -64,6 +71,7 @@ public class QuanTriController {
     }
 
     @PutMapping("/{id}/vai-tro")
+    @Operation(summary = "Đổi vai trò", description = "Thay đổi vai trò của tài khoản nhân viên")
     public ApiSuccessResponse<TaiKhoanNhanVienResponseDTO> doiVaiTro(
             @PathVariable Long id,
             @RequestBody @Valid DoiVaiTroRequestDTO dto) {
@@ -75,6 +83,7 @@ public class QuanTriController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Xoá tài khoản", description = "Xoá tài khoản nhân viên")
     public ApiSuccessResponse<Void> xoaTaiKhoan(@PathVariable Long id) {
         service.xoaTaiKhoan(id);
         return ApiSuccessResponse.<Void>builder()

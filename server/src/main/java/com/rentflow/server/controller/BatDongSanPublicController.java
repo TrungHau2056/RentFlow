@@ -5,6 +5,8 @@ import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.BatDongSanDetailDTO;
 import com.rentflow.server.dto.response.BatDongSanSummaryDTO;
 import com.rentflow.server.service.BatDongSanService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,10 +20,12 @@ import java.util.List;
 @RequestMapping("/api/bat-dong-san-cong-khai")
 @Validated
 @RequiredArgsConstructor
+@Tag(name = "03. Bất động sản (Công khai)", description = "Tra cứu bất động sản công khai cho khách hàng")
 public class BatDongSanPublicController {
     private final BatDongSanService batDongSanService;
 
     @GetMapping
+    @Operation(summary = "Danh sách công khai", description = "Lấy danh sách bất động sản đang cho thuê (công khai)")
     public ApiSuccessResponse<List<BatDongSanSummaryDTO>> getAll() {
         return ApiSuccessResponse.<List<BatDongSanSummaryDTO>>builder()
                 .status(HttpStatus.OK.value())
@@ -31,6 +35,7 @@ public class BatDongSanPublicController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Chi tiết công khai", description = "Lấy thông tin bất động sản công khai theo ID")
     public ApiSuccessResponse<Object> getById(@PathVariable Long id) {
         return ApiSuccessResponse.<Object>builder()
                 .status(HttpStatus.OK.value())
@@ -41,6 +46,7 @@ public class BatDongSanPublicController {
 
     @GetMapping("/{id}/detail")
     @PreAuthorize("hasAnyAuthority('KHACH_HANG', 'CHU_NHA', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @Operation(summary = "Chi tiết đầy đủ", description = "Lấy chi tiết đầy đủ bất động sản (yêu cầu đăng nhập)")
     public ApiSuccessResponse<BatDongSanDetailDTO> getDetail(@PathVariable Long id) {
         return ApiSuccessResponse.<BatDongSanDetailDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -50,6 +56,7 @@ public class BatDongSanPublicController {
     }
 
     @GetMapping("/search")
+    @Operation(summary = "Tìm kiếm", description = "Tìm kiếm bất động sản theo loại nhà, giá, diện tích, hướng")
     public ApiSuccessResponse<List<BatDongSanSummaryDTO>> search(
             @RequestParam(required = false) String loaiNha,
             @RequestParam(required = false) Double giaMin,
@@ -66,6 +73,7 @@ public class BatDongSanPublicController {
 
     @PutMapping("/{id}/chi-tiet")
     @PreAuthorize("hasAnyAuthority('CHU_NHA', 'NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Cập nhật chi tiết", description = "Cập nhật thông số chi tiết bất động sản")
     public ApiSuccessResponse<BatDongSanDetailDTO> updateChiTiet(
             @PathVariable Long id,
             @RequestBody @Valid BatDongSanChiTietRequestDTO dto) {

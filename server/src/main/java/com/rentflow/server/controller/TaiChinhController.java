@@ -9,6 +9,8 @@ import com.rentflow.server.dto.response.taichinh.HopDongKyGuiEligibleResponseDTO
 import com.rentflow.server.service.GiaoDichTaiChinhService;
 import com.rentflow.server.service.HoaHongService;
 import com.rentflow.server.service.HopDongKyGuiTaiChinhService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,7 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('KE_TOAN')")
+@Tag(name = "12. Tài chính", description = "Quản lý giao dịch tài chính, hoa hồng (chỉ KE_TOAN)")
 public class TaiChinhController {
 
     private final GiaoDichTaiChinhService giaoDichService;
@@ -39,6 +42,7 @@ public class TaiChinhController {
     private final HopDongKyGuiTaiChinhService hopDongKyGuiTaiChinhService;
 
     @PostMapping("/ghi-nhan-thu")
+    @Operation(summary = "Ghi nhận thu tiền đảm bảo", description = "Ghi nhận thu tiền đảm bảo từ khách hàng")
     public ApiSuccessResponse<GiaoDichTaiChinhResponseDTO> ghiNhanThu(
             @RequestBody @Valid GhiNhanThuRequestDTO dto,
             @AuthenticationPrincipal Jwt jwt) {
@@ -50,6 +54,7 @@ public class TaiChinhController {
     }
 
     @GetMapping("/giao-dich")
+    @Operation(summary = "Danh sách giao dịch", description = "Lấy danh sách giao dịch tài chính (có thể lọc theo loại)")
     public ApiSuccessResponse<List<GiaoDichTaiChinhResponseDTO>> layDanhSachGiaoDich(
             @RequestParam(required = false) String loaiGiaoDich) {
         return ApiSuccessResponse.<List<GiaoDichTaiChinhResponseDTO>>builder()
@@ -60,6 +65,7 @@ public class TaiChinhController {
     }
 
     @GetMapping("/giao-dich/{id}")
+    @Operation(summary = "Chi tiết giao dịch", description = "Lấy chi tiết giao dịch tài chính theo ID")
     public ApiSuccessResponse<GiaoDichTaiChinhResponseDTO> layChiTietGiaoDich(@PathVariable Long id) {
         return ApiSuccessResponse.<GiaoDichTaiChinhResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -69,6 +75,7 @@ public class TaiChinhController {
     }
 
     @PostMapping("/tinh-hoa-hong/{hopDongThueId}")
+    @Operation(summary = "Tính hoa hồng", description = "Tính và tạo hoa hồng cho hợp đồng thuê")
     public ApiSuccessResponse<HoaHongResponseDTO> tinhHoaHong(
             @PathVariable Long hopDongThueId,
             @AuthenticationPrincipal Jwt jwt) {
@@ -80,6 +87,7 @@ public class TaiChinhController {
     }
 
     @GetMapping("/hoa-hong")
+    @Operation(summary = "Danh sách hoa hồng", description = "Lấy danh sách hoa hồng")
     public ApiSuccessResponse<List<HoaHongResponseDTO>> layDanhSachHoaHong() {
         return ApiSuccessResponse.<List<HoaHongResponseDTO>>builder()
                 .status(HttpStatus.OK.value())
@@ -89,6 +97,7 @@ public class TaiChinhController {
     }
 
     @GetMapping("/hoa-hong/{id}")
+    @Operation(summary = "Chi tiết hoa hồng", description = "Lấy chi tiết hoa hồng theo ID")
     public ApiSuccessResponse<HoaHongResponseDTO> layChiTietHoaHong(@PathVariable Long id) {
         return ApiSuccessResponse.<HoaHongResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -98,6 +107,7 @@ public class TaiChinhController {
     }
 
     @PutMapping("/hoa-hong/{id}/thanh-toan")
+    @Operation(summary = "Đánh dấu đã thanh toán", description = "Đánh dấu hoa hồng đã được thanh toán")
     public ApiSuccessResponse<HoaHongResponseDTO> danhDauThanhToan(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt) {
@@ -109,6 +119,7 @@ public class TaiChinhController {
     }
 
     @GetMapping("/hop-dong-ky-gui/du-dieu-kien-hoan-tra")
+    @Operation(summary = "Hợp đồng đủ điều kiện hoàn trả", description = "Quét hợp đồng ký gửi đủ điều kiện hoàn trả tiền đảm bảo")
     public ApiSuccessResponse<List<HopDongKyGuiEligibleResponseDTO>> quetHopDongDuDieuKien() {
         List<HopDongKyGuiEligibleResponseDTO> result =
                 hopDongKyGuiTaiChinhService.quetHopDongDuDieuKienHoanTra();
@@ -120,6 +131,7 @@ public class TaiChinhController {
     }
 
     @PostMapping("/hoan-tra")
+    @Operation(summary = "Hoàn trả tiền đảm bảo", description = "Xuất lệnh hoàn trả tiền đảm bảo cho chủ nhà")
     public ApiSuccessResponse<GiaoDichTaiChinhResponseDTO> hoanTra(
             @RequestBody @Valid YeuCauHoanTraRequestDTO dto,
             @AuthenticationPrincipal Jwt jwt) {
