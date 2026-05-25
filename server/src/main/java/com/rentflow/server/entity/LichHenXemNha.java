@@ -37,4 +37,10 @@ public class LichHenXemNha {
 
     @Column(name = "phan_hoi", columnDefinition = "TEXT")
     private String phanHoi;
+
+    @Column(name = "noi_dung_trao_doi", columnDefinition = "TEXT")
+    private String noiDungTraoDoi;
+
+    @Column(name = "ket_qua")
+    private String ketQua;
 }

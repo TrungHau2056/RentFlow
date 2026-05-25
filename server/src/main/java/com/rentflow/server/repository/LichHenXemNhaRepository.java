@@ -11,4 +11,10 @@ import java.util.List;
 @Repository
 public interface LichHenXemNhaRepository extends JpaRepository<LichHenXemNha, Long> {
     List<LichHenXemNha> findByKhachHangAndBatDongSan(KhachHang khachHang, BatDongSan batDongSan);
+    List<LichHenXemNha> findByNhanVienId(Long nhanVienId);
+    List<LichHenXemNha> findByKhachHangId(Long khachHangId);
+    List<LichHenXemNha> findByBatDongSanId(Long batDongSanId);
+    List<LichHenXemNha> findByTrangThai(String trangThai);
+    List<LichHenXemNha> findByNhanVienIdAndTrangThai(Long nhanVienId, String trangThai);
+    List<LichHenXemNha> findByKhachHangIdAndTrangThai(Long khachHangId, String trangThai);
 }

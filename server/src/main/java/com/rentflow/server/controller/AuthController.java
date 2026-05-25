@@ -3,6 +3,7 @@ package com.rentflow.server.controller;
 
 import com.rentflow.server.dto.request.LoginRequestDTO;
 import com.rentflow.server.dto.request.RefreshRequestDTO;
+import com.rentflow.server.dto.request.RegisterRequestDTO;
 import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.auth.JwtResponseDTO;
 import com.rentflow.server.service.AuthService;
@@ -10,10 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,6 +25,15 @@ public class AuthController {
                 .status(HttpStatus.OK.value())
                 .message("Login successfully")
                 .data(authService.login(dto))
+                .build();
+    }
+
+    @PostMapping("/register")
+    public ApiSuccessResponse<JwtResponseDTO> register(@RequestBody @Valid RegisterRequestDTO dto) {
+        return ApiSuccessResponse.<JwtResponseDTO>builder()
+                .status(HttpStatus.CREATED.value())
+                .message("Đăng ký tài khoản thành công")
+                .data(authService.register(dto))
                 .build();
     }
 

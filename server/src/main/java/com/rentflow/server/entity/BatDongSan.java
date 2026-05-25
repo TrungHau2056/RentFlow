@@ -34,6 +34,21 @@ public class BatDongSan {
     @Column(name = "mo_ta", columnDefinition = "TEXT")
     private String moTa;
 
+    @Column(name = "loai_nha")
+    private String loaiNha;
+
+    @Column(name = "huong")
+    private String huong;
+
+    @Column(name = "so_phong_ngu")
+    private Integer soPhongNgu;
+
+    @Column(name = "so_phong_ve_sinh")
+    private Integer soPhongVeSinh;
+
+    @Column(name = "gia_de_xuat")
+    private Double giaDeXuat;
+
     @Column(name = "trang_thai")
     private String trangThai;
 

@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class QuanTriTaiKhoanService {
 
     private static final Set<String> VAI_TRO_NOI_BO = Set.of(
-            "QUAN_TRI_VIEN", "MOI_GIOI", "KE_TOAN", "NHAN_VIEN_DAI_LY", "TU_VAN_PHAP_LUAT"
+            "QUAN_TRI_VIEN", "MOI_GIOI", "KE_TOAN", "NHAN_VIEN_DAI_LY", "BO_PHAN_PHAP_LUAT"
     );
     private static final List<String> VAI_TRO_NOI_BO_LIST = List.copyOf(VAI_TRO_NOI_BO);
     private static final Set<String> TRANG_THAI_HOP_LE = Set.of("ACTIVE", "LOCKED");
