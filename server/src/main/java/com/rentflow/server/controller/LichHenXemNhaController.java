@@ -4,6 +4,8 @@ import com.rentflow.server.dto.request.LichHenXemNhaRequestDTO;
 import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.LichHenXemNhaResponseDTO;
 import com.rentflow.server.service.LichHenXemNhaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,11 +20,13 @@ import java.util.Map;
 @RequestMapping("/api/lich-hen-xem-nha")
 @Validated
 @RequiredArgsConstructor
+@Tag(name = "08. Lịch hẹn xem nhà", description = "Quản lý lịch hẹn xem nhà")
 public class LichHenXemNhaController {
     private final LichHenXemNhaService lichHenXemNhaService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Tạo lịch hẹn xem nhà", description = "Tạo lịch hẹn xem nhà mới")
     public ApiSuccessResponse<LichHenXemNhaResponseDTO> create(@RequestBody @Valid LichHenXemNhaRequestDTO dto) {
         return ApiSuccessResponse.<LichHenXemNhaResponseDTO>builder()
                 .status(HttpStatus.CREATED.value())
@@ -33,6 +37,7 @@ public class LichHenXemNhaController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'KHACH_HANG')")
+    @Operation(summary = "Danh sách lịch hẹn", description = "Lấy danh sách lịch hẹn xem nhà (có thể lọc theo nhiều tiêu chí)")
     public ApiSuccessResponse<List<LichHenXemNhaResponseDTO>> getAll(
             @RequestParam(required = false) Long nhanVienId,
             @RequestParam(required = false) Long khachHangId,
@@ -47,6 +52,7 @@ public class LichHenXemNhaController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'KHACH_HANG')")
+    @Operation(summary = "Chi tiết lịch hẹn", description = "Lấy chi tiết lịch hẹn xem nhà theo ID")
     public ApiSuccessResponse<LichHenXemNhaResponseDTO> getById(@PathVariable Long id) {
         return ApiSuccessResponse.<LichHenXemNhaResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -57,6 +63,7 @@ public class LichHenXemNhaController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Cập nhật lịch hẹn", description = "Cập nhật thông tin lịch hẹn xem nhà")
     public ApiSuccessResponse<LichHenXemNhaResponseDTO> update(
             @PathVariable Long id,
             @RequestBody @Valid LichHenXemNhaRequestDTO dto) {
@@ -69,6 +76,7 @@ public class LichHenXemNhaController {
 
     @PatchMapping("/{id}/trang-thai")
     @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'KHACH_HANG')")
+    @Operation(summary = "Cập nhật trạng thái lịch hẹn", description = "Cập nhật trạng thái lịch hẹn (đến hẹn, hủy, hoàn thành...)")
     public ApiSuccessResponse<LichHenXemNhaResponseDTO> updateTrangThai(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
@@ -81,6 +89,7 @@ public class LichHenXemNhaController {
 
     @PutMapping("/{id}/phan-hoi")
     @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Ghi nhận phản hồi", description = "Ghi nhận phản hồi sau khi xem nhà")
     public ApiSuccessResponse<LichHenXemNhaResponseDTO> updatePhanHoi(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {

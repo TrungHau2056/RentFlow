@@ -4,6 +4,8 @@ import com.rentflow.server.dto.request.KhachHangRequestDTO;
 import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.KhachHangResponseDTO;
 import com.rentflow.server.service.KhachHangService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,11 +19,13 @@ import java.util.List;
 @RequestMapping("/api/khach-hang")
 @Validated
 @RequiredArgsConstructor
+@Tag(name = "05. Khách hàng", description = "Quản lý thông tin khách hàng thuê nhà")
 public class KhachHangController {
     private final KhachHangService khachHangService;
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @Operation(summary = "Danh sách khách hàng", description = "Lấy tất cả khách hàng")
     public ApiSuccessResponse<List<KhachHangResponseDTO>> getAll() {
         return ApiSuccessResponse.<List<KhachHangResponseDTO>>builder()
                 .status(HttpStatus.OK.value())
@@ -32,6 +36,7 @@ public class KhachHangController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT', 'KHACH_HANG')")
+    @Operation(summary = "Chi tiết khách hàng", description = "Lấy thông tin khách hàng theo ID")
     public ApiSuccessResponse<KhachHangResponseDTO> getById(@PathVariable Long id) {
         return ApiSuccessResponse.<KhachHangResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -42,6 +47,7 @@ public class KhachHangController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('KHACH_HANG', 'NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Cập nhật khách hàng", description = "Cập nhật thông tin khách hàng")
     public ApiSuccessResponse<KhachHangResponseDTO> update(
             @PathVariable Long id,
             @RequestBody @Valid KhachHangRequestDTO dto) {
@@ -54,6 +60,7 @@ public class KhachHangController {
 
     @PutMapping("/{id}/nhu-cau")
     @PreAuthorize("hasAuthority('KHACH_HANG')")
+    @Operation(summary = "Cập nhật nhu cầu", description = "Cập nhật nhu cầu tìm nhà của khách hàng")
     public ApiSuccessResponse<KhachHangResponseDTO> updateNhuCau(
             @PathVariable Long id,
             @RequestBody @Valid KhachHangRequestDTO dto) {
@@ -66,6 +73,7 @@ public class KhachHangController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('BO_PHAN_PHAP_LUAT')")
+    @Operation(summary = "Xoá khách hàng", description = "Xoá khách hàng (chỉ BO_PHAN_PHAP_LUAT)")
     public ApiSuccessResponse<Void> delete(@PathVariable Long id) {
         khachHangService.delete(id);
         return ApiSuccessResponse.<Void>builder()

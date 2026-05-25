@@ -4,6 +4,8 @@ import com.rentflow.server.dto.request.ChuNhaRequestDTO;
 import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.ChuNhaResponseDTO;
 import com.rentflow.server.service.ChuNhaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,11 +19,13 @@ import java.util.List;
 @RequestMapping("/api/chu-nha")
 @Validated
 @RequiredArgsConstructor
+@Tag(name = "04. Chủ nhà", description = "Quản lý thông tin chủ nhà")
 public class ChuNhaController {
     private final ChuNhaService chuNhaService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Danh sách chủ nhà", description = "Lấy tất cả chủ nhà")
     public ApiSuccessResponse<List<ChuNhaResponseDTO>> getAll() {
         return ApiSuccessResponse.<List<ChuNhaResponseDTO>>builder()
                 .status(HttpStatus.OK.value())
@@ -32,6 +36,7 @@ public class ChuNhaController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'CHU_NHA')")
+    @Operation(summary = "Chi tiết chủ nhà", description = "Lấy thông tin chủ nhà theo ID")
     public ApiSuccessResponse<ChuNhaResponseDTO> getById(@PathVariable Long id) {
         return ApiSuccessResponse.<ChuNhaResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -42,6 +47,7 @@ public class ChuNhaController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Thêm chủ nhà", description = "Tạo mới chủ nhà")
     public ApiSuccessResponse<ChuNhaResponseDTO> create(@RequestBody @Valid ChuNhaRequestDTO dto) {
         return ApiSuccessResponse.<ChuNhaResponseDTO>builder()
                 .status(HttpStatus.CREATED.value())
@@ -52,6 +58,7 @@ public class ChuNhaController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Cập nhật chủ nhà", description = "Cập nhật thông tin chủ nhà")
     public ApiSuccessResponse<ChuNhaResponseDTO> update(@PathVariable Long id, @RequestBody @Valid ChuNhaRequestDTO dto) {
         return ApiSuccessResponse.<ChuNhaResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -62,6 +69,7 @@ public class ChuNhaController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+    @Operation(summary = "Xoá chủ nhà", description = "Xoá chủ nhà (chỉ QUAN_TRI_VIEN)")
     public ApiSuccessResponse<Void> delete(@PathVariable Long id) {
         chuNhaService.delete(id);
         return ApiSuccessResponse.<Void>builder()

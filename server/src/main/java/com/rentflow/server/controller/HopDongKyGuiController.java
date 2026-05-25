@@ -5,6 +5,8 @@ import com.rentflow.server.dto.request.PheDuyetRequestDTO;
 import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.HopDongKyGuiResponseDTO;
 import com.rentflow.server.service.HopDongKyGuiService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,11 +20,13 @@ import java.util.List;
 @RequestMapping("/api/hop-dong-ky-gui")
 @Validated
 @RequiredArgsConstructor
+@Tag(name = "06. Hợp đồng ký gửi", description = "Quản lý hợp đồng ký gửi bất động sản")
 public class HopDongKyGuiController {
     private final HopDongKyGuiService hopDongKyGuiService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @Operation(summary = "Danh sách hợp đồng ký gửi", description = "Lấy tất cả hợp đồng ký gửi")
     public ApiSuccessResponse<List<HopDongKyGuiResponseDTO>> getAll() {
         return ApiSuccessResponse.<List<HopDongKyGuiResponseDTO>>builder()
                 .status(HttpStatus.OK.value())
@@ -33,6 +37,7 @@ public class HopDongKyGuiController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT', 'CHU_NHA')")
+    @Operation(summary = "Chi tiết hợp đồng ký gửi", description = "Lấy thông tin hợp đồng ký gửi theo ID")
     public ApiSuccessResponse<HopDongKyGuiResponseDTO> getById(@PathVariable Long id) {
         return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -43,6 +48,7 @@ public class HopDongKyGuiController {
 
     @PostMapping
     @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Thêm hợp đồng ký gửi", description = "Tạo mới hợp đồng ký gửi")
     public ApiSuccessResponse<HopDongKyGuiResponseDTO> create(@RequestBody @Valid HopDongKyGuiRequestDTO dto) {
         return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
                 .status(HttpStatus.CREATED.value())
@@ -53,6 +59,7 @@ public class HopDongKyGuiController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Cập nhật hợp đồng ký gửi", description = "Cập nhật thông tin hợp đồng ký gửi")
     public ApiSuccessResponse<HopDongKyGuiResponseDTO> update(@PathVariable Long id,
                                                                @RequestBody @Valid HopDongKyGuiRequestDTO dto) {
         return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
@@ -64,6 +71,7 @@ public class HopDongKyGuiController {
 
     @PatchMapping("/{id}/gui-phe-duyet")
     @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Gửi phê duyệt", description = "Gửi hợp đồng ký gửi cho bộ phận pháp luật phê duyệt")
     public ApiSuccessResponse<HopDongKyGuiResponseDTO> guiPheDuyet(@PathVariable Long id) {
         return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -74,6 +82,7 @@ public class HopDongKyGuiController {
 
     @PatchMapping("/{id}/phe-duyet")
     @PreAuthorize("hasRole('BO_PHAN_PHAP_LUAT')")
+    @Operation(summary = "Phê duyệt hợp đồng", description = "Phê duyệt hoặc từ chối hợp đồng ký gửi (chỉ BO_PHAN_PHAP_LUAT)")
     public ApiSuccessResponse<HopDongKyGuiResponseDTO> pheDuyet(@PathVariable Long id,
                                                                  @RequestBody @Valid PheDuyetRequestDTO dto) {
         return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
@@ -85,6 +94,7 @@ public class HopDongKyGuiController {
 
     @PatchMapping("/{id}/ky-ket")
     @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Ký kết hợp đồng", description = "Ký kết hợp đồng ký gửi")
     public ApiSuccessResponse<HopDongKyGuiResponseDTO> kyKet(@PathVariable Long id) {
         return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
                 .status(HttpStatus.OK.value())
@@ -95,6 +105,7 @@ public class HopDongKyGuiController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+    @Operation(summary = "Xoá hợp đồng ký gửi", description = "Xoá hợp đồng ký gửi (chỉ QUAN_TRI_VIEN)")
     public ApiSuccessResponse<Void> delete(@PathVariable Long id) {
         hopDongKyGuiService.delete(id);
         return ApiSuccessResponse.<Void>builder()
