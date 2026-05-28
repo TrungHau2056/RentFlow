@@ -1,0 +1,775 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+
+const QUAN_HUYEN_OPTIONS = [
+  { value: 'cau-giay', label: 'Cầu Giấy' },
+  { value: 'tay-ho', label: 'Tây Hồ' },
+  { value: 'ba-dinh', label: 'Ba Đình' },
+  { value: 'hoan-kiem', label: 'Hoàn Kiếm' },
+  { value: 'hai-ba-trung', label: 'Hai Bà Trưng' },
+  { value: 'dong-da', label: 'Đống Đa' },
+  { value: 'thanh-xuan', label: 'Thanh Xuân' },
+  { value: 'ha-dong', label: 'Hà Đông' },
+  { value: 'nam-tu-liem', label: 'Nam Từ Liêm' },
+  { value: 'bac-tu-liem', label: 'Bắc Từ Liêm' },
+]
+
+const LOAI_NHA_OPTIONS = [
+  { value: 'can-ho', label: 'Căn hộ' },
+  { value: 'nha-rieng', label: 'Nhà riêng' },
+  { value: 'biet-thu', label: 'Biệt thự' },
+  { value: 'kios', label: 'Kios, mặt bằng' },
+  { value: 'studio', label: 'Studio' },
+]
+
+const HUONG_NHA_OPTIONS = [
+  { value: 'dong', label: 'Đông' },
+  { value: 'tay', label: 'Tây' },
+  { value: 'nam', label: 'Nam' },
+  { value: 'bac', label: 'Bắc' },
+  { value: 'dong-nam', label: 'Đông Nam' },
+  { value: 'tay-nam', label: 'Tây Nam' },
+  { value: 'dong-bac', label: 'Đông Bắc' },
+  { value: 'tay-bac', label: 'Tây Bắc' },
+]
+
+const NOI_THAT_OPTIONS = [
+  { value: 'day-du', label: 'Đầy đủ' },
+  { value: 'co-ban', label: 'Cơ bản' },
+  { value: 'khong', label: 'Không có' },
+]
+
+const PROPERTY_DATA = [
+  {
+    id: 1,
+    title: 'Biệt thự cổ điển Pháp tại Phố Cổ',
+    price: '45.000.000 đ/tháng',
+    priceRaw: 45000000,
+    location: 'Hoàn Kiếm, Hà Nội',
+    area: '320 m²',
+    areaRaw: 320,
+    bedrooms: 4,
+    bathrooms: 5,
+    type: 'biet-thu',
+    typeLabel: 'Biệt thự',
+    image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
+    status: 'Moi',
+    statusLabel: 'Mới',
+    description: 'Biệt thự cổ kính, không gian xanh, gần Hồ Gươm',
+  },
+  {
+    id: 2,
+    title: 'Căn hộ cao cấp view hồ Tây',
+    price: '28.000.000 đ/tháng',
+    priceRaw: 28000000,
+    location: 'Tây Hồ, Hà Nội',
+    area: '150 m²',
+    areaRaw: 150,
+    bedrooms: 3,
+    bathrooms: 2,
+    type: 'can-ho',
+    typeLabel: 'Căn hộ',
+    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+    status: 'Noi_Bat',
+    statusLabel: 'Nổi bật',
+    description: 'View hồ toàn cảnh, nội thất hiện đại',
+  },
+  {
+    id: 3,
+    title: 'Nhà phố thương mại Cầu Giấy',
+    price: '22.000.000 đ/tháng',
+    priceRaw: 22000000,
+    location: 'Cầu Giấy, Hà Nội',
+    area: '120 m²',
+    areaRaw: 120,
+    bedrooms: 3,
+    bathrooms: 2,
+    type: 'nha-rieng',
+    typeLabel: 'Nhà riêng',
+    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+    status: 'Gia_Tot',
+    statusLabel: 'Giá tốt',
+    description: 'Mặt phố kinh doanh, giao thông thuận tiện',
+  },
+  {
+    id: 4,
+    title: 'Penthouse sang trọng Ba Đình',
+    price: '55.000.000 đ/tháng',
+    priceRaw: 55000000,
+    location: 'Ba Đình, Hà Nội',
+    area: '200 m²',
+    areaRaw: 200,
+    bedrooms: 3,
+    bathrooms: 3,
+    type: 'can-ho',
+    typeLabel: 'Căn hộ',
+    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
+    status: 'Moi',
+    statusLabel: 'Mới',
+    description: 'Tầng thượng, sân vườn riêng, thang máy',
+  },
+  {
+    id: 5,
+    title: 'Studio hiện đại gần ĐH Quốc Gia',
+    price: '12.000.000 đ/tháng',
+    priceRaw: 12000000,
+    location: 'Cầu Giấy, Hà Nội',
+    area: '45 m²',
+    areaRaw: 45,
+    bedrooms: 1,
+    bathrooms: 1,
+    type: 'studio',
+    typeLabel: 'Studio',
+    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+    status: 'Moi',
+    statusLabel: 'Mới',
+    description: 'Full nội thất, phù hợp người độc thân',
+  },
+  {
+    id: 6,
+    title: 'Nhà nguyên căn Nam Từ Liêm',
+    price: '18.000.000 đ/tháng',
+    priceRaw: 18000000,
+    location: 'Nam Từ Liêm, Hà Nội',
+    area: '85 m²',
+    areaRaw: 85,
+    bedrooms: 3,
+    bathrooms: 2,
+    type: 'nha-rieng',
+    typeLabel: 'Nhà riêng',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
+    status: 'Gia_Tot',
+    statusLabel: 'Giá tốt',
+    description: 'Hẻm xe hơi, khu dân cư an ninh',
+  },
+  {
+    id: 7,
+    title: 'Căn hộ chung cư cao cấp Vinhomes',
+    price: '35.000.000 đ/tháng',
+    priceRaw: 35000000,
+    location: 'Thanh Xuân, Hà Nội',
+    area: '110 m²',
+    areaRaw: 110,
+    bedrooms: 3,
+    bathrooms: 2,
+    type: 'can-ho',
+    typeLabel: 'Căn hộ',
+    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
+    status: 'Noi_Bat',
+    statusLabel: 'Nổi bật',
+    description: 'Khu đô thị hiện đại, tiện ích đầy đủ',
+  },
+  {
+    id: 8,
+    title: 'Biệt thự sân vườn Hà Đông',
+    price: '40.000.000 đ/tháng',
+    priceRaw: 40000000,
+    location: 'Hà Đông, Hà Nội',
+    area: '250 m²',
+    areaRaw: 250,
+    bedrooms: 5,
+    bathrooms: 4,
+    type: 'biet-thu',
+    typeLabel: 'Biệt thự',
+    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+    status: 'Moi',
+    statusLabel: 'Mới',
+    description: 'Sân vườn rộng, garage ô tô, yên tĩnh',
+  },
+]
+
+const STATUS_STYLES = {
+  Moi: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  Noi_Bat: 'bg-orange-100 text-orange-700 border-orange-200',
+  Gia_Tot: 'bg-blue-100 text-blue-700 border-blue-200',
+}
+
+const SORT_OPTIONS = [
+  { value: 'moi-nhat', label: 'Mới nhất' },
+  { value: 'gia-thap-cao', label: 'Giá: Thấp đến cao' },
+  { value: 'gia-cao-thap', label: 'Giá: Cao đến thấp' },
+  { value: 'dien-tich-lon', label: 'Diện tích lớn nhất' },
+]
+
+export default function BatDongSanPage() {
+  const [userInfo, setUserInfo] = useState(null)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('userInfo')
+    if (stored) {
+      try { setUserInfo(JSON.parse(stored)) }
+      catch { localStorage.removeItem('userInfo') }
+    }
+  }, [])
+
+  const isTenant = userInfo?.role === 'KHACH_THUE'
+
+  const [filters, setFilters] = useState({
+    districts: [],
+    priceRange: { min: '', max: '' },
+    areaRange: { min: '', max: '' },
+    bedrooms: [],
+    houseType: [],
+    direction: [],
+    furniture: [],
+    status: [],
+  })
+  const [sortBy, setSortBy] = useState('moi-nhat')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const toggleFilter = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: prev[key].includes(value)
+        ? prev[key].filter(v => v !== value)
+        : [...prev[key], value]
+    }))
+  }
+
+  const handleResetFilters = () => {
+    setFilters({
+      districts: [],
+      priceRange: { min: '', max: '' },
+      areaRange: { min: '', max: '' },
+      bedrooms: [],
+      houseType: [],
+      direction: [],
+      furniture: [],
+      status: [],
+    })
+  }
+
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Top Navigation */}
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-primary font-bold text-xl">RentFlow</h1>
+                <p className="text-slate-500 text-xs">Ký gửi & Cho thuê nhà</p>
+              </div>
+            </Link>
+
+            <div className="hidden md:flex items-center gap-6">
+              {/* Links công cộng */}
+              <Link to="/" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+                Trang chủ
+              </Link>
+              <Link to="/bat-dong-san" className="text-primary font-medium text-sm">
+                Nhà cho thuê
+              </Link>
+              {!isTenant && (
+                <Link to="/bat-dong-san/dang-ky" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+                  Ký gửi nhà
+                </Link>
+              )}
+              <a href="#contact" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+                Liên hệ
+              </a>
+
+              {/* Links riêng cho khách thuê */}
+              {isTenant && (
+                <Link to="/tenant/nha-da-luu" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+                  Nhà đã lưu
+                </Link>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link
+                to="/login"
+                className="text-slate-600 font-medium text-sm hover:text-primary transition-colors px-4 py-2"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                to="/register"
+                className="bg-primary-container hover:bg-primary text-white font-medium text-sm px-5 py-2.5 rounded-lg transition-colors shadow-md shadow-primary-container/30"
+              >
+                Đăng ký
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Search Header */}
+      <div className="bg-white border-b border-slate-200 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <Link to="/" className="hover:text-primary transition-colors">Trang chủ</Link>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-primary font-medium">Nhà cho thuê</span>
+          </div>
+
+          {/* Search Bar */}
+          <div className="bg-slate-50 rounded-xl p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Nhập khu vực..."
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none"
+                />
+              </div>
+              <select className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
+                <option value="">Khoảng giá</option>
+                <option value="0-10">Dưới 10 triệu</option>
+                <option value="10-15">10 - 15 triệu</option>
+                <option value="15-20">15 - 20 triệu</option>
+                <option value="20-30">20 - 30 triệu</option>
+                <option value="30-50">30 - 50 triệu</option>
+                <option value="50+">Trên 50 triệu</option>
+              </select>
+              <select className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
+                <option value="">Diện tích</option>
+                <option value="0-50">Dưới 50 m²</option>
+                <option value="50-80">50 - 80 m²</option>
+                <option value="80-120">80 - 120 m²</option>
+                <option value="120-200">120 - 200 m²</option>
+                <option value="200+">Trên 200 m²</option>
+              </select>
+              <select className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
+                <option value="">Phòng ngủ</option>
+                <option value="1">1 phòng</option>
+                <option value="2">2 phòng</option>
+                <option value="3">3 phòng</option>
+                <option value="4">4+ phòng</option>
+              </select>
+              <button className="bg-primary-container hover:bg-primary text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg shadow-primary-container/30 hover:shadow-xl hover:shadow-primary-container/40 flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Tìm kiếm
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex gap-6">
+          {/* Sidebar Filter */}
+          <aside className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-xl border border-slate-200 p-5 sticky top-56">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Bộ lọc
+                </h3>
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs text-slate-500 hover:text-primary transition-colors"
+                >
+                  Đặt lại
+                </button>
+              </div>
+
+              {/* Loại nhà */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Loại nhà
+                </h4>
+                <div className="space-y-2">
+                  {LOAI_NHA_OPTIONS.map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.houseType.includes(option.value)}
+                        onChange={() => toggleFilter('houseType', option.value)}
+                        className="w-4 h-4 rounded border-slate-300 text-primary-container focus:ring-primary-container focus:ring-2"
+                      />
+                      <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quận/Huyện */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Quận / Huyện
+                </h4>
+                <div className="space-y-2">
+                  {QUAN_HUYEN_OPTIONS.map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.districts.includes(option.value)}
+                        onChange={() => toggleFilter('districts', option.value)}
+                        className="w-4 h-4 rounded border-slate-300 text-primary-container focus:ring-primary-container focus:ring-2"
+                      />
+                      <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Khoảng giá */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Khoảng giá
+                </h4>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={filters.priceRange.min}
+                    onChange={(e) => setFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, min: e.target.value } }))}
+                    placeholder="Min"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none"
+                  />
+                  <span className="text-slate-400">-</span>
+                  <input
+                    type="number"
+                    value={filters.priceRange.max}
+                    onChange={(e) => setFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, max: e.target.value } }))}
+                    placeholder="Max"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Diện tích */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Diện tích
+                </h4>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={filters.areaRange.min}
+                    onChange={(e) => setFilters(prev => ({ ...prev, areaRange: { ...prev.areaRange, min: e.target.value } }))}
+                    placeholder="Min"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none"
+                  />
+                  <span className="text-slate-400">-</span>
+                  <input
+                    type="number"
+                    value={filters.areaRange.max}
+                    onChange={(e) => setFilters(prev => ({ ...prev, areaRange: { ...prev.areaRange, max: e.target.value } }))}
+                    placeholder="Max"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Số phòng ngủ */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Phòng ngủ
+                </h4>
+                <div className="flex gap-2 flex-wrap">
+                  {[1, 2, 3, 4, '5+'].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => toggleFilter('bedrooms', num)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        filters.bedrooms.includes(num)
+                          ? 'bg-primary-container text-white shadow-md'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200 hover:border-primary-container'
+                      }`}
+                    >
+                      {num}+
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hướng nhà */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Hướng
+                </h4>
+                <div className="space-y-2">
+                  {HUONG_NHA_OPTIONS.map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.direction.includes(option.value)}
+                        onChange={() => toggleFilter('direction', option.value)}
+                        className="w-4 h-4 rounded border-slate-300 text-primary-container focus:ring-primary-container focus:ring-2"
+                      />
+                      <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nội thất */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Nội thất
+                </h4>
+                <div className="space-y-2">
+                  {NOI_THAT_OPTIONS.map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.furniture.includes(option.value)}
+                        onChange={() => toggleFilter('furniture', option.value)}
+                        className="w-4 h-4 rounded border-slate-300 text-primary-container focus:ring-primary-container focus:ring-2"
+                      />
+                      <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trạng thái */}
+              <div className="mb-5">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Trạng thái
+                </h4>
+                <div className="space-y-2">
+                  {[
+                    { value: 'Moi', label: 'Nhà mới' },
+                    { value: 'Noi_Bat', label: 'Nổi bật' },
+                    { value: 'Gia_Tot', label: 'Giá tốt' },
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={filters.status.includes(option.value)}
+                        onChange={() => toggleFilter('status', option.value)}
+                        className="w-4 h-4 rounded border-slate-300 text-primary-container focus:ring-primary-container focus:ring-2"
+                      />
+                      <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <button className="w-full py-2.5 rounded-lg bg-primary-container text-white font-medium text-sm hover:bg-primary transition-colors shadow-md shadow-primary-container/30">
+                Áp dụng bộ lọc
+              </button>
+            </div>
+          </aside>
+
+          {/* Property List */}
+          <div className="flex-1">
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-800">Nhà cho thuê</h1>
+                <p className="text-slate-500 text-sm mt-1">
+                  Hiển thị {PROPERTY_DATA.length} kết quả
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-500">Sắp xếp:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-700 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Property Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {PROPERTY_DATA.map((property) => (
+                <Link
+                  key={property.id}
+                  to={`/bat-dong-san/${property.id}`}
+                  className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group"
+                >
+                  <div className="flex">
+                    {/* Image */}
+                    <div className="w-2/5 relative overflow-hidden">
+                      <img
+                        src={property.image}
+                        alt={property.title}
+                        className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status]}`}>
+                          {property.statusLabel}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
+                        className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors z-10"
+                      >
+                        <svg className="w-4 h-4 text-slate-400 hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="w-3/5 p-4 flex flex-col">
+                      <h3 className="font-semibold text-slate-800 mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                        {property.title}
+                      </h3>
+                      <p className="text-primary-container font-bold text-lg mb-2">
+                        {property.price}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-3">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        </svg>
+                        <span className="line-clamp-1">{property.location}</span>
+                      </div>
+                      <p className="text-sm text-slate-500 mb-3 line-clamp-2">
+                        {property.description}
+                      </p>
+
+                      {/* Stats */}
+                      <div className="flex gap-4 pt-3 border-t border-slate-100 mt-auto">
+                        <div className="flex items-center gap-1 text-sm text-slate-500">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                          </svg>
+                          <span>{property.area}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-slate-500">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          </svg>
+                          <span>{property.bedrooms} ngủ</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-slate-500">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                          </svg>
+                          <span>{property.typeLabel}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {[1, 2, 3, 4, 5].map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-10 h-10 rounded-lg font-medium text-sm transition-colors ${
+                    currentPage === page
+                      ? 'bg-primary-container text-white'
+                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <span className="text-slate-400">...</span>
+
+              <button
+                onClick={() => setCurrentPage(p => p + 1)}
+                className="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-white py-8 mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-xl">RentFlow</h3>
+                  <p className="text-slate-400 text-xs">Ký gửi & Cho thuê nhà</p>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Hệ thống quản lý ký gửi và cho thuê bất động sản chuyên nghiệp tại Hà Nội.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-white mb-4">Liên kết nhanh</h4>
+              <ul className="space-y-2">
+                {/* Links công cộng */}
+                <li><Link to="/" className="text-slate-400 text-sm hover:text-white transition-colors">Trang chủ</Link></li>
+                <li><Link to="/bat-dong-san" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà cho thuê</Link></li>
+                {!isTenant && (
+                  <li><Link to="/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">Ký gửi nhà</Link></li>
+                )}
+                <li><a href="#contact" className="text-slate-400 text-sm hover:text-white transition-colors">Liên hệ</a></li>
+
+                {/* Links riêng cho khách thuê */}
+                {isTenant && (
+                  <>
+                    <li><Link to="/tenant/nha-da-luu" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà đã lưu</Link></li>
+                  </>
+                )}
+              </ul>
+            </div>
+            <div id="contact">
+              <h4 className="font-semibold text-white mb-4">Liên hệ</h4>
+              <ul className="space-y-2 text-slate-400 text-sm">
+                <li>Hà Nội, Việt Nam</li>
+                <li>0988.123.456</li>
+                <li>contact@rentflow.vn</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-slate-800 pt-6 text-center text-slate-500 text-sm">
+            © 2025 RentFlow. Tất cả quyền được bảo lưu.
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  )
+}
