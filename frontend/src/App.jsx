@@ -1,121 +1,118 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import DashboardPage from './pages/DashboardPage'
+import BatDongSanPage from './pages/BatDongSanPage'
+import QuanLyBatDongSanPage from './pages/QuanLyBatDongSanPage'
+import DangKyKyGuiPage from './pages/DangKyKyGuiPage'
+import ChiTietBatDongSanPage from './pages/ChiTietBatDongSanPage'
+import ChiTietQuanLyBatDongSanPage from './pages/ChiTietQuanLyBatDongSanPage'
+import TaiChinhPage from './pages/TaiChinhPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
+import AdminBatDongSanPage from './pages/AdminBatDongSanPage'
+import AdminHopDongKyGuiPage from './pages/AdminHopDongKyGuiPage'
+import AdminHopDongThuePage from './pages/AdminHopDongThuePage'
+import ChiTietHopDongKyGuiPage from './pages/ChiTietHopDongKyGuiPage'
+import CustomersPage from './pages/CustomersPage'
+import ChiTietKhachHangPage from './pages/ChiTietKhachHangPage'
+import LegalPage from './pages/LegalPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import TenantDashboardPage from './pages/TenantDashboardPage'
+import SavedPropertiesPage from './pages/SavedPropertiesPage'
+import ScheduleViewingPage from './pages/ScheduleViewingPage'
+import MyViewingSchedulePage from './pages/MyViewingSchedulePage'
+import NotificationsPage from './pages/NotificationsPage'
+import TenantContractsPage from './pages/TenantContractsPage'
+import TenantProfilePage from './pages/TenantProfilePage'
+import HopDongKyGuiPage from './pages/HopDongKyGuiPage'
+import TienDamBaoPage from './pages/TienDamBaoPage'
+import LichKhaoSatPage from './pages/LichKhaoSatPage'
+import LichXemNhaPage from './pages/LichXemNhaPage'
+import PhanCongMoiGioiPage from './pages/PhanCongMoiGioiPage'
+import HoaHongPage from './pages/HoaHongPage'
+import ThongBaoPage from './pages/ThongBaoPage'
+import BaoCaoThongKePage from './pages/BaoCaoThongKePage'
+import AccountManagementPage from './pages/AccountManagementPage'
+import AdminLayout from './layouts/AdminLayout'
+import DashboardLayout from './layouts/DashboardLayout'
+import TenantLayout from './layouts/TenantLayout'
+
+// Redirect logged-in users to their role-appropriate dashboard
+function HomeRoute() {
+  const userInfo = localStorage.getItem('userInfo')
+  if (!userInfo) return <Navigate to="/home" replace />
+
+  let user
+  try {
+    user = JSON.parse(userInfo)
+  } catch {
+    localStorage.removeItem('userInfo')
+    return <Navigate to="/home" replace />
+  }
+
+  if (user.role === 'ADMIN') return <Navigate to="/admin" replace />
+  if (user.role === 'CHU_NHA') return <Navigate to="/dashboard" replace />
+  if (user.role === 'KHACH_THUE') return <Navigate to="/tenant" replace />
+  return <Navigate to="/home" replace />
+}
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <Routes>
+      {/* Public / Khách thuê routes */}
+      <Route path="/" element={<HomeRoute />} />
+      <Route path="/bat-dong-san" element={<BatDongSanPage />} />
+      <Route path="/bat-dong-san/dang-ky" element={<DangKyKyGuiPage />} />
+      <Route path="/bat-dong-san/:id" element={<ChiTietBatDongSanPage />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
-      <div className="ticks"></div>
+      {/* Khách hàng routes */}
+      <Route path="/tenant" element={<TenantLayout />}>
+        <Route index element={<TenantDashboardPage />} />
+        <Route path="nha-da-luu" element={<SavedPropertiesPage />} />
+        <Route path="lich-xem" element={<MyViewingSchedulePage />} />
+        <Route path="dat-lich-xem" element={<ScheduleViewingPage />} />
+        <Route path="thong-bao" element={<NotificationsPage />} />
+        <Route path="hop-dong" element={<TenantContractsPage />} />
+        <Route path="ho-so" element={<TenantProfilePage />} />
+      </Route>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {/* Chủ nhà routes — shared sidebar via DashboardLayout */}
+      <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="bat-dong-san" element={<QuanLyBatDongSanPage />} />
+        <Route path="bat-dong-san/:id" element={<ChiTietQuanLyBatDongSanPage />} />
+        <Route path="bat-dong-san/dang-ky" element={<DangKyKyGuiPage />} />
+        <Route path="tai-chinh" element={<TaiChinhPage />} />
+        <Route path="hop-dong" element={<HopDongKyGuiPage />} />
+        <Route path="lich-khao-sat" element={<LichKhaoSatPage />} />
+        <Route path="thong-bao" element={<ThongBaoPage />} />
+        <Route path="hop-dong-ky-gui/:id" element={<ChiTietHopDongKyGuiPage />} />
+      </Route>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      {/* Admin routes — shared sidebar via AdminLayout */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="bat-dong-san" element={<AdminBatDongSanPage />} />
+        <Route path="hop-dong-ky-gui" element={<AdminHopDongKyGuiPage />} />
+        <Route path="hop-dong-thue" element={<AdminHopDongThuePage />} />
+        <Route path="lich-xem-nha" element={<LichXemNhaPage />} />
+        <Route path="phan-cong-moi-gioi" element={<PhanCongMoiGioiPage />} />
+        <Route path="hoa-hong" element={<HoaHongPage />} />
+        <Route path="tien-dam-bao" element={<TienDamBaoPage />} />
+        <Route path="bao-cao-thong-ke" element={<BaoCaoThongKePage />} />
+        <Route path="phap-luat" element={<LegalPage />} />
+        <Route path="tai-khoan" element={<AccountManagementPage />} />
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers/:id" element={<ChiTietKhachHangPage />} />
+        <Route path="hop-dong-ky-gui/:id" element={<ChiTietHopDongKyGuiPage />} />
+      </Route>
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
