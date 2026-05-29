@@ -380,11 +380,6 @@ export default function AdminHopDongThuePage() {
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
 
-  const moiGioiOptions = useMemo(() => {
-    const names = [...new Set(contracts.map(c => c.moiGioi).filter(Boolean))]
-    return [MOI_GIOI_ALL, ...names.sort()]
-  }, [contracts])
-
   const fetchContracts = useCallback(async () => {
     try {
       const res = await contractService.getThueContracts()
@@ -395,13 +390,13 @@ export default function AdminHopDongThuePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { fetchContracts() }, [])
+  useEffect(() => { fetchContracts() }, [fetchContracts])
 
   const moiGioiOptions = useMemo(() => {
-    const names = contracts.map(c => c.moiGioi).filter(Boolean)
-    return ['Tất cả', ...new Set(names)]
+    const names = [...new Set(contracts.map(c => c.moiGioi).filter(Boolean))]
+    return [MOI_GIOI_ALL, ...names.sort()]
   }, [contracts])
 
   const filtered = useMemo(() => {
