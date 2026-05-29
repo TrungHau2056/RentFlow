@@ -24,7 +24,7 @@ const PAYMENT_STATUS = {
   cho_thanh_toan: { label: 'Chờ thanh toán', color: 'text-amber-600', bg: 'bg-amber-50' },
 }
 
-const MOI_GIOI_OPTIONS = ['Tất cả', 'Trần Văn Hùng', 'Lê Quốc Anh', 'Phạm Minh Tuấn', 'Nguyễn Thị Lan']
+const MOI_GIOI_ALL = 'Tất cả'
 const SORT_OPTIONS = [
   { key: 'newest', label: 'Mới nhất' },
   { key: 'expiring', label: 'Sắp hết hạn' },
@@ -490,12 +490,17 @@ function EmptyState() {
 export default function AdminHopDongThuePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTrangThai, setFilterTrangThai] = useState('all')
-  const [filterMoiGioi, setFilterMoiGioi] = useState('Tất cả')
+  const [filterMoiGioi, setFilterMoiGioi] = useState(MOI_GIOI_ALL)
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const moiGioiOptions = useMemo(() => {
+    const names = [...new Set(contracts.map(c => c.moiGioi).filter(Boolean))]
+    return [MOI_GIOI_ALL, ...names.sort()]
+  }, [contracts])
 
   const fetchContracts = useCallback(async () => {
     try {
@@ -526,7 +531,7 @@ export default function AdminHopDongThuePage() {
       )
     }
     if (filterTrangThai !== 'all') result = result.filter(c => c.trangThai === filterTrangThai)
-    if (filterMoiGioi !== 'Tất cả') result = result.filter(c => c.moiGioi === filterMoiGioi)
+    if (filterMoiGioi !== MOI_GIOI_ALL) result = result.filter(c => c.moiGioi === filterMoiGioi)
 
     switch (sortBy) {
       case 'expiring': result.sort((a, b) => {
@@ -725,7 +730,7 @@ export default function AdminHopDongThuePage() {
             onChange={(e) => setFilterMoiGioi(e.target.value)}
             className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-700 focus:border-blue-500 focus:outline-none"
           >
-            {MOI_GIOI_OPTIONS.map(o => <option key={o}>{o}</option>)}
+            {moiGioiOptions.map(o => <option key={o}>{o}</option>)}
           </select>
 
           {/* Sort */}

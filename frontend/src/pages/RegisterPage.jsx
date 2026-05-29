@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { isInternalAdminRole } from '../config/roles'
 import { extractUserFromJwt } from '../utils/jwt'
+import api from '../services/api'
 
 const ROLES = [
   { value: 'CHU_NHA', label: 'Chủ nhà', desc: 'Ký gửi bất động sản cho thuê' },
@@ -32,37 +33,29 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:8080/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hoTen: form.hoTen,
-          email: form.email,
-          soDienThoai: form.soDienThoai || undefined,
-          password: form.password,
-          vaiTro: role,
-        }),
+      const res = await api.post('/api/auth/register', {
+        hoTen: form.hoTen,
+        email: form.email,
+        soDienThoai: form.soDienThoai || undefined,
+        password: form.password,
+        vaiTro: role,
       })
-      const data = await res.json()
-      if (res.ok) {
-        const { accessToken, refreshToken } = data.data
-        localStorage.setItem('accessToken', accessToken)
-        if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
+      const { accessToken, refreshToken } = res.data.data
+      localStorage.setItem('accessToken', accessToken)
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
 
-        const userInfo = extractUserFromJwt(accessToken, form.email)
-        if (userInfo) {
-          userInfo.hoTen = form.hoTen
-          localStorage.setItem('userInfo', JSON.stringify(userInfo))
-        }
-
-        if (isInternalAdminRole(role)) navigate('/admin')
-        else if (role === 'CHU_NHA') navigate('/dashboard')
-        else navigate('/')
-      } else {
-        setError(data.message || 'Đăng ký thất bại')
+      const userInfo = extractUserFromJwt(accessToken, form.email)
+      if (userInfo) {
+        userInfo.hoTen = form.hoTen
+        localStorage.setItem('userInfo', JSON.stringify(userInfo))
       }
-    } catch {
-      setError('Không thể kết nối đến máy chủ')
+
+      if (isInternalAdminRole(role)) navigate('/admin')
+      else if (role === 'CHU_NHA') navigate('/dashboard')
+      else navigate('/')
+    } catch (err) {
+      const data = err.response?.data
+      setError(data?.message || 'Đăng ký thất bại')
     } finally {
       setLoading(false)
     }

@@ -24,6 +24,22 @@ export const MOCK_USERS = [
     avatar: null,
   },
   {
+    email: 'daily@rentflow.vn',
+    password: '123456',
+    id: 6,
+    hoTen: 'Vũ Hoàng Đại Lý',
+    role: 'NHAN_VIEN_DAI_LY',
+    avatar: null,
+  },
+  {
+    email: 'moigioi@rentflow.vn',
+    password: '123456',
+    id: 7,
+    hoTen: 'Lý Thanh Môi Giới',
+    role: 'MOI_GIOI',
+    avatar: null,
+  },
+  {
     email: 'chunha@rentflow.vn',
     password: '123456',
     id: 2,

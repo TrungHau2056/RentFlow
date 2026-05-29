@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isInternalAdminRole } from '../config/roles'
-import { MOCK_USERS } from '../config/mockUsers'
 import { extractUserFromJwt } from '../utils/jwt'
+import api from '../services/api'
 
 const MEMBER_BENEFITS = [
   'Xem địa chỉ chi tiết',
@@ -74,14 +74,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     else navigate('/')
   }
 
-  const storeSession = (data) => {
-    localStorage.setItem('accessToken', data.accessToken)
-    localStorage.setItem('refreshToken', data.refreshToken)
-    if (data.user) {
-      localStorage.setItem('userInfo', JSON.stringify(data.user))
-    }
-  }
-
   const handleLogin = async (event) => {
     event.preventDefault()
     setError('')
@@ -96,47 +88,20 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     }
 
     setLoading(true)
-    const matchedUser = MOCK_USERS.find((user) => user.email === email && user.password === password)
-
-    if (matchedUser) {
-      storeSession({
-        accessToken: `mock-access-token-${matchedUser.id}`,
-        refreshToken: `mock-refresh-token-${matchedUser.id}`,
-        user: {
-          id: matchedUser.id,
-          hoTen: matchedUser.hoTen,
-          email: matchedUser.email,
-          role: matchedUser.role,
-          avatar: matchedUser.avatar,
-        },
-      })
-      setLoading(false)
-      routeAuthenticatedUser(matchedUser)
-      return
-    }
-
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await response.json()
-      if (response.ok) {
-        const { accessToken } = data.data
-        storeSession(data.data)
+      const response = await api.post('/api/auth/login', { email, password })
+      const { accessToken, refreshToken } = response.data.data
 
-        const userInfo = extractUserFromJwt(accessToken, email)
-        if (userInfo) {
-          localStorage.setItem('userInfo', JSON.stringify(userInfo))
-        }
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
 
-        routeAuthenticatedUser(userInfo)
-      } else {
-        setError(data.message || 'Đăng nhập thất bại')
-      }
-    } catch {
-      setError('Không thể kết nối máy chủ. Dùng tài khoản demo: admin@rentflow.vn / 123456')
+      const userInfo = extractUserFromJwt(accessToken, email)
+      if (userInfo) localStorage.setItem('userInfo', JSON.stringify(userInfo))
+
+      routeAuthenticatedUser(userInfo)
+    } catch (err) {
+      const data = err.response?.data
+      setError(data?.message || 'Đăng nhập thất bại')
     } finally {
       setLoading(false)
     }
@@ -154,33 +119,28 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
 
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:8080/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hoTen: registerForm.hoTen,
-          email: registerForm.email,
-          soDienThoai: registerForm.soDienThoai || undefined,
-          password: registerForm.password,
-          vaiTro: registerForm.role,
-        }),
+      const response = await api.post('/api/auth/register', {
+        hoTen: registerForm.hoTen,
+        email: registerForm.email,
+        soDienThoai: registerForm.soDienThoai || undefined,
+        password: registerForm.password,
+        vaiTro: registerForm.role,
       })
-      const data = await response.json()
-      if (response.ok) {
-        const { accessToken } = data.data
-        storeSession(data.data)
+      const { accessToken, refreshToken } = response.data.data
 
-        const userInfo = extractUserFromJwt(accessToken, registerForm.email)
-        if (userInfo) {
-          localStorage.setItem('userInfo', JSON.stringify(userInfo))
-        }
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
 
-        routeAuthenticatedUser(userInfo)
-      } else {
-        setError(data.message || 'Đăng ký thất bại')
+      const userInfo = extractUserFromJwt(accessToken, registerForm.email)
+      if (userInfo) {
+        userInfo.hoTen = registerForm.hoTen
+        localStorage.setItem('userInfo', JSON.stringify(userInfo))
       }
-    } catch {
-      setError('Không thể kết nối đến máy chủ')
+
+      routeAuthenticatedUser(userInfo)
+    } catch (err) {
+      const data = err.response?.data
+      setError(data?.message || 'Đăng ký thất bại')
     } finally {
       setLoading(false)
     }

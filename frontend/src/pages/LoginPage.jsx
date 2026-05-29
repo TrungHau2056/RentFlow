@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { isInternalAdminRole } from '../config/roles'
-import { MOCK_USERS } from '../config/mockUsers'
 import { extractUserFromJwt } from '../utils/jwt'
+import api from '../services/api'
 
 const ALERT_CONTENT = {
   missing: {
@@ -48,14 +48,6 @@ export default function LoginPage() {
 
   const alert = ALERT_CONTENT[alertType]
 
-  const storeSession = (data) => {
-    localStorage.setItem('accessToken', data.accessToken)
-    localStorage.setItem('refreshToken', data.refreshToken)
-    if (data.user) localStorage.setItem('userInfo', JSON.stringify(data.user))
-    if (rememberMe) localStorage.setItem('rememberedIdentifier', identifier.trim())
-    else localStorage.removeItem('rememberedIdentifier')
-  }
-
   const handleSubmit = async (event) => {
     event.preventDefault()
     setAlertType('')
@@ -65,66 +57,31 @@ export default function LoginPage() {
       setAlertType('missing')
       return
     }
-    if (normalizedIdentifier === 'khoa@rentflow.vn') {
-      setAlertType('locked')
-      return
-    }
-
-    // Check mock users
-    const matchedUser = MOCK_USERS.find(u => u.email === normalizedIdentifier)
-    if (matchedUser) {
-      if (password !== matchedUser.password) {
-        setAlertType('incorrect')
-        return
-      }
-
-      storeSession({
-        accessToken: `mock-access-token-${matchedUser.id}`,
-        refreshToken: `mock-refresh-token-${matchedUser.id}`,
-        user: {
-          id: matchedUser.id,
-          hoTen: matchedUser.hoTen,
-          email: matchedUser.email,
-          role: matchedUser.role,
-          avatar: matchedUser.avatar,
-        },
-      })
-      setLoading(false)
-      if (isInternalAdminRole(matchedUser.role)) navigate('/admin')
-      else if (matchedUser.role === 'CHU_NHA') navigate('/dashboard')
-      else navigate('/tenant')
-      return
-    }
 
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedIdentifier, password }),
-      })
-      const data = await response.json()
-      if (response.ok) {
-        const { accessToken } = data.data
-        storeSession(data.data)
+      const response = await api.post('/api/auth/login', { email: normalizedIdentifier, password })
+      const { accessToken, refreshToken } = response.data.data
 
-        // Backend JwtResponseDTO chỉ trả accessToken & refreshToken,
-        // không có user object → cần giải mã JWT để lấy thông tin
-        const userInfo = extractUserFromJwt(accessToken, normalizedIdentifier)
-        if (userInfo) {
-          localStorage.setItem('userInfo', JSON.stringify(userInfo))
-        }
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
 
-        const role = userInfo?.role
-        if (isInternalAdminRole(role)) navigate('/admin')
-        else if (role === 'CHU_NHA') navigate('/dashboard')
-        else if (role === 'KHACH_THUE' || role === 'KHACH_HANG') navigate('/tenant')
-        else navigate('/')
-      } else {
-        setAlertType(data.message?.toLowerCase().includes('khóa') ? 'locked' : 'incorrect')
-      }
-    } catch {
-      setAlertType('unavailable')
+      const userInfo = extractUserFromJwt(accessToken, normalizedIdentifier)
+      if (userInfo) localStorage.setItem('userInfo', JSON.stringify(userInfo))
+
+      if (rememberMe) localStorage.setItem('rememberedIdentifier', normalizedIdentifier)
+      else localStorage.removeItem('rememberedIdentifier')
+
+      const role = userInfo?.role
+      if (isInternalAdminRole(role)) navigate('/admin')
+      else if (role === 'CHU_NHA') navigate('/dashboard')
+      else if (role === 'KHACH_THUE' || role === 'KHACH_HANG') navigate('/tenant')
+      else navigate('/')
+    } catch (error) {
+      const data = error.response?.data
+      if (data?.message?.toLowerCase().includes('khóa')) setAlertType('locked')
+      else if (error.code === 'ERR_NETWORK' || !error.response) setAlertType('unavailable')
+      else setAlertType('incorrect')
     } finally {
       setLoading(false)
     }
