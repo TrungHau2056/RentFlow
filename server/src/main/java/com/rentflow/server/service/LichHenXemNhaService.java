@@ -1,5 +1,6 @@
 package com.rentflow.server.service;
 
+import com.rentflow.server.dto.request.DatLichXemNhaRequestDTO;
 import com.rentflow.server.dto.request.LichHenXemNhaRequestDTO;
 import com.rentflow.server.dto.response.LichHenXemNhaResponseDTO;
 import com.rentflow.server.entity.BatDongSan;
@@ -18,6 +19,7 @@ import com.rentflow.server.util.enums.TrangThaiLichHen;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -47,6 +49,46 @@ public class LichHenXemNhaService {
                 .trangThai(dto.getTrangThai() != null ? dto.getTrangThai() : TrangThaiLichHen.CHO_XAC_NHAN.name())
                 .build();
         return toResponseDTO(lichHenXemNhaRepository.save(entity));
+    }
+
+    public LichHenXemNhaResponseDTO createByCustomer(DatLichXemNhaRequestDTO dto) {
+        TaiKhoan currentUser = securityUtils.getCurrentUser();
+        KhachHang kh = currentUser.getKhachHangSet().stream()
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.KHACH_HANG_NOT_FOUND));
+        BatDongSan bds = batDongSanRepository.findById(dto.getBatDongSanId())
+                .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        NhanVien nv = null;
+        if (dto.getNhanVienId() != null) {
+            nv = nhanVienRepository.findById(dto.getNhanVienId())
+                    .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
+        }
+
+        StringBuilder noiDung = new StringBuilder();
+        if (dto.getGhiChu() != null) noiDung.append("Ghi chú: ").append(dto.getGhiChu());
+        if (dto.getHinhThucXem() != null) {
+            if (noiDung.length() > 0) noiDung.append("\n");
+            noiDung.append("Hình thức xem: ").append(dto.getHinhThucXem());
+        }
+
+        LichHenXemNha entity = LichHenXemNha.builder()
+                .khachHang(kh)
+                .batDongSan(bds)
+                .nhanVien(nv)
+                .thoiGian(dto.getThoiGian())
+                .noiDungTraoDoi(noiDung.length() > 0 ? noiDung.toString() : null)
+                .trangThai(TrangThaiLichHen.CHO_XAC_NHAN.name())
+                .build();
+        return toResponseDTO(lichHenXemNhaRepository.save(entity));
+    }
+
+    public List<LichHenXemNhaResponseDTO> getMySchedules() {
+        TaiKhoan currentUser = securityUtils.getCurrentUser();
+        KhachHang kh = currentUser.getKhachHangSet().stream()
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.KHACH_HANG_NOT_FOUND));
+        return lichHenXemNhaRepository.findByKhachHangId(kh.getId())
+                .stream().map(this::toResponseDTO).toList();
     }
 
     public List<LichHenXemNhaResponseDTO> getAll(Long nhanVienId, Long khachHangId, Long batDongSanId, String trangThai) {
@@ -101,6 +143,19 @@ public class LichHenXemNhaService {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
         entity.setTrangThai(trangThai);
+        return toResponseDTO(lichHenXemNhaRepository.save(entity));
+    }
+
+    public LichHenXemNhaResponseDTO reschedule(Long id, LocalDateTime newTime) {
+        LichHenXemNha entity = lichHenXemNhaRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.LICH_HEN_NOT_FOUND));
+        verifyOwnership(entity);
+        String trangThai = entity.getTrangThai();
+        if (!TrangThaiLichHen.CHO_XAC_NHAN.name().equals(trangThai)
+                && !TrangThaiLichHen.DA_XAC_NHAN.name().equals(trangThai)) {
+            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        entity.setThoiGian(newTime);
         return toResponseDTO(lichHenXemNhaRepository.save(entity));
     }
 

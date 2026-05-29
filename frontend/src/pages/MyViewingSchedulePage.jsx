@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import viewingService from '../services/viewingService'
 
 const STATUS_TABS = [
   { id: 'all', label: 'Tất cả' },
@@ -22,127 +23,38 @@ const METHOD_CONFIG = {
   di_cung_moi_gioi: { label: 'Đi cùng môi giới', icon: '🤝', color: 'bg-teal-50 text-teal-700' },
 }
 
-const BROKERS = [
-  { id: 1, name: 'Nguyễn Minh Tuấn', role: 'Môi giới cao cấp', rating: 4.9, reviews: 127, online: true, avatar: null, phone: '0901***789' },
-  { id: 2, name: 'Trần Thị Hương', role: 'Môi giới chuyên nghiệp', rating: 4.8, reviews: 95, online: false, avatar: null, phone: '0912***456' },
-  { id: 3, name: 'Lê Quốc Hùng', role: 'Môi giới khu vực', rating: 4.7, reviews: 68, online: true, avatar: null, phone: '0978***234' },
-]
-
-const BOOKINGS = [
-  {
-    id: 'SCH-001234',
-    propertyId: 1,
-    propertyName: 'Căn hộ 2PN Vinhomes Metropolis',
-    propertyImage: null,
-    price: '18.000.000',
-    priceUnit: '/tháng',
-    address: 'Hoàn Kiếm, Hà Nội',
-    area: '75m²',
-    bedrooms: '2 PN',
-    date: '2026-05-27',
-    time: '09:00',
-    method: 'truc_tiep',
-    status: 'cho_xac_nhan',
-    brokerId: 1,
-    notes: 'Muốn xem ban công hướng sông',
-    createdAt: '2026-05-25',
-  },
-  {
-    id: 'SCH-001235',
-    propertyId: 2,
-    propertyName: 'Nhà phố 3 tầng Cầu Giấy',
-    propertyImage: null,
-    price: '25.000.000',
-    priceUnit: '/tháng',
-    address: 'Cầu Giấy, Hà Nội',
-    area: '120m²',
-    bedrooms: '4 PN',
-    date: '2026-05-28',
-    time: '14:00',
-    method: 'di_cung_moi_gioi',
-    status: 'da_xac_nhan',
-    brokerId: 2,
-    notes: '',
-    createdAt: '2026-05-24',
-  },
-  {
-    id: 'SCH-001236',
-    propertyId: 3,
-    propertyName: 'Căn hộ Studio Trung Hòa',
-    propertyImage: null,
-    price: '12.000.000',
-    priceUnit: '/tháng',
-    address: 'Thanh Xuân, Hà Nội',
-    area: '45m²',
-    bedrooms: '1 PN',
-    date: '2026-05-30',
-    time: '10:00',
-    method: 'video_call',
-    status: 'da_xac_nhan',
-    brokerId: 1,
-    notes: 'Xem qua video do ở xa',
-    createdAt: '2026-05-23',
-  },
-  {
-    id: 'SCH-001237',
-    propertyId: 4,
-    propertyName: 'Chung cư 3PN Keangnam Hanoi',
-    propertyImage: null,
-    price: '35.000.000',
-    priceUnit: '/tháng',
-    address: 'Tây Hồ, Hà Nội',
-    area: '140m²',
-    bedrooms: '3 PN',
-    date: '2026-05-22',
-    time: '15:00',
-    method: 'truc_tiep',
-    status: 'da_hoan_thanh',
-    brokerId: 3,
-    notes: '',
-    createdAt: '2026-05-20',
-  },
-  {
-    id: 'SCH-001238',
-    propertyId: 5,
-    propertyName: 'Căn hộ 2PN Lotte Center Hanoi',
-    propertyImage: null,
-    price: '22.000.000',
-    priceUnit: '/tháng',
-    address: 'Hoàn Kiếm, Hà Nội',
-    area: '85m²',
-    bedrooms: '2 PN',
-    date: '2026-05-20',
-    time: '11:00',
-    method: 'truc_tiep',
-    status: 'da_huy',
-    brokerId: 2,
-    notes: 'Lịch trình thay đổi',
-    createdAt: '2026-05-18',
-  },
-  {
-    id: 'SCH-001239',
-    propertyId: 6,
-    propertyName: 'Nhà vườn Long Biên',
-    propertyImage: null,
-    price: '15.000.000',
-    priceUnit: '/tháng',
-    address: 'Long Biên, Hà Nội',
-    area: '200m²',
-    bedrooms: '4 PN',
-    date: '2026-05-21',
-    time: '08:00',
-    method: 'di_cung_moi_gioi',
-    status: 'da_hoan_thanh',
-    brokerId: 3,
-    notes: '',
-    createdAt: '2026-05-19',
-  },
-]
+const STATUS_MAP = {
+  CHO_XAC_NHAN: 'cho_xac_nhan',
+  DA_XAC_NHAN: 'da_xac_nhan',
+  DA_HOAN_THANH: 'da_hoan_thanh',
+  DA_HUY: 'da_huy',
+}
 
 const DAYS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
-function getBroker(id) {
-  return BROKERS.find(b => b.id === id) || BROKERS[0]
+function mapBooking(item) {
+  const thoiGian = item.thoiGian ? new Date(item.thoiGian) : new Date()
+  const date = thoiGian.toISOString().slice(0, 10)
+  const time = thoiGian.toTimeString().slice(0, 5)
+  return {
+    id: item.id,
+    propertyId: item.batDongSanId,
+    propertyName: item.diaChiBatDongSan || `BĐS #${item.batDongSanId}`,
+    propertyImage: null,
+    price: '',
+    priceUnit: '/tháng',
+    address: item.diaChiBatDongSan || '',
+    area: '',
+    bedrooms: '',
+    date,
+    time,
+    method: 'truc_tiep',
+    status: STATUS_MAP[item.trangThai] || item.trangThai?.toLowerCase() || 'cho_xac_nhan',
+    brokerId: item.nhanVienId,
+    brokerName: item.tenNhanVien || '',
+    notes: item.noiDungTraoDoi || '',
+    createdAt: date,
+  }
 }
 
 function formatDate(dateStr) {
@@ -251,8 +163,15 @@ function BrokerCard({ broker }) {
   )
 }
 
-function BookingCard({ booking, onCancel, onReschedule }) {
-  const broker = getBroker(booking.brokerId)
+function BookingCard({ booking, onReschedule }) {
+  const broker = {
+    name: booking.brokerName || 'Môi giới',
+    role: 'Môi giới',
+    online: false,
+    rating: 0,
+    reviews: 0,
+    phone: '',
+  }
   const isActive = booking.status === 'cho_xac_nhan' || booking.status === 'da_xac_nhan'
 
   return (
@@ -332,16 +251,6 @@ function BookingCard({ booking, onCancel, onReschedule }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Đổi lịch
-            </button>
-            <button
-              type="button"
-              onClick={() => onCancel(booking)}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Hủy lịch
             </button>
           </div>
         )}
@@ -483,38 +392,6 @@ function CalendarView({ bookings, onSelectBooking }) {
   )
 }
 
-function CancelModal({ booking, onClose, onConfirm }) {
-  if (!booking) return null
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
-      <div className="relative w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
-          <svg className="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-        </div>
-        <h3 className="text-center text-xl font-bold text-slate-900">Hủy lịch xem nhà?</h3>
-        <p className="mt-2 text-center text-sm text-slate-500">
-          Bạn có chắc chắn muốn hủy lịch hẹn xem <span className="font-semibold text-slate-700">{booking.propertyName}</span> vào {formatDate(booking.date)} lúc {booking.time}?
-        </p>
-        <div className="mt-5 rounded-2xl bg-amber-50 p-4">
-          <p className="text-xs text-amber-700">Lưu ý: Hủy lịch quá nhiều lần có thể ảnh hưởng đến thứ hạng tài khoản của bạn.</p>
-        </div>
-        <div className="mt-6 flex gap-3">
-          <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-            Giữ lại lịch
-          </button>
-          <button type="button" onClick={() => onConfirm(booking.id)} className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
-            Xác nhận hủy
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function RescheduleModal({ booking, onClose, onConfirm }) {
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
@@ -621,27 +498,21 @@ function RescheduleModal({ booking, onClose, onConfirm }) {
 function SuccessModal({ type, booking, onClose }) {
   if (!booking) return null
 
-  const isCancel = type === 'cancel'
+  const isError = type === 'reschedule_error'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
       <div className="relative w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl text-center">
-        <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${isCancel ? 'bg-red-50' : 'bg-emerald-50'}`}>
-          {isCancel ? (
-            <svg className="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          ) : (
-            <svg className="h-8 w-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
+        <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${isError ? 'bg-red-50' : 'bg-emerald-50'}`}>
+          <svg className={`h-8 w-8 ${isError ? 'text-red-500' : 'text-emerald-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={isError ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'} />
+          </svg>
         </div>
-        <h3 className="text-xl font-bold text-slate-900">{isCancel ? 'Đã hủy lịch thành công' : 'Đã đổi lịch thành công'}</h3>
+        <h3 className="text-xl font-bold text-slate-900">{isError ? 'Đổi lịch thất bại' : 'Đã đổi lịch thành công'}</h3>
         <p className="mt-2 text-sm text-slate-500">
-          {isCancel
-            ? `Lịch hẹn ${booking.id} đã được hủy.`
+          {isError
+            ? 'Không thể đổi lịch hẹn. Vui lòng thử lại sau.'
             : `Lịch hẹn ${booking.id} đã được cập nhật.`}
         </p>
         <div className="mt-4 rounded-xl bg-slate-50 p-3 text-left">
@@ -682,10 +553,22 @@ function EmptyState() {
 export default function MyViewingSchedulePage() {
   const [activeTab, setActiveTab] = useState('all')
   const [viewMode, setViewMode] = useState('list')
-  const [bookings, setBookings] = useState(BOOKINGS)
-  const [cancelBooking, setCancelBooking] = useState(null)
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading] = useState(true)
   const [rescheduleBooking, setRescheduleBooking] = useState(null)
   const [successResult, setSuccessResult] = useState(null)
+
+  useEffect(() => {
+    setLoading(true)
+    viewingService.getMyViewingSchedules()
+      .then(res => {
+        if (res?.data) {
+          setBookings(res.data.map(mapBooking))
+        }
+      })
+      .catch(() => setBookings([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filteredBookings = useMemo(() => {
     if (activeTab === 'all') return bookings
@@ -699,16 +582,24 @@ export default function MyViewingSchedulePage() {
     cancelled: bookings.filter(b => b.status === 'da_huy').length,
   }), [bookings])
 
-  const handleCancelConfirm = (bookingId) => {
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'da_huy' } : b))
-    setCancelBooking(null)
-    setSuccessResult({ type: 'cancel', booking: { id: bookingId } })
+  const handleRescheduleConfirm = async (bookingId, newDate, newTime) => {
+    try {
+      const thoiGian = `${newDate}T${newTime}:00`
+      await viewingService.rescheduleAppointment(bookingId, thoiGian)
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, date: newDate, time: newTime } : b))
+      setRescheduleBooking(null)
+      setSuccessResult({ type: 'reschedule', booking: { id: bookingId } })
+    } catch {
+      setSuccessResult({ type: 'reschedule_error', booking: { id: bookingId } })
+    }
   }
 
-  const handleRescheduleConfirm = (bookingId, newDate, newTime) => {
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, date: newDate, time: newTime } : b))
-    setRescheduleBooking(null)
-    setSuccessResult({ type: 'reschedule', booking: { id: bookingId } })
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+      </div>
+    )
   }
 
   return (
@@ -804,7 +695,6 @@ export default function MyViewingSchedulePage() {
               <BookingCard
                 key={booking.id}
                 booking={booking}
-                onCancel={setCancelBooking}
                 onReschedule={setRescheduleBooking}
               />
             ))}
@@ -820,14 +710,6 @@ export default function MyViewingSchedulePage() {
       )}
 
       {/* Modals */}
-      {cancelBooking && (
-        <CancelModal
-          booking={cancelBooking}
-          onClose={() => setCancelBooking(null)}
-          onConfirm={handleCancelConfirm}
-        />
-      )}
-
       {rescheduleBooking && (
         <RescheduleModal
           booking={rescheduleBooking}

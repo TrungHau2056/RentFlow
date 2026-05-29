@@ -29,7 +29,7 @@ public class NhanVienMoiGioiController {
     private final KhachHangRepository khachHangRepository;
 
     @PostMapping("/{id}/khach-hang")
-    @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
     @Operation(summary = "Phân công khách hàng", description = "Phân công khách hàng cho nhân viên môi giới")
     public ApiSuccessResponse<Void> assignKhachHang(
             @PathVariable Long id,
@@ -48,7 +48,7 @@ public class NhanVienMoiGioiController {
     }
 
     @GetMapping("/{id}/khach-hang")
-    @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
     @Operation(summary = "DS khách hàng được phân công", description = "Lấy danh sách khách hàng đã phân công cho nhân viên")
     public ApiSuccessResponse<List<KhachHangResponseDTO>> getAssignedKhachHang(@PathVariable Long id) {
         NhanVien nv = nhanVienRepository.findById(id)
@@ -71,7 +71,7 @@ public class NhanVienMoiGioiController {
     }
 
     @DeleteMapping("/{nhanVienId}/khach-hang/{khachHangId}")
-    @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
     @Operation(summary = "Huỷ phân công", description = "Huỷ phân công khách hàng khỏi nhân viên môi giới")
     public ApiSuccessResponse<Void> removeAssign(
             @PathVariable Long nhanVienId,

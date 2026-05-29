@@ -1,92 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import viewingService from '../services/viewingService'
 
-const PROPERTY_DATA = [
-  {
-    id: 1,
-    title: 'Căn hộ cao cấp tại trung tâm',
-    price: '15.000.000 đ/tháng',
-    location: 'Cầu Giấy, Hà Nội',
-    area: '85 m²',
-    bedrooms: 2,
-    bathrooms: 2,
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
-    status: 'Moi',
-    statusLabel: 'Mới',
-    type: 'Căn hộ',
-  },
-  {
-    id: 2,
-    title: 'Biệt thự hiện đại sân vườn',
-    price: '45.000.000 đ/tháng',
-    location: 'Ba Đình, Hà Nội',
-    area: '250 m²',
-    bedrooms: 4,
-    bathrooms: 3,
-    image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
-    status: 'Noi_Bat',
-    statusLabel: 'Nổi bật',
-    type: 'Biệt thự',
-  },
-  {
-    id: 3,
-    title: 'Nhà phố thương mại',
-    price: '28.000.000 đ/tháng',
-    location: 'Hà Đông, Hà Nội',
-    area: '120 m²',
-    bedrooms: 3,
-    bathrooms: 2,
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
-    status: 'Gia_Tot',
-    statusLabel: 'Giá tốt',
-    type: 'Nhà phố',
-  },
-  {
-    id: 4,
-    title: 'Penthouse view sông Hồng',
-    price: '80.000.000 đ/tháng',
-    location: 'Hoàn Kiếm, Hà Nội',
-    area: '180 m²',
-    bedrooms: 3,
-    bathrooms: 3,
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
-    status: 'Noi_Bat',
-    statusLabel: 'Nổi bật',
-    type: 'Penthouse',
-  },
-  {
-    id: 5,
-    title: 'Căn hộ studio tiện nghi',
-    price: '12.000.000 đ/tháng',
-    location: 'Thanh Xuân, Hà Nội',
-    area: '45 m²',
-    bedrooms: 1,
-    bathrooms: 1,
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
-    status: 'Moi',
-    statusLabel: 'Mới',
-    type: 'Studio',
-  },
-  {
-    id: 6,
-    title: 'Nhà nguyên căn hẻm xe hơi',
-    price: '18.000.000 đ/tháng',
-    location: 'Nam Từ Liêm, Hà Nội',
-    area: '75 m²',
-    bedrooms: 3,
-    bathrooms: 2,
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
-    status: 'Dang_Cho_Thue',
-    statusLabel: 'Đang cho thuê',
-    type: 'Nhà nguyên căn',
-  },
+const PLACEHOLDER_IMAGES = [
+  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
 ]
+
+const STATUS_MAP = {
+  SAN_SANG_CHO_THUE: { status: 'Moi', label: 'Còn trống' },
+  DANG_CHO_THUE: { status: 'Noi_Bat', label: 'Đang cho thuê' },
+  DA_THUE: { status: 'Da_Thue', label: 'Đã cho thuê' },
+}
 
 const STATUS_STYLES = {
   Moi: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   Noi_Bat: 'bg-orange-100 text-orange-700 border-orange-200',
-  Gia_Tot: 'bg-blue-100 text-blue-700 border-blue-200',
-  Dang_Cho_Thue: 'bg-slate-100 text-slate-600 border-slate-200',
+  Da_Thue: 'bg-slate-100 text-slate-600 border-slate-200',
+}
+
+function formatPrice(vnd) {
+  return (vnd || 0).toLocaleString('vi-VN') + ' đ/tháng'
+}
+
+function mapProperty(item, index) {
+  const statusInfo = STATUS_MAP[item.trangThai] || { status: 'Moi', label: 'Mới' }
+  return {
+    id: item.id,
+    title: item.loaiNha ? `${item.loaiNha} tại ${item.diaChi}` : item.diaChi,
+    price: formatPrice(item.giaThue),
+    location: item.diaChi || '',
+    area: item.dienTich ? `${item.dienTich} m²` : '',
+    bedrooms: item.soPhongNgu || 0,
+    bathrooms: item.soPhongVeSinh || 0,
+    image: PLACEHOLDER_IMAGES[index % PLACEHOLDER_IMAGES.length],
+    status: statusInfo.status,
+    statusLabel: statusInfo.label,
+    type: item.loaiNha || '',
+  }
 }
 
 const DISTRICTS = [
@@ -155,6 +110,16 @@ export default function HomePage() {
     area: '',
     bedrooms: '',
   })
+  const [featuredProperties, setFeaturedProperties] = useState([])
+
+  useEffect(() => {
+    viewingService.getPublicProperties()
+      .then(res => {
+        const list = (res?.data || []).map(mapProperty)
+        setFeaturedProperties(list)
+      })
+      .catch(() => setFeaturedProperties([]))
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">
@@ -356,13 +321,12 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {PROPERTY_DATA.map((property) => (
+          {featuredProperties.map((property, index) => (
             <Link
               key={property.id}
               to={`/bat-dong-san/${property.id}`}
               className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:shadow-xl hover:border-slate-300 transition-all duration-300"
             >
-              {/* Image */}
               <div className="relative h-56 overflow-hidden">
                 <img
                   src={property.image}
@@ -370,7 +334,7 @@ export default function HomePage() {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status] || STATUS_STYLES.Dang_Cho_Thue}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                     {property.statusLabel}
                   </span>
                 </div>
@@ -379,7 +343,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Content */}
               <div className="p-5">
                 <h3 className="font-semibold text-slate-800 mb-2 line-clamp-1 group-hover:text-primary transition-colors">
                   {property.title}

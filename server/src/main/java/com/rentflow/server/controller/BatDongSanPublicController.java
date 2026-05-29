@@ -45,7 +45,7 @@ public class BatDongSanPublicController {
     }
 
     @GetMapping("/{id}/detail")
-    @PreAuthorize("hasAnyAuthority('KHACH_HANG', 'CHU_NHA', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @PreAuthorize("hasAnyRole('KHACH_HANG', 'CHU_NHA', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
     @Operation(summary = "Chi tiết đầy đủ", description = "Lấy chi tiết đầy đủ bất động sản (yêu cầu đăng nhập)")
     public ApiSuccessResponse<BatDongSanDetailDTO> getDetail(@PathVariable Long id) {
         return ApiSuccessResponse.<BatDongSanDetailDTO>builder()
@@ -72,7 +72,7 @@ public class BatDongSanPublicController {
     }
 
     @PutMapping("/{id}/chi-tiet")
-    @PreAuthorize("hasAnyAuthority('CHU_NHA', 'NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasAnyRole('CHU_NHA', 'NHAN_VIEN_DAI_LY')")
     @Operation(summary = "Cập nhật chi tiết", description = "Cập nhật thông số chi tiết bất động sản")
     public ApiSuccessResponse<BatDongSanDetailDTO> updateChiTiet(
             @PathVariable Long id,

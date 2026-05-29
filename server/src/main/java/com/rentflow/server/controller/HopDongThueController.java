@@ -25,7 +25,7 @@ public class HopDongThueController {
     private final HopDongThueService hopDongThueService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
     @Operation(summary = "Tạo hợp đồng thuê", description = "Tạo mới hợp đồng thuê nhà")
     public ApiSuccessResponse<HopDongThueResponseDTO> create(@RequestBody @Valid HopDongThueRequestDTO dto) {
         return ApiSuccessResponse.<HopDongThueResponseDTO>builder()
@@ -36,7 +36,7 @@ public class HopDongThueController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
     @Operation(summary = "Danh sách hợp đồng thuê", description = "Lấy tất cả hợp đồng thuê (có thể lọc theo trạng thái, khách hàng)")
     public ApiSuccessResponse<List<HopDongThueResponseDTO>> getAll(
             @RequestParam(required = false) String trangThai,
@@ -49,7 +49,7 @@ public class HopDongThueController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
     @Operation(summary = "Chi tiết hợp đồng thuê", description = "Lấy chi tiết hợp đồng thuê theo ID")
     public ApiSuccessResponse<HopDongThueResponseDTO> getById(@PathVariable Long id) {
         return ApiSuccessResponse.<HopDongThueResponseDTO>builder()
@@ -60,7 +60,7 @@ public class HopDongThueController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
     @Operation(summary = "Cập nhật hợp đồng thuê", description = "Cập nhật thông tin hợp đồng thuê")
     public ApiSuccessResponse<HopDongThueResponseDTO> update(
             @PathVariable Long id,
@@ -73,7 +73,7 @@ public class HopDongThueController {
     }
 
     @PutMapping("/{id}/ky")
-    @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
     @Operation(summary = "Ký hợp đồng thuê", description = "Ký kết hợp đồng thuê")
     public ApiSuccessResponse<HopDongThueResponseDTO> kyHopDong(@PathVariable Long id) {
         return ApiSuccessResponse.<HopDongThueResponseDTO>builder()
@@ -84,7 +84,7 @@ public class HopDongThueController {
     }
 
     @PatchMapping("/{id}/trang-thai")
-    @PreAuthorize("hasAuthority('BO_PHAN_PHAP_LUAT')")
+    @PreAuthorize("hasRole('BO_PHAN_PHAP_LUAT')")
     @Operation(summary = "Cập nhật trạng thái hợp đồng thuê", description = "Cập nhật trạng thái hợp đồng thuê (chỉ BO_PHAN_PHAP_LUAT)")
     public ApiSuccessResponse<HopDongThueResponseDTO> updateTrangThai(
             @PathVariable Long id,
@@ -97,7 +97,7 @@ public class HopDongThueController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasAuthority('NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
     @Operation(summary = "Hợp đồng của tôi", description = "Lấy danh sách hợp đồng thuê do nhân viên hiện tại tạo")
     public ApiSuccessResponse<List<HopDongThueResponseDTO>> getMyHopDong() {
         return ApiSuccessResponse.<List<HopDongThueResponseDTO>>builder()

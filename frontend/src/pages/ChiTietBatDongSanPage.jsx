@@ -1,47 +1,9 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
+import viewingService from '../services/viewingService'
 
-const PROPERTY_DATA = {
-  id: 1,
-  title: 'Biệt thự cổ điển Pháp tại Phố Cổ',
-  price: '45.000.000 đ/tháng',
-  priceRaw: 45000000,
-  location: 'Hoàn Kiếm, Hà Nội',
-  fullAddress: '123 Hàng Ngang, Phường Hàng Đào, Quận Hoàn Kiếm, Hà Nội',
-  area: '320 m²',
-  areaRaw: 320,
-  bedrooms: 4,
-  bathrooms: 5,
-  floors: 3,
-  direction: 'Đông Nam',
-  type: 'Biệt thự',
-  legalStatus: 'Sổ đỏ chính chủ',
-  status: 'Noi_Bat',
-  statusLabel: 'Nổi bật',
-  description: `Tọa lạc tại vị trí kim cương trong khu phố cổ Hà Nội, biệt thự mang kiến trúc Pháp cổ điển được phục dựng tinh xảo.
-
-Không gian sống kết hợp hài hòa giữa nét đẹp truyền thống và tiện nghi hiện đại. Thiết kế 3 tầng với sân thượng, giếng trời thông thoáng.
-
-Vị trí đắc địa: 5 phút đi bộ ra Hồ Gươm, gần các trường quốc tế, bệnh viện lớn. Khu vực an ninh, dân trí cao.`,
-  features: [
-    { icon: '🏠', text: 'Kiến trúc Pháp cổ, đã hoàn công' },
-    { icon: '🔒', text: 'An ninh 24/7, camera giám sát' },
-    { icon: '🌳', text: 'Sân vườn 50m², cây xanh' },
-    { icon: '🚗', text: 'Garage ô tô trong nhà' },
-    { icon: '🛗', text: 'Thang máy gia đình' },
-    { icon: '☀️', text: 'Năng lượng mặt trời' },
-  ],
-  furniture: 'Đầy đủ nội thất cao cấp',
-  nearby: [
-    'Trường quốc tế Liên Hợp Quốc 500m',
-    'Bệnh viện Việt Đức 1km',
-    'Trung tâm thương mại Tràng Tiền 800m',
-    'Công viên Thống Nhất 1.5km',
-  ],
-}
-
-const PROPERTY_IMAGES = [
+const PLACEHOLDER_IMAGES = [
   { src: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200&h=800&fit=crop', locked: false },
   { src: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop', locked: false },
   { src: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop', locked: false },
@@ -50,164 +12,48 @@ const PROPERTY_IMAGES = [
   { src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop', locked: true },
 ]
 
-const SIMILAR_PROPERTIES = [
-  {
-    id: 2,
-    title: 'Căn hộ cao cấp view hồ Tây',
-    price: '28.000.000 đ/tháng',
-    location: 'Tây Hồ, Hà Nội',
-    area: '150 m²',
-    bedrooms: 3,
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop',
-    status: 'Noi_Bat',
-    statusLabel: 'Nổi bật',
-  },
-  {
-    id: 3,
-    title: 'Nhà phố thương mại Cầu Giấy',
-    price: '22.000.000 đ/tháng',
-    location: 'Cầu Giấy, Hà Nội',
-    area: '120 m²',
-    bedrooms: 3,
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
-    status: 'Gia_Tot',
-    statusLabel: 'Giá tốt',
-  },
-  {
-    id: 4,
-    title: 'Penthouse sang trọng Ba Đình',
-    price: '55.000.000 đ/tháng',
-    location: 'Ba Đình, Hà Nội',
-    area: '200 m²',
-    bedrooms: 3,
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
-    status: 'Moi',
-    statusLabel: 'Mới',
-  },
-]
+const STATUS_MAP = {
+  SAN_SANG_CHO_THUE: { status: 'Moi', label: 'Còn trống' },
+  DANG_CHO_THUE: { status: 'Noi_Bat', label: 'Đang cho thuê' },
+  DA_THUE: { status: 'Da_Thue', label: 'Đã cho thuê' },
+}
 
-const ALL_PROPERTIES = [
-  PROPERTY_DATA,
-  {
-    id: 2,
-    title: 'Căn hộ cao cấp view hồ Tây',
-    price: '28.000.000 đ/tháng',
-    priceRaw: 28000000,
-    location: 'Tây Hồ, Hà Nội',
-    fullAddress: '88 Xuân La, Phường Xuân La, Quận Tây Hồ, Hà Nội',
-    area: '150 m²',
-    areaRaw: 150,
-    bedrooms: 3,
-    bathrooms: 2,
-    floors: 1,
-    direction: 'Đông Bắc',
-    type: 'Căn hộ',
-    legalStatus: 'Sổ đỏ chính chủ',
-    status: 'Noi_Bat',
-    statusLabel: 'Nổi bật',
-    description: `Căn hộ cao cấp tọa lạc tại khu vực đắc địa view trực diện Hồ Tây, không gian sống thanh bình giữa lòng thủ đô.
+function formatPrice(vnd) {
+  return (vnd || 0).toLocaleString('vi-VN') + ' đ/tháng'
+}
 
-Thiết kế hiện đại với ban công kính toàn cảnh, tận hưởng ánh sáng tự nhiên và gió hồ mát mẻ quanh năm. Nội thất nhập khẩu châu Âu, bếp mở sang trọng.
+function mapDetailProperty(item) {
+  const statusInfo = STATUS_MAP[item.trangThai] || { status: 'Moi', label: 'Mới' }
+  return {
+    id: item.id,
+    title: item.loaiNha ? `${item.loaiNha} tại ${item.diaChi}` : item.diaChi,
+    price: formatPrice(item.giaThue),
+    priceRaw: item.giaThue || 0,
+    location: item.diaChi || '',
+    fullAddress: item.diaChi || '',
+    area: item.dienTich ? `${item.dienTich} m²` : '',
+    areaRaw: item.dienTich || 0,
+    bedrooms: item.soPhongNgu || 0,
+    bathrooms: item.soPhongVeSinh || 0,
+    direction: item.huong || '',
+    type: item.loaiNha || '',
+    description: item.moTa || '',
+    status: statusInfo.status,
+    statusLabel: statusInfo.label,
+    features: [],
+    nearby: [],
+    furniture: '',
+    floors: 0,
+    legalStatus: '',
+  }
+}
 
-Vị trí lý tưởng: Gần đại học Quốc gia, khu đô thị Ciputra, các nhà hàng và quán cafe ven hồ.`,
-    features: [
-      { icon: '🏢', text: 'View hồ toàn cảnh, ban công kính' },
-      { icon: '🏊', text: 'Hồ bơi sân thượng riêng' },
-      { icon: '🏋️', text: 'Gym và spa trong tòa nhà' },
-      { icon: '🚗', text: 'Chỗ để xe ngầm 2 chỗ' },
-      { icon: '🔒', text: 'An ninh 24/7, thẻ từ' },
-      { icon: '🛗', text: 'Thang máy tốc độ cao' },
-    ],
-    furniture: 'Nội thất nhập khẩu châu Âu đầy đủ',
-    nearby: [
-      'Đại học Quốc gia Hà Nội 500m',
-      'Khu đô thị Ciputra 1km',
-      'Bệnh viện E 2km',
-      'Chợ Hồ Tây 800m',
-    ],
-  },
-  {
-    id: 3,
-    title: 'Nhà phố thương mại Cầu Giấy',
-    price: '22.000.000 đ/tháng',
-    priceRaw: 22000000,
-    location: 'Cầu Giấy, Hà Nội',
-    fullAddress: '45 Duy Tân, Phường Dịch Vọng Hậu, Quận Cầu Giấy, Hà Nội',
-    area: '120 m²',
-    areaRaw: 120,
-    bedrooms: 3,
-    bathrooms: 2,
-    floors: 4,
-    direction: 'Tây Nam',
-    type: 'Nhà phố',
-    legalStatus: 'Sổ đỏ chính chủ',
-    status: 'Gia_Tot',
-    statusLabel: 'Giá tốt',
-    description: `Nhà phố thương mại phù hợp vừa ở vừa kinh doanh, tọa lạc trên trục đường chính sầm uất quận Cầu Giấy.
 
-Thiết kế 4 tầng thông minh: tầng trệt không gian kinh doanh, tầng 2-3 không gian sống, tầng 4 sân thượng. Mặt tiền rộng 6m, thuận lợi cho mọi loại hình kinh doanh.
-
-Khu vực trung tâm: Gần Keangnam, Big C, các trường học và bệnh viện lớn.`,
-    features: [
-      { icon: '🏪', text: 'Mặt tiền 6m, kinh doanh tốt' },
-      { icon: '🏢', text: '4 tầng thiết kế thông minh' },
-      { icon: '🚗', text: 'Chỗ để xe rộng rãi' },
-      { icon: '📹', text: 'Camera an ninh toàn nhà' },
-      { icon: '🔌', text: 'Hệ thống điện 3 pha' },
-      { icon: '🧯', text: 'Phòng cháy chữa cháy chuẩn' },
-    ],
-    furniture: 'Nội thất cơ bản, tầng trệt trống kinh doanh',
-    nearby: [
-      'Tòa nhà Keangnam 300m',
-      'Big C Cầu Giấy 500m',
-      'Bệnh viện 198 1km',
-      'ĐH Quốc gia 1.5km',
-    ],
-  },
-  {
-    id: 4,
-    title: 'Penthouse sang trọng Ba Đình',
-    price: '55.000.000 đ/tháng',
-    priceRaw: 55000000,
-    location: 'Ba Đình, Hà Nội',
-    fullAddress: '1A Hoàng Hoa Thám, Phường Liễu Giai, Quận Ba Đình, Hà Nội',
-    area: '200 m²',
-    areaRaw: 200,
-    bedrooms: 3,
-    bathrooms: 3,
-    floors: 1,
-    direction: 'Nam',
-    type: 'Penthouse',
-    legalStatus: 'Sổ đỏ chính chủ',
-    status: 'Moi',
-    statusLabel: 'Mới',
-    description: `Penthouse đẳng cấp 5 sao tại khu vực trung tâm hành chính Ba Đình, không gian sống xa hoa và riêng tư.
-
-Tầng thượng với sân vườn riêng, hồ bơi mini và khu vực BBQ ngoài trời. Nội thất thiết kế riêng bởi kiến trúc sư danh tiếng, mỗi chi tiết đều thể hiện sự tinh tế.
-
-Vị trí độc tôn: Nằm giữa khu ngoại giao đoàn, gần Lăng Bác, các đại sứ quán và công viên xanh mát.`,
-    features: [
-      { icon: '🏡', text: 'Sân vườn và hồ bơi riêng' },
-      { icon: '🍳', text: 'Bếp mở thiết kế Ý' },
-      { icon: '🎬', text: 'Phòng chiếu phim tại gia' },
-      { icon: '🍷', text: 'Khu vực BBQ sân thượng' },
-      { icon: '🛗', text: 'Thang máy riêng trực tiếp' },
-      { icon: '🌟', text: 'Dịch vụ quản gia 24/7' },
-    ],
-    furniture: 'Nội thất thiết kế riêng, cao cấp nhập khẩu',
-    nearby: [
-      'Lăng Chủ tịch Hồ Chí Minh 1km',
-      'Công viên Bách Thảo 500m',
-      'Lotte Center 800m',
-      'Bệnh viện Hữu Nghị 1.5km',
-    ],
-  },
-]
 
 const STATUS_STYLES = {
   Moi: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   Noi_Bat: 'bg-orange-100 text-orange-700 border-orange-200',
-  Gia_Tot: 'bg-blue-100 text-blue-700 border-blue-200',
+  Da_Thue: 'bg-slate-100 text-slate-600 border-slate-200',
 }
 
 const MEMBERSHIP_FEATURES = [
@@ -233,7 +79,7 @@ function readStoredUser() {
 
 export default function ChiTietBatDongSanPage() {
   const { id } = useParams()
-  const [mainImage, setMainImage] = useState(PROPERTY_IMAGES[0])
+  const [mainImage, setMainImage] = useState(PLACEHOLDER_IMAGES[0])
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [userInfo, setUserInfo] = useState(readStoredUser)
   const isLoggedIn = !!userInfo
@@ -242,10 +88,37 @@ export default function ChiTietBatDongSanPage() {
       return JSON.parse(localStorage.getItem('savedProperties') || '[]')
     } catch { return [] }
   })
-  const property = ALL_PROPERTIES.find(p => p.id === Number(id)) || PROPERTY_DATA
+  const [property, setProperty] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [similarProperties, setSimilarProperties] = useState([])
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      viewingService.getPropertyDetail(id),
+      viewingService.getPublicProperties(),
+    ])
+      .then(([detailRes, listRes]) => {
+        if (detailRes?.data) {
+          setProperty(mapDetailProperty(detailRes.data))
+        }
+        if (listRes?.data) {
+          const filtered = listRes.data
+            .filter(item => item.id !== Number(id))
+            .slice(0, 3)
+            .map(mapDetailProperty)
+          setSimilarProperties(filtered)
+        }
+      })
+      .catch(() => setProperty(null))
+      .finally(() => setLoading(false))
+  }, [id])
+
   const isSaved = savedPropertyIds.includes(Number(id))
   const isTenant = userInfo?.role === 'KHACH_THUE'
   const canRegisterConsignment = userInfo?.role === 'CHU_NHA'
+
+  const navigate = useNavigate()
 
   const toggleSave = () => {
     if (!isLoggedIn) {
@@ -258,6 +131,14 @@ export default function ChiTietBatDongSanPage() {
       : [...savedPropertyIds, numId]
     setSavedPropertyIds(updated)
     localStorage.setItem('savedProperties', JSON.stringify(updated))
+  }
+
+  const handleScheduleViewing = () => {
+    navigate(`/tenant/dat-lich-xem?propertyId=${id}`)
+  }
+
+  const handleContact = () => {
+    alert('Vui lòng liên hệ: 0988.123.456 hoặc email: contact@rentflow.vn')
   }
 
   const handleLockedAction = (e) => {
@@ -276,6 +157,30 @@ export default function ChiTietBatDongSanPage() {
         localStorage.removeItem('userInfo')
       }
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-container"></div>
+      </div>
+    )
+  }
+
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-slate-500 font-medium">Không tìm thấy bất động sản</p>
+          <Link to="/bat-dong-san" className="text-primary-container hover:underline mt-2 inline-block text-sm">Quay lại danh sách</Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -423,7 +328,7 @@ export default function ChiTietBatDongSanPage() {
               {/* Thumbnail Grid */}
               <div className="p-4 bg-slate-50">
                 <div className="grid grid-cols-6 gap-2">
-                  {PROPERTY_IMAGES.map((img, idx) => (
+                  {PLACEHOLDER_IMAGES.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => !(img.locked && !isLoggedIn) && setMainImage(img)}
@@ -591,30 +496,30 @@ export default function ChiTietBatDongSanPage() {
             <div>
               <h2 className="text-lg font-bold text-slate-800 mb-4">Bất động sản tương tự</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {SIMILAR_PROPERTIES.map((property) => (
+                {similarProperties.map((p) => (
                   <Link
-                    key={property.id}
-                    to={`/bat-dong-san/${property.id}`}
+                    key={p.id}
+                    to={`/bat-dong-san/${p.id}`}
                     className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group"
                   >
                     <div className="relative h-40 overflow-hidden">
                       <img
-                        src={property.image}
-                        alt={property.title}
+                        src={PLACEHOLDER_IMAGES[p.id % PLACEHOLDER_IMAGES.length].src}
+                        alt={p.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                       <div className="absolute top-2 left-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status]}`}>
-                          {property.statusLabel}
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[p.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                          {p.statusLabel}
                         </span>
                       </div>
                     </div>
                     <div className="p-3">
-                      <h3 className="font-medium text-slate-800 text-sm mb-1 line-clamp-1">{property.title}</h3>
-                      <div className="text-primary-container font-bold text-sm mb-2">{property.price}</div>
+                      <h3 className="font-medium text-slate-800 text-sm mb-1 line-clamp-1">{p.title}</h3>
+                      <div className="text-primary-container font-bold text-sm mb-2">{p.price}</div>
                       <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span>{property.area}</span>
-                        <span>{property.bedrooms} ngủ</span>
+                        <span>{p.area}</span>
+                        <span>{p.bedrooms} ngủ</span>
                       </div>
                     </div>
                   </Link>
@@ -693,13 +598,19 @@ export default function ChiTietBatDongSanPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <button className="w-full bg-primary-container hover:bg-primary text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg shadow-primary-container/30 hover:shadow-xl flex items-center justify-center gap-2">
+                  <button
+                    onClick={handleContact}
+                    className="w-full bg-primary-container hover:bg-primary text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg shadow-primary-container/30 hover:shadow-xl flex items-center justify-center gap-2"
+                  >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                     Liên hệ ngay
                   </button>
-                  <button className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2">
+                  <button
+                    onClick={handleScheduleViewing}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>

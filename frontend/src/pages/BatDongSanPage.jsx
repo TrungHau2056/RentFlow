@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import viewingService from '../services/viewingService'
 
 const QUAN_HUYEN_OPTIONS = [
   { value: 'cau-giay', label: 'Cầu Giấy' },
@@ -39,149 +40,61 @@ const NOI_THAT_OPTIONS = [
   { value: 'khong', label: 'Không có' },
 ]
 
-const PROPERTY_DATA = [
-  {
-    id: 1,
-    title: 'Biệt thự cổ điển Pháp tại Phố Cổ',
-    price: '45.000.000 đ/tháng',
-    priceRaw: 45000000,
-    location: 'Hoàn Kiếm, Hà Nội',
-    area: '320 m²',
-    areaRaw: 320,
-    bedrooms: 4,
-    bathrooms: 5,
-    type: 'biet-thu',
-    typeLabel: 'Biệt thự',
-    image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
-    status: 'Moi',
-    statusLabel: 'Mới',
-    description: 'Biệt thự cổ kính, không gian xanh, gần Hồ Gươm',
-  },
-  {
-    id: 2,
-    title: 'Căn hộ cao cấp view hồ Tây',
-    price: '28.000.000 đ/tháng',
-    priceRaw: 28000000,
-    location: 'Tây Hồ, Hà Nội',
-    area: '150 m²',
-    areaRaw: 150,
-    bedrooms: 3,
-    bathrooms: 2,
-    type: 'can-ho',
-    typeLabel: 'Căn hộ',
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
-    status: 'Noi_Bat',
-    statusLabel: 'Nổi bật',
-    description: 'View hồ toàn cảnh, nội thất hiện đại',
-  },
-  {
-    id: 3,
-    title: 'Nhà phố thương mại Cầu Giấy',
-    price: '22.000.000 đ/tháng',
-    priceRaw: 22000000,
-    location: 'Cầu Giấy, Hà Nội',
-    area: '120 m²',
-    areaRaw: 120,
-    bedrooms: 3,
-    bathrooms: 2,
-    type: 'nha-rieng',
-    typeLabel: 'Nhà riêng',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
-    status: 'Gia_Tot',
-    statusLabel: 'Giá tốt',
-    description: 'Mặt phố kinh doanh, giao thông thuận tiện',
-  },
-  {
-    id: 4,
-    title: 'Penthouse sang trọng Ba Đình',
-    price: '55.000.000 đ/tháng',
-    priceRaw: 55000000,
-    location: 'Ba Đình, Hà Nội',
-    area: '200 m²',
-    areaRaw: 200,
-    bedrooms: 3,
-    bathrooms: 3,
-    type: 'can-ho',
-    typeLabel: 'Căn hộ',
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
-    status: 'Moi',
-    statusLabel: 'Mới',
-    description: 'Tầng thượng, sân vườn riêng, thang máy',
-  },
-  {
-    id: 5,
-    title: 'Studio hiện đại gần ĐH Quốc Gia',
-    price: '12.000.000 đ/tháng',
-    priceRaw: 12000000,
-    location: 'Cầu Giấy, Hà Nội',
-    area: '45 m²',
-    areaRaw: 45,
-    bedrooms: 1,
-    bathrooms: 1,
-    type: 'studio',
-    typeLabel: 'Studio',
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
-    status: 'Moi',
-    statusLabel: 'Mới',
-    description: 'Full nội thất, phù hợp người độc thân',
-  },
-  {
-    id: 6,
-    title: 'Nhà nguyên căn Nam Từ Liêm',
-    price: '18.000.000 đ/tháng',
-    priceRaw: 18000000,
-    location: 'Nam Từ Liêm, Hà Nội',
-    area: '85 m²',
-    areaRaw: 85,
-    bedrooms: 3,
-    bathrooms: 2,
-    type: 'nha-rieng',
-    typeLabel: 'Nhà riêng',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
-    status: 'Gia_Tot',
-    statusLabel: 'Giá tốt',
-    description: 'Hẻm xe hơi, khu dân cư an ninh',
-  },
-  {
-    id: 7,
-    title: 'Căn hộ chung cư cao cấp Vinhomes',
-    price: '35.000.000 đ/tháng',
-    priceRaw: 35000000,
-    location: 'Thanh Xuân, Hà Nội',
-    area: '110 m²',
-    areaRaw: 110,
-    bedrooms: 3,
-    bathrooms: 2,
-    type: 'can-ho',
-    typeLabel: 'Căn hộ',
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
-    status: 'Noi_Bat',
-    statusLabel: 'Nổi bật',
-    description: 'Khu đô thị hiện đại, tiện ích đầy đủ',
-  },
-  {
-    id: 8,
-    title: 'Biệt thự sân vườn Hà Đông',
-    price: '40.000.000 đ/tháng',
-    priceRaw: 40000000,
-    location: 'Hà Đông, Hà Nội',
-    area: '250 m²',
-    areaRaw: 250,
-    bedrooms: 5,
-    bathrooms: 4,
-    type: 'biet-thu',
-    typeLabel: 'Biệt thự',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
-    status: 'Moi',
-    statusLabel: 'Mới',
-    description: 'Sân vườn rộng, garage ô tô, yên tĩnh',
-  },
+const PLACEHOLDER_IMAGES = [
+  'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
 ]
+
+const STATUS_MAP = {
+  SAN_SANG_CHO_THUE: { status: 'Moi', label: 'Còn trống' },
+  DANG_CHO_THUE: { status: 'Noi_Bat', label: 'Đang cho thuê' },
+  DA_THUE: { status: 'Da_Thue', label: 'Đã cho thuê' },
+}
+
+const LOAI_NHA_MAP = {
+  'Biệt thự': 'biet-thu',
+  'Căn hộ': 'can-ho',
+  'Nhà riêng': 'nha-rieng',
+  'Studio': 'studio',
+  'Nhà phố': 'nha-rieng',
+}
+
+function formatPrice(vnd) {
+  return (vnd || 0).toLocaleString('vi-VN') + ' đ/tháng'
+}
+
+function mapProperty(item, index) {
+  const typeKey = LOAI_NHA_MAP[item.loaiNha] || 'can-ho'
+  const statusInfo = STATUS_MAP[item.trangThai] || { status: 'Moi', label: 'Mới' }
+  return {
+    id: item.id,
+    title: item.loaiNha ? `${item.loaiNha} ${item.diaChi}` : item.diaChi,
+    price: formatPrice(item.giaThue),
+    priceRaw: item.giaThue || 0,
+    location: item.diaChi || '',
+    area: item.dienTich ? `${item.dienTich} m²` : '',
+    areaRaw: item.dienTich || 0,
+    bedrooms: item.soPhongNgu || 0,
+    bathrooms: item.soPhongVeSinh || 0,
+    type: typeKey,
+    typeLabel: item.loaiNha || '',
+    image: PLACEHOLDER_IMAGES[index % PLACEHOLDER_IMAGES.length],
+    status: statusInfo.status,
+    statusLabel: statusInfo.label,
+    description: item.diaChi || '',
+  }
+}
 
 const STATUS_STYLES = {
   Moi: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   Noi_Bat: 'bg-orange-100 text-orange-700 border-orange-200',
-  Gia_Tot: 'bg-blue-100 text-blue-700 border-blue-200',
+  Da_Thue: 'bg-slate-100 text-slate-600 border-slate-200',
 }
 
 const SORT_OPTIONS = [
@@ -207,6 +120,18 @@ export default function BatDongSanPage() {
   const navigate = useNavigate()
   const [userInfo] = useState(readStoredUser)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    viewingService.getPublicProperties()
+      .then(res => {
+        const list = (res?.data || []).map(mapProperty)
+        setProperties(list)
+      })
+      .catch(() => setProperties([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const initials = userInfo?.hoTen
     ?.split(' ')
@@ -264,7 +189,7 @@ export default function BatDongSanPage() {
     })
   }
 
-  const filteredProperties = PROPERTY_DATA.filter((property) => {
+  const filteredProperties = properties.filter((property) => {
     if (filters.districts.length > 0 && !filters.districts.some(d => property.location.includes(d))) return false
     if (filters.houseType.length > 0 && !filters.houseType.includes(property.type)) return false
     if (filters.bedrooms.length > 0) {
@@ -642,9 +567,9 @@ export default function BatDongSanPage() {
                 </h4>
                 <div className="space-y-2">
                   {[
-                    { value: 'Moi', label: 'Nhà mới' },
-                    { value: 'Noi_Bat', label: 'Nổi bật' },
-                    { value: 'Gia_Tot', label: 'Giá tốt' },
+                    { value: 'Moi', label: 'Còn trống' },
+                    { value: 'Noi_Bat', label: 'Đang cho thuê' },
+                    { value: 'Da_Thue', label: 'Đã cho thuê' },
                   ].map((option) => (
                     <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
                       <input
@@ -691,7 +616,27 @@ export default function BatDongSanPage() {
               </div>
             </div>
 
+            {/* Loading State */}
+            {loading && (
+              <div className="text-center py-12">
+                <div className="w-8 h-8 border-4 border-primary-container border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-slate-500">Đang tải dữ liệu...</p>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && paginatedProperties.length === 0 && (
+              <div className="text-center py-12">
+                <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <p className="text-slate-500 font-medium">Không tìm thấy bất động sản nào</p>
+                <p className="text-slate-400 text-sm mt-1">Thử thay đổi bộ lọc hoặc tìm kiếm khác</p>
+              </div>
+            )}
+
             {/* Property Grid */}
+            {!loading && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {paginatedProperties.map((property) => (
                 <Link
@@ -769,6 +714,7 @@ export default function BatDongSanPage() {
                 </Link>
               ))}
             </div>
+            )}
 
             {/* Pagination */}
             <div className="flex items-center justify-center gap-2 mt-8">
