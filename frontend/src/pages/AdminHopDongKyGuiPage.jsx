@@ -1,277 +1,5 @@
-import { useState, useMemo } from 'react'
-
-const CONTRACTS = [
-  {
-    id: 1,
-    ma: 'HĐKG-2025-001',
-    chuNha: 'Nguyễn Văn Minh',
-    sdtChuNha: '0901 234 567',
-    emailChuNha: 'nguyenvanminh@email.com',
-    batDongSan: 'Biệt thự Vinhomes Cao cấp',
-    diaChiBDS: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    loaiBDS: 'Biệt thự',
-    giaThue: 50000000,
-    ngayKy: '2025-03-15',
-    thoiHan: 12,
-    ngayHetHan: '2026-03-15',
-    tienDamBao: 100000000,
-    trangThai: 'dang_hieu_luc',
-    trangThaiPhapLy: 'da_duyet',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    dieuKhoanPhatSinh: [
-      { noiDung: 'Gia hạn thêm 6 tháng nếu cả hai bên đồng ý', trangThai: 'da_duyet', ghiChu: 'Đã được pháp luật duyệt' },
-      { noiDung: 'Điều chỉnh giá thuê tăng 5% sau tháng thứ 6', trangThai: 'cho_duyet', ghiChu: 'Chờ xác nhận từ chủ nhà' },
-    ],
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2025-03-10', noiDung: 'Tạo hợp đồng', nguoi: 'Lê Quốc Anh', loai: 'create' },
-      { ngay: '2025-03-12', noiDung: 'Chỉnh sửa điều khoản 3.2', nguoi: 'Lê Quốc Anh', loai: 'edit' },
-      { ngay: '2025-03-13', noiDung: 'Pháp luật duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-      { ngay: '2025-03-15', noiDung: 'Chủ nhà ký kết', nguoi: 'Nguyễn Văn Minh', loai: 'sign' },
-      { ngay: '2025-03-15', noiDung: 'Hợp đồng có hiệu lực', nguoi: 'Hệ thống', loai: 'active' },
-    ],
-  },
-  {
-    id: 2,
-    ma: 'HĐKG-2025-002',
-    chuNha: 'Phạm Minh Tuấn',
-    sdtChuNha: '0903 456 789',
-    emailChuNha: 'phamminhtuan@email.com',
-    batDongSan: 'Biệt thự sân vườn Tây Hồ',
-    diaChiBDS: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    loaiBDS: 'Biệt thự',
-    giaThue: 65000000,
-    ngayKy: '2025-02-10',
-    thoiHan: 24,
-    ngayHetHan: '2027-02-10',
-    tienDamBao: 195000000,
-    trangThai: 'dang_hieu_luc',
-    trangThaiPhapLy: 'da_duyet',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    dieuKhoanPhatSinh: [],
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2025-02-05', noiDung: 'Tạo hợp đồng', nguoi: 'Trần Văn Hùng', loai: 'create' },
-      { ngay: '2025-02-07', noiDung: 'Pháp luật duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-      { ngay: '2025-02-10', noiDung: 'Ký kết thành công', nguoi: 'Phạm Minh Tuấn', loai: 'sign' },
-    ],
-  },
-  {
-    id: 3,
-    ma: 'HĐKG-2025-003',
-    chuNha: 'Trần Thị Hoa',
-    sdtChuNha: '0987 654 321',
-    emailChuNha: 'tranthihoa@email.com',
-    batDongSan: 'Căn hộ Midtown Sài Đồng',
-    diaChiBDS: '29 Liễu Giai, Ba Đình, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaThue: 15000000,
-    ngayKy: null,
-    thoiHan: 12,
-    ngayHetHan: null,
-    tienDamBao: 30000000,
-    trangThai: 'cho_duyet',
-    trangThaiPhapLy: 'cho_phap_luat',
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    dieuKhoanPhatSinh: [],
-    workflowStep: 1,
-    lichSu: [
-      { ngay: '2025-05-25', noiDung: 'Tạo hợp đồng', nguoi: 'Lê Quốc Anh', loai: 'create' },
-    ],
-  },
-  {
-    id: 4,
-    ma: 'HĐKG-2025-004',
-    chuNha: 'Lê Quốc Bảo',
-    sdtChuNha: '0912 345 678',
-    emailChuNha: 'lequocbao@email.com',
-    batDongSan: 'Nhà phố cổ khu phố cổ',
-    diaChiBDS: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    loaiBDS: 'Nhà phố',
-    giaThue: 25000000,
-    ngayKy: null,
-    thoiHan: 12,
-    ngayHetHan: null,
-    tienDamBao: 50000000,
-    trangThai: 'cho_ky',
-    trangThaiPhapLy: 'da_duyet',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    dieuKhoanPhatSinh: [
-      { noiDung: 'Cho phép kinh doanh thương mại tại tầng 1', trangThai: 'da_duyet', ghiChu: 'Phù hợp quy định' },
-    ],
-    workflowStep: 4,
-    lichSu: [
-      { ngay: '2025-04-18', noiDung: 'Tạo hợp đồng', nguoi: 'Trần Văn Hùng', loai: 'create' },
-      { ngay: '2025-04-19', noiDung: 'Pháp luật duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-      { ngay: '2025-04-20', noiDung: 'Gửi cho chủ nhà ký', nguoi: 'Trần Văn Hùng', loai: 'send' },
-    ],
-  },
-  {
-    id: 5,
-    ma: 'HĐKG-2025-005',
-    chuNha: 'Đỗ Văn Kiên',
-    sdtChuNha: '0978 111 222',
-    emailChuNha: 'dovankien@email.com',
-    batDongSan: 'Nhà mặt phố Đống Đa',
-    diaChiBDS: '88 Láng Hạ, Đống Đa, Hà Nội',
-    loaiBDS: 'Nhà phố',
-    giaThue: 22000000,
-    ngayKy: null,
-    thoiHan: 12,
-    ngayHetHan: null,
-    tienDamBao: 44000000,
-    trangThai: 'cho_duyet',
-    trangThaiPhapLy: 'can_sua',
-    moiGioi: 'Phạm Minh Tuấn',
-    sdtMoiGioi: '0903 456 789',
-    dieuKhoanPhatSinh: [
-      { noiDung: 'Quy định sử dụng thang máy chung', trangThai: 'cho_duyet', ghiChu: 'Cần bổ sung điều khoản bảo trì' },
-    ],
-    workflowStep: 2,
-    lichSu: [
-      { ngay: '2025-05-18', noiDung: 'Tạo hợp đồng', nguoi: 'Phạm Minh Tuấn', loai: 'create' },
-      { ngay: '2025-05-19', noiDung: 'Pháp luật yêu cầu sửa đổi điều 4.1', nguoi: 'Phạm Thị Hương', loai: 'edit' },
-    ],
-  },
-  {
-    id: 6,
-    ma: 'HĐKG-2025-006',
-    chuNha: 'Nguyễn Thị Lan',
-    sdtChuNha: '0965 432 109',
-    emailChuNha: 'nguyenthilan@email.com',
-    batDongSan: 'Căn hộ Studio Times City',
-    diaChiBDS: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaThue: 8000000,
-    ngayKy: '2025-05-01',
-    thoiHan: 6,
-    ngayHetHan: '2025-11-01',
-    tienDamBao: 16000000,
-    trangThai: 'sap_het_han',
-    trangThaiPhapLy: 'da_duyet',
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    dieuKhoanPhatSinh: [],
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2025-04-28', noiDung: 'Tạo hợp đồng', nguoi: 'Lê Quốc Anh', loai: 'create' },
-      { ngay: '2025-04-29', noiDung: 'Pháp luật duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-      { ngay: '2025-05-01', noiDung: 'Ký kết', nguoi: 'Nguyễn Thị Lan', loai: 'sign' },
-    ],
-  },
-  {
-    id: 7,
-    ma: 'HĐKG-2024-015',
-    chuNha: 'Phạm Hữu Đức',
-    sdtChuNha: '0904 555 666',
-    emailChuNha: 'phamhuuduc@email.com',
-    batDongSan: 'Shophouse Sun Grand City',
-    diaChiBDS: 'Sun Grand City, Thụy Khuê, Tây Hồ, Hà Nội',
-    loaiBDS: 'Shophouse',
-    giaThue: 45000000,
-    ngayKy: '2024-06-01',
-    thoiHan: 12,
-    ngayHetHan: '2025-06-01',
-    tienDamBao: 90000000,
-    trangThai: 'da_ket_thuc',
-    trangThaiPhapLy: 'da_duyet',
-    moiGioi: 'Nguyễn Thị Lan',
-    sdtMoiGioi: '0912 888 999',
-    dieuKhoanPhatSinh: [],
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2024-05-25', noiDung: 'Tạo hợp đồng', nguoi: 'Nguyễn Thị Lan', loai: 'create' },
-      { ngay: '2024-05-27', noiDung: 'Pháp luật duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-      { ngay: '2024-06-01', noiDung: 'Ký kết', nguoi: 'Phạm Hữu Đức', loai: 'sign' },
-      { ngay: '2025-06-01', noiDung: 'Hợp đồng hết hạn', nguoi: 'Hệ thống', loai: 'expire' },
-    ],
-  },
-  {
-    id: 8,
-    ma: 'HĐKG-2025-007',
-    chuNha: 'Hoàng Đức Thắng',
-    sdtChuNha: '0911 222 333',
-    emailChuNha: 'hoangducthang@email.com',
-    batDongSan: 'Căn hộ 3PN The Manor',
-    diaChiBDS: 'The Manor, Mai Dich, Cầu Giấy, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaThue: 28000000,
-    ngayKy: '2025-04-05',
-    thoiHan: 12,
-    ngayHetHan: '2026-04-05',
-    tienDamBao: 56000000,
-    trangThai: 'tam_ngung',
-    trangThaiPhapLy: 'da_duyet',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    dieuKhoanPhatSinh: [
-      { noiDung: 'Tạm ngưng do tranh chấp nội thất', trangThai: 'da_duyet', ghiChu: 'Chờ giải quyết tranh chấp giữa chủ nhà và khách thuê' },
-    ],
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2025-04-01', noiDung: 'Tạo hợp đồng', nguoi: 'Trần Văn Hùng', loai: 'create' },
-      { ngay: '2025-04-03', noiDung: 'Pháp luật duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-      { ngay: '2025-04-05', noiDung: 'Ký kết', nguoi: 'Hoàng Đức Thắng', loai: 'sign' },
-      { ngay: '2025-05-10', noiDung: 'Tạm ngưng hợp đồng', nguoi: 'Phạm Thị Hương', loai: 'suspend' },
-    ],
-  },
-  {
-    id: 9,
-    ma: 'HĐKG-2025-008',
-    chuNha: 'Công ty CP Đầu tư ABC',
-    sdtChuNha: '024-1234-5678',
-    emailChuNha: 'info@abccorp.vn',
-    batDongSan: 'Văn phòng hạng B Cầu Giấy',
-    diaChiBDS: 'Tòa Keangnam, Phạm Hùng, Cầu Giấy, Hà Nội',
-    loaiBDS: 'Văn phòng',
-    giaThue: 35000000,
-    ngayKy: null,
-    thoiHan: 24,
-    ngayHetHan: null,
-    tienDamBao: 105000000,
-    trangThai: 'cho_duyet',
-    trangThaiPhapLy: 'tu_choi',
-    moiGioi: 'Nguyễn Thị Lan',
-    sdtMoiGioi: '0912 888 999',
-    dieuKhoanPhatSinh: [
-      { noiDung: 'Điều khoản bồi thường không rõ ràng', trangThai: 'tu_choi', ghiChu: 'Cần sửa lại theo mẫu chuẩn' },
-    ],
-    workflowStep: 2,
-    lichSu: [
-      { ngay: '2025-05-29', noiDung: 'Tạo hợp đồng', nguoi: 'Nguyễn Thị Lan', loai: 'create' },
-      { ngay: '2025-05-30', noiDung: 'Pháp luật từ chối - cần sửa đổi', nguoi: 'Phạm Thị Hương', loai: 'reject' },
-    ],
-  },
-  {
-    id: 10,
-    ma: 'HĐKG-2025-009',
-    chuNha: 'Vũ Thị Mai',
-    sdtChuNha: '0988 777 666',
-    emailChuNha: 'vuthimai@email.com',
-    batDongSan: 'Kiot mặt đường Kim Mã',
-    diaChiBDS: '142 Kim Mã, Ba Đình, Hà Nội',
-    loaiBDS: 'Kiot',
-    giaThue: 12000000,
-    ngayKy: null,
-    thoiHan: 6,
-    ngayHetHan: null,
-    tienDamBao: 24000000,
-    trangThai: 'cho_ky',
-    trangThaiPhapLy: 'da_duyet',
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    dieuKhoanPhatSinh: [],
-    workflowStep: 4,
-    lichSu: [
-      { ngay: '2025-05-28', noiDung: 'Tạo hợp đồng', nguoi: 'Lê Quốc Anh', loai: 'create' },
-      { ngay: '2025-05-29', noiDung: 'Pháp luật duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-    ],
-  },
-]
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import hopDongKyGuiService from '../services/hopDongKyGuiService'
 
 const STATUS_CONFIG = {
   cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -401,8 +129,8 @@ function WorkflowTimeline({ currentStep }) {
 }
 
 function ContractRow({ contract, isSelected, onSelect }) {
-  const status = STATUS_CONFIG[contract.trangThai]
-  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy]
+  const status = STATUS_CONFIG[contract.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: contract.trangThai }
+  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy] || { color: 'bg-slate-100 text-slate-500', dot: 'bg-slate-400', label: contract.trangThaiPhapLy }
   const daysLeft = daysUntil(contract.ngayHetHan)
 
   return (
@@ -417,7 +145,7 @@ function ContractRow({ contract, isSelected, onSelect }) {
       <td className="py-3 px-4">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-blue-700">{contract.chuNha.charAt(0)}</span>
+            <span className="text-xs font-semibold text-blue-700">{contract.chuNha?.charAt(0)}</span>
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-slate-800 truncate">{contract.chuNha}</p>
@@ -458,8 +186,8 @@ function ContractRow({ contract, isSelected, onSelect }) {
 
 function ContractDetail({ contract, onClose }) {
   if (!contract) return null
-  const status = STATUS_CONFIG[contract.trangThai]
-  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy]
+  const status = STATUS_CONFIG[contract.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: contract.trangThai }
+  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy] || { color: 'bg-slate-100 text-slate-500', dot: 'bg-slate-400', label: contract.trangThaiPhapLy }
   const daysLeft = daysUntil(contract.ngayHetHan)
 
   return (
@@ -568,7 +296,7 @@ function ContractDetail({ contract, onClose }) {
                 </svg>
               </div>
             </div>
-            <p className="text-xs text-emerald-600 mt-1">Tương đương {Math.round(contract.tienDamBao / contract.giaThue)} tháng tiền thuê</p>
+            <p className="text-xs text-emerald-600 mt-1">Tương đương {contract.giaThue ? Math.round(contract.tienDamBao / contract.giaThue) : 0} tháng tiền thuê</p>
           </div>
         </div>
 
@@ -591,11 +319,11 @@ function ContractDetail({ contract, onClose }) {
         </div>
 
         {/* Additional Clauses */}
-        {contract.dieuKhoanPhatSinh.length > 0 && (
+        {(contract.dieuKhoanPhatSinh || []).length > 0 && (
           <div>
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Điều khoản phát sinh</h4>
             <div className="space-y-2">
-              {contract.dieuKhoanPhatSinh.map((dk, i) => {
+              {(contract.dieuKhoanPhatSinh || []).map((dk, i) => {
                 const clauseStatus = CLAUSE_STATUS[dk.trangThai]
                 return (
                   <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
@@ -635,7 +363,7 @@ function ContractDetail({ contract, onClose }) {
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Lịch sử hoạt động</h4>
           <div className="space-y-0">
-            {contract.lichSu.map((item, i) => {
+            {(contract.lichSu || []).map((item, i) => {
               const iconConfig = {
                 create: { bg: 'bg-blue-100', color: 'text-blue-600', icon: 'M12 4v16m8-8H4' },
                 edit: { bg: 'bg-amber-100', color: 'text-amber-600', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
@@ -770,9 +498,29 @@ export default function AdminHopDongKyGuiPage() {
   const [filterChuNha, setFilterChuNha] = useState('Tất cả')
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
+  const [contracts, setContracts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchContracts = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await hopDongKyGuiService.danhSach()
+      setContracts(response.data?.data || [])
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải danh sách hợp đồng')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchContracts()
+  }, [fetchContracts])
 
   const filtered = useMemo(() => {
-    let result = [...CONTRACTS]
+    let result = [...contracts]
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(c =>
@@ -799,8 +547,8 @@ export default function AdminHopDongKyGuiPage() {
       case 'amount_desc': result.sort((a, b) => b.tienDamBao - a.tienDamBao); break
       case 'amount_asc': result.sort((a, b) => a.tienDamBao - b.tienDamBao); break
       default: result.sort((a, b) => {
-        const dateA = a.lichSu[0]?.ngay || a.ngayKy || ''
-        const dateB = b.lichSu[0]?.ngay || b.ngayKy || ''
+        const dateA = (a.lichSu || [])[0]?.ngay || a.ngayKy || ''
+        const dateB = (b.lichSu || [])[0]?.ngay || b.ngayKy || ''
         return new Date(dateB) - new Date(dateA)
       })
     }
@@ -808,21 +556,49 @@ export default function AdminHopDongKyGuiPage() {
   }, [searchQuery, filterTrangThai, filterPhapLy, filterChuNha, sortBy])
 
   const kpiData = useMemo(() => ({
-    total: CONTRACTS.length,
-    choDuyet: CONTRACTS.filter(c => c.trangThai === 'cho_duyet').length,
-    dangHieuLuc: CONTRACTS.filter(c => c.trangThai === 'dang_hieu_luc').length,
-    sapHetHan: CONTRACTS.filter(c => c.trangThai === 'sap_het_han').length,
-    coDieuKhoan: CONTRACTS.filter(c => c.dieuKhoanPhatSinh.length > 0).length,
-  }), [])
+    total: contracts.length,
+    choDuyet: contracts.filter(c => c.trangThai === 'cho_duyet').length,
+    dangHieuLuc: contracts.filter(c => c.trangThai === 'dang_hieu_luc').length,
+    sapHetHan: contracts.filter(c => c.trangThai === 'sap_het_han').length,
+    coDieuKhoan: contracts.filter(c => (c.dieuKhoanPhatSinh || []).length > 0).length,
+  }), [contracts])
 
   const alertData = useMemo(() => {
-    const sapHetHan = CONTRACTS.filter(c => c.trangThai === 'sap_het_han')
-    const choPhapLuat = CONTRACTS.filter(c => c.trangThaiPhapLy === 'cho_phap_luat' || c.trangThaiPhapLy === 'can_sua' || c.trangThaiPhapLy === 'tu_choi')
-    const thieuChuKy = CONTRACTS.filter(c => c.trangThai === 'cho_ky')
+    const sapHetHan = contracts.filter(c => c.trangThai === 'sap_het_han')
+    const choPhapLuat = contracts.filter(c => c.trangThaiPhapLy === 'cho_phap_luat' || c.trangThaiPhapLy === 'can_sua' || c.trangThaiPhapLy === 'tu_choi')
+    const thieuChuKy = contracts.filter(c => c.trangThai === 'cho_ky')
     return { sapHetHan, choPhapLuat, thieuChuKy }
-  }, [])
+  }, [contracts])
 
-  const selectedContract = selectedId ? CONTRACTS.find(c => c.id === selectedId) : null
+  const selectedContract = selectedId ? contracts.find(c => c.id === selectedId) : null
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-md">
+          <svg className="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p className="text-red-700 font-medium mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+          <button onClick={fetchContracts} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+            Thử lại
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -1022,7 +798,7 @@ export default function AdminHopDongKyGuiPage() {
                 </table>
               </div>
               <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-                <span>Hiển thị {filtered.length} / {CONTRACTS.length} hợp đồng</span>
+                <span>Hiển thị {filtered.length} / {contracts.length} hợp đồng</span>
               </div>
             </div>
           </div>

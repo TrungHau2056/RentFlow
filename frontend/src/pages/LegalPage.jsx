@@ -1,247 +1,41 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import hopDongKyGuiService from '../services/hopDongKyGuiService'
 
-const LEGAL_REQUESTS = [
-  {
-    id: 1,
-    maYeuCau: 'PL-2025-012',
-    maHopDong: 'HĐKG-2025-003',
-    chuNha: 'Trần Thị Hoa',
-    sdtChuNha: '0987 654 321',
-    batDongSan: 'Căn hộ Midtown Sài Đồng',
-    diaChiBDS: '29 Liễu Giai, Ba Đình, Hà Nội',
-    loaiYeuCau: 'duyet_hop_dong',
-    mucDoUuTien: 'khan_cap',
-    ngayGui: '2025-05-25',
-    trangThai: 'cho_duyet',
-    nguoiGui: 'Lê Quốc Anh',
-    nguoiXuLy: null,
-    deadline: '2025-05-28',
-    dieuKhoanPhatSinh: [],
-    ghiChuPhapLy: '',
-    lichSu: [
-      { ngay: '2025-05-25', noiDung: 'Gửi yêu cầu duyệt hợp đồng', nguoi: 'Lê Quốc Anh', loai: 'send' },
-    ],
-  },
-  {
-    id: 2,
-    maYeuCau: 'PL-2025-011',
-    maHopDong: 'HĐKG-2025-005',
-    chuNha: 'Đỗ Văn Kiên',
-    sdtChuNha: '0978 111 222',
-    batDongSan: 'Nhà mặt phố Đống Đa',
-    diaChiBDS: '88 Láng Hạ, Đống Đa, Hà Nội',
-    loaiYeuCau: 'sua_dieu_khoan',
-    mucDoUuTien: 'quan_trong',
-    ngayGui: '2025-05-19',
-    trangThai: 'dang_xet_duyet',
-    nguoiGui: 'Phạm Minh Tuấn',
-    nguoiXuLy: 'Phạm Thị Hương',
-    deadline: '2025-05-26',
-    dieuKhoanPhatSinh: [
-      {
-        id: 1,
-        dieuKhoan: 'Quy định sử dụng thang máy chung',
-        noiDungCu: 'Chủ nhà chịu toàn bộ chi phí bảo trì thang máy.',
-        noiDungMoi: 'Chi phí bảo trì thang máy được chia đều giữa chủ nhà và các đơn vị thuê, theo tỷ lệ diện tích sử dụng.',
-        trangThai: 'cho_duyet',
-        mucDoRuiRo: 'trung_binh',
-        ghiChu: 'Cần bổ sung điều khoản bảo trì định kỳ',
-      },
-    ],
-    ghiChuPhapLy: 'Điều khoản thang máy cần rõ ràng hơn về trách nhiệm bảo trì.',
-    lichSu: [
-      { ngay: '2025-05-19', noiDung: 'Gửi yêu cầu sửa điều khoản', nguoi: 'Phạm Minh Tuấn', loai: 'send' },
-      { ngay: '2025-05-20', noiDung: 'Bắt đầu xem xét', nguoi: 'Phạm Thị Hương', loai: 'review' },
-    ],
-  },
-  {
-    id: 3,
-    maYeuCau: 'PL-2025-010',
-    maHopDong: 'HĐKG-2025-008',
-    chuNha: 'Công ty CP Đầu tư ABC',
-    sdtChuNha: '024-1234-5678',
-    batDongSan: 'Văn phòng hạng B Cầu Giấy',
-    diaChiBDS: 'Tòa Keangnam, Phạm Hùng, Cầu Giấy, Hà Nội',
-    loaiYeuCau: 'tu_choi',
-    mucDoUuTien: 'khan_cap',
-    ngayGui: '2025-05-29',
-    trangThai: 'da_tu_choi',
-    nguoiGui: 'Nguyễn Thị Lan',
-    nguoiXuLy: 'Phạm Thị Hương',
-    deadline: '2025-05-31',
-    dieuKhoanPhatSinh: [
-      {
-        id: 2,
-        dieuKhoan: 'Điều khoản bồi thường không rõ ràng',
-        noiDungCu: 'Trong trường hợp chấm dứt hợp đồng trước hạn, bên vi phạm phải bồi thường toàn bộ thiệt hại.',
-        noiDungMoi: 'Bồi thường theo mức 3 tháng tiền thuê đối với bên vi phạm chấm dứt hợp đồng trước hạn, trừ trường hợp bất khả kháng.',
-        trangThai: 'tu_choi',
-        mucDoRuiRo: 'cao',
-        ghiChu: 'Cần sửa lại theo mẫu chuẩn của công ty',
-      },
-    ],
-    ghiChuPhapLy: 'Điều khoản bồi thường vi phạm quy định nội bộ. Yêu cầu viết lại theo mẫu HĐ-2025.',
-    lichSu: [
-      { ngay: '2025-05-29', noiDung: 'Gửi yêu cầu duyệt', nguoi: 'Nguyễn Thị Lan', loai: 'send' },
-      { ngay: '2025-05-30', noiDung: 'Bắt đầu xem xét', nguoi: 'Phạm Thị Hương', loai: 'review' },
-      { ngay: '2025-05-30', noiDung: 'Từ chối - điều khoản bồi thường không đạt', nguoi: 'Phạm Thị Hương', loai: 'reject' },
-    ],
-  },
-  {
-    id: 4,
-    maYeuCau: 'PL-2025-009',
-    maHopDong: 'HĐKG-2025-004',
-    chuNha: 'Lê Quốc Bảo',
-    sdtChuNha: '0912 345 678',
-    batDongSan: 'Nhà phố cổ khu phố cổ',
-    diaChiBDS: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    loaiYeuCau: 'duyet_dieu_khoan',
-    mucDoUuTien: 'binh_thuong',
-    ngayGui: '2025-04-19',
-    trangThai: 'da_phe_duyet',
-    nguoiGui: 'Trần Văn Hùng',
-    nguoiXuLy: 'Phạm Thị Hương',
-    deadline: '2025-04-25',
-    dieuKhoanPhatSinh: [
-      {
-        id: 3,
-        dieuKhoan: 'Cho phép kinh doanh thương mại tại tầng 1',
-        noiDungCu: 'Chỉ sử dụng cho mục đích ở.',
-        noiDungMoi: 'Cho phép sử dụng tầng 1 cho mục đích kinh doanh thương mại hợp pháp, không gây ô nhiễm tiếng ồn vượt mức quy định.',
-        trangThai: 'da_duyet',
-        mucDoRuiRo: 'thap',
-        ghiChu: 'Phù hợp quy định địa phương',
-      },
-    ],
-    ghiChuPhapLy: 'Điều khoản phù hợp quy định. Đã phê duyệt.',
-    lichSu: [
-      { ngay: '2025-04-19', noiDung: 'Gửi yêu cầu duyệt điều khoản', nguoi: 'Trần Văn Hùng', loai: 'send' },
-      { ngay: '2025-04-19', noiDung: 'Bắt đầu xem xét', nguoi: 'Phạm Thị Hương', loai: 'review' },
-      { ngay: '2025-04-19', noiDung: 'Phê duyệt điều khoản', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-    ],
-  },
-  {
-    id: 5,
-    maYeuCau: 'PL-2025-013',
-    maHopDong: 'HĐKG-2025-010',
-    chuNha: 'Vũ Thị Mai',
-    sdtChuNha: '0988 777 666',
-    batDongSan: 'Kiot mặt đường Kim Mã',
-    diaChiBDS: '142 Kim Mã, Ba Đình, Hà Nội',
-    loaiYeuCau: 'duyet_hop_dong',
-    mucDoUuTien: 'binh_thuong',
-    ngayGui: '2025-05-29',
-    trangThai: 'dang_xet_duyet',
-    nguoiGui: 'Lê Quốc Anh',
-    nguoiXuLy: 'Phạm Thị Hương',
-    deadline: '2025-06-02',
-    dieuKhoanPhatSinh: [],
-    ghiChuPhapLy: '',
-    lichSu: [
-      { ngay: '2025-05-29', noiDung: 'Gửi yêu cầu duyệt hợp đồng', nguoi: 'Lê Quốc Anh', loai: 'send' },
-      { ngay: '2025-05-30', noiDung: 'Bắt đầu xem xét', nguoi: 'Phạm Thị Hương', loai: 'review' },
-    ],
-  },
-  {
-    id: 6,
-    maYeuCau: 'PL-2025-008',
-    maHopDong: 'HĐKG-2025-001',
-    chuNha: 'Nguyễn Văn Minh',
-    sdtChuNha: '0901 234 567',
-    batDongSan: 'Biệt thự Vinhomes Cao cấp',
-    diaChiBDS: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    loaiYeuCau: 'duyet_dieu_khoan',
-    mucDoUuTien: 'quan_trong',
-    ngayGui: '2025-03-12',
-    trangThai: 'da_phe_duyet',
-    nguoiGui: 'Lê Quốc Anh',
-    nguoiXuLy: 'Phạm Thị Hương',
-    deadline: '2025-03-15',
-    dieuKhoanPhatSinh: [
-      {
-        id: 4,
-        dieuKhoan: 'Gia hạn thêm 6 tháng nếu cả hai bên đồng ý',
-        noiDungCu: 'Hợp đồng có thời hạn 12 tháng, không tự động gia hạn.',
-        noiDungMoi: 'Hợp đồng tự động gia hạn thêm 6 tháng nếu không có bên nào thông báo chấm dứt trước 30 ngày.',
-        trangThai: 'da_duyet',
-        mucDoRuiRo: 'thap',
-        ghiChu: 'Đã được pháp luật duyệt',
-      },
-      {
-        id: 5,
-        dieuKhoan: 'Điều chỉnh giá thuê tăng 5% sau tháng thứ 6',
-        noiDungCu: 'Giá thuê cố định trong suốt thời hạn hợp đồng.',
-        noiDungMoi: 'Giá thuê có thể điều chỉnh tăng tối đa 5% sau tháng thứ 6, với thông báo trước 15 ngày.',
-        trangThai: 'cho_duyet',
-        mucDoRuiRo: 'trung_binh',
-        ghiChu: 'Chờ xác nhận từ chủ nhà',
-      },
-    ],
-    ghiChuPhapLy: 'Điều khoản gia hạn đã duyệt. Điều khoản giá thuê chờ chủ nhà xác nhận.',
-    lichSu: [
-      { ngay: '2025-03-12', noiDung: 'Gửi yêu cầu duyệt điều khoản phát sinh', nguoi: 'Lê Quốc Anh', loai: 'send' },
-      { ngay: '2025-03-12', noiDung: 'Bắt đầu xem xét', nguoi: 'Phạm Thị Hương', loai: 'review' },
-      { ngay: '2025-03-13', noiDung: 'Phê duyệt điều khoản gia hạn', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-    ],
-  },
-  {
-    id: 7,
-    maYeuCau: 'PL-2025-014',
-    maHopDong: 'HĐKG-2025-011',
-    chuNha: 'Hoàng Đức Thắng',
-    sdtChuNha: '0911 222 333',
-    batDongSan: 'Căn hộ 3PN The Manor',
-    diaChiBDS: 'The Manor, Mai Dich, Cầu Giấy, Hà Nội',
-    loaiYeuCau: 'sua_dieu_khoan',
-    mucDoUuTien: 'khan_cap',
-    ngayGui: '2025-05-10',
-    trangThai: 'can_bo_sung',
-    nguoiGui: 'Trần Văn Hùng',
-    nguoiXuLy: 'Phạm Thị Hương',
-    deadline: '2025-05-15',
-    dieuKhoanPhatSinh: [
-      {
-        id: 6,
-        dieuKhoan: 'Tạm ngưng hợp đồng do tranh chấp nội thất',
-        noiDungCu: 'Bên thuê phải bảo quản nội thất theo hiện trạng.',
-        noiDungMoi: 'Bên thuê và chủ nhà cùng kiểm kê nội thất trong vòng 7 ngày kể từ ngày ký. Mọi hư hỏng phát sinh sau kiểm kê do bên thuê chịu.',
-        trangThai: 'cho_duyet',
-        mucDoRuiRo: 'cao',
-        ghiChu: 'Cần bổ sung biên bản kiểm kê nội thất',
-      },
-    ],
-    ghiChuPhapLy: 'Tranh chấp nội thất giữa chủ nhà và khách thuê. Cần biên bản kiểm kê chi tiết.',
-    lichSu: [
-      { ngay: '2025-05-10', noiDung: 'Gửi yêu cầu sửa điều khoản', nguoi: 'Trần Văn Hùng', loai: 'send' },
-      { ngay: '2025-05-11', noiDung: 'Bắt đầu xem xét', nguoi: 'Phạm Thị Hương', loai: 'review' },
-      { ngay: '2025-05-12', noiDung: 'Yêu cầu bổ sung biên bản kiểm kê', nguoi: 'Phạm Thị Hương', loai: 'request' },
-    ],
-  },
-  {
-    id: 8,
-    maYeuCau: 'PL-2025-007',
-    maHopDong: 'HĐKG-2025-002',
-    chuNha: 'Phạm Minh Tuấn',
-    sdtChuNha: '0903 456 789',
-    batDongSan: 'Biệt thự sân vườn Tây Hồ',
-    diaChiBDS: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    loaiYeuCau: 'duyet_hop_dong',
-    mucDoUuTien: 'binh_thuong',
-    ngayGui: '2025-02-07',
-    trangThai: 'da_phe_duyet',
-    nguoiGui: 'Trần Văn Hùng',
-    nguoiXuLy: 'Phạm Thị Hương',
-    deadline: '2025-02-12',
-    dieuKhoanPhatSinh: [],
-    ghiChuPhapLy: 'Hợp đồng chuẩn, không có phát sinh.',
-    lichSu: [
-      { ngay: '2025-02-07', noiDung: 'Gửi yêu cầu duyệt hợp đồng', nguoi: 'Trần Văn Hùng', loai: 'send' },
-      { ngay: '2025-02-07', noiDung: 'Bắt đầu xem xét', nguoi: 'Phạm Thị Hương', loai: 'review' },
-      { ngay: '2025-02-07', noiDung: 'Phê duyệt', nguoi: 'Phạm Thị Hương', loai: 'approve' },
-    ],
-  },
-]
+function mapRequests(data) {
+  return (data || []).filter(c => c.trangThai !== 'dang_hieu_luc').map(c => ({
+    id: c.id,
+    maYeuCau: c.maYeuCau || `PL-${c.ma || c.id}`,
+    maHopDong: c.ma || c.maHopDong || '',
+    chuNha: c.chuNha || c.tenChuNha || '',
+    sdtChuNha: c.sdtChuNha || c.soDienThoai || '',
+    batDongSan: c.batDongSan || c.tenBatDongSan || '',
+    diaChiBDS: c.diaChiBDS || c.diaChi || '',
+    loaiYeuCau: c.loaiYeuCau || 'duyet_hop_dong',
+    mucDoUuTien: c.mucDoUuTien || 'binh_thuong',
+    ngayGui: c.ngayGui || c.ngayKy || '',
+    trangThai: c.trangThai || '',
+    nguoiGui: c.nguoiGui || c.moiGioi || '',
+    nguoiXuLy: c.nguoiXuLy || '',
+    deadline: c.deadline || c.ngayHetHan || '',
+    dieuKhoanPhatSinh: (c.dieuKhoanPhatSinh || []).map(dk => ({
+      id: dk.id,
+      dieuKhoan: dk.dieuKhoan || dk.noiDung || '',
+      noiDungCu: dk.noiDungCu || '',
+      noiDungMoi: dk.noiDungMoi || '',
+      trangThai: dk.trangThai || 'cho_duyet',
+      mucDoRuiRo: dk.mucDoRuiRo || 'trung_binh',
+      ghiChu: dk.ghiChu || '',
+    })),
+    ghiChuPhapLy: c.ghiChuPhapLy || '',
+    lichSu: (c.lichSu || []).map(ls => ({
+      ngay: ls.ngay || ls.thoiGian || '',
+      noiDung: ls.noiDung || ls.buoc || '',
+      nguoi: ls.nguoi || ls.nguoiThucHien || '',
+      loai: ls.loai || '',
+    })),
+  })) || []
+}
 
 const STATUS_CONFIG = {
   cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -332,9 +126,9 @@ function KPICard({ icon, label, value, color, bgColor, sparkData, sparkColor, ac
 }
 
 function RequestRow({ request, isSelected, onSelect }) {
-  const status = STATUS_CONFIG[request.trangThai]
-  const priority = PRIORITY_CONFIG[request.mucDoUuTien]
-  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau]
+  const status = STATUS_CONFIG[request.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: request.trangThai }
+  const priority = PRIORITY_CONFIG[request.mucDoUuTien] || { color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400', label: request.mucDoUuTien }
+  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau] || { color: 'bg-slate-100 text-slate-600', icon: '', label: request.loaiYeuCau }
   const daysLeft = daysUntil(request.deadline)
   const isOverdue = daysLeft !== null && daysLeft < 0
   const isUrgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 1
@@ -367,9 +161,11 @@ function RequestRow({ request, isSelected, onSelect }) {
       </td>
       <td className="py-3 px-4">
         <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium ${loaiYC.color}`}>
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={loaiYC.icon} />
-          </svg>
+          {loaiYC.icon && (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={loaiYC.icon} />
+            </svg>
+          )}
           {loaiYC.label}
         </span>
       </td>
@@ -447,11 +243,11 @@ function ClauseCompare({ clause }) {
   )
 }
 
-function LegalDetail({ request, onClose }) {
+function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLoading }) {
   if (!request) return null
-  const status = STATUS_CONFIG[request.trangThai]
-  const priority = PRIORITY_CONFIG[request.mucDoUuTien]
-  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau]
+  const status = STATUS_CONFIG[request.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: request.trangThai }
+  const priority = PRIORITY_CONFIG[request.mucDoUuTien] || { color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400', label: request.mucDoUuTien }
+  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau] || { color: 'bg-slate-100 text-slate-600', icon: '', label: request.loaiYeuCau }
   const daysLeft = daysUntil(request.deadline)
   const isOverdue = daysLeft !== null && daysLeft < 0
 
@@ -625,24 +421,36 @@ function LegalDetail({ request, onClose }) {
           <div className="space-y-2">
             {(request.trangThai === 'cho_duyet' || request.trangThai === 'dang_xet_duyet' || request.trangThai === 'can_bo_sung') && (
               <>
-                <button className="w-full py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5">
+                <button
+                  onClick={() => onApprove(request.id)}
+                  disabled={actionLoading}
+                  className="w-full py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Phê duyệt
+                  {actionLoading ? 'Đang xử lý...' : 'Phê duyệt'}
                 </button>
                 <div className="flex gap-2">
-                  <button className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5">
+                  <button
+                    onClick={() => onReject(request.id)}
+                    disabled={actionLoading}
+                    className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    Từ chối
+                    {actionLoading ? 'Đang xử lý...' : 'Từ chối'}
                   </button>
-                  <button className="flex-1 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5">
+                  <button
+                    onClick={() => onSubmit(request.id)}
+                    disabled={actionLoading}
+                    className="flex-1 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    Yêu cầu sửa
+                    {actionLoading ? 'Đang xử lý...' : 'Yêu cầu sửa'}
                   </button>
                 </div>
               </>
@@ -706,9 +514,66 @@ export default function LegalPage() {
   const [filterLoai, setFilterLoai] = useState('Tất cả')
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
+
+  const fetchRequests = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await hopDongKyGuiService.danhSach()
+      setRequests(mapRequests(response.data?.data))
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải danh sách yêu cầu')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchRequests()
+  }, [fetchRequests])
+
+  const handleApprove = useCallback(async (id) => {
+    try {
+      setActionLoading(true)
+      await hopDongKyGuiService.pheDuyet(id, { pheDuyet: true })
+      fetchRequests()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Phê duyệt thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [fetchRequests])
+
+  const handleReject = useCallback(async (id) => {
+    try {
+      setActionLoading(true)
+      await hopDongKyGuiService.pheDuyet(id, { pheDuyet: false })
+      fetchRequests()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Từ chối thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [fetchRequests])
+
+  const handleSubmit = useCallback(async (id) => {
+    try {
+      setActionLoading(true)
+      await hopDongKyGuiService.guiPheDuyet(id)
+      fetchRequests()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gửi duyệt thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [fetchRequests])
 
   const filtered = useMemo(() => {
-    let result = [...LEGAL_REQUESTS]
+    let result = [...requests]
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(r =>
@@ -735,26 +600,26 @@ export default function LegalPage() {
       default: result.sort((a, b) => new Date(b.ngayGui) - new Date(a.ngayGui))
     }
     return result
-  }, [searchQuery, filterTrangThai, filterUuTien, filterLoai, sortBy])
+  }, [searchQuery, filterTrangThai, filterUuTien, filterLoai, sortBy, requests])
 
   const kpiData = useMemo(() => ({
-    choDuyet: LEGAL_REQUESTS.filter(r => r.trangThai === 'cho_duyet' || r.trangThai === 'dang_xet_duyet').length,
-    dieuKhoanPhatSinh: LEGAL_REQUESTS.reduce((acc, r) => acc + r.dieuKhoanPhatSinh.length, 0),
-    daPheDuyet: LEGAL_REQUESTS.filter(r => r.trangThai === 'da_phe_duyet').length,
-    daTuChoi: LEGAL_REQUESTS.filter(r => r.trangThai === 'da_tu_choi').length,
-  }), [])
+    choDuyet: requests.filter(r => r.trangThai === 'cho_duyet' || r.trangThai === 'dang_xet_duyet').length,
+    dieuKhoanPhatSinh: requests.reduce((acc, r) => acc + r.dieuKhoanPhatSinh.length, 0),
+    daPheDuyet: requests.filter(r => r.trangThai === 'da_phe_duyet').length,
+    daTuChoi: requests.filter(r => r.trangThai === 'da_tu_choi').length,
+  }), [requests])
 
   const alertData = useMemo(() => {
-    const quaHan = LEGAL_REQUESTS.filter(r => {
+    const quaHan = requests.filter(r => {
       const d = daysUntil(r.deadline)
       return d !== null && d < 0 && r.trangThai !== 'da_phe_duyet' && r.trangThai !== 'da_tu_choi'
     })
-    const ruiRoCao = LEGAL_REQUESTS.filter(r => r.dieuKhoanPhatSinh.some(c => c.mucDoRuiRo === 'cao'))
-    const khanCap = LEGAL_REQUESTS.filter(r => r.mucDoUuTien === 'khan_cap' && r.trangThai !== 'da_phe_duyet' && r.trangThai !== 'da_tu_choi')
+    const ruiRoCao = requests.filter(r => r.dieuKhoanPhatSinh.some(c => c.mucDoRuiRo === 'cao'))
+    const khanCap = requests.filter(r => r.mucDoUuTien === 'khan_cap' && r.trangThai !== 'da_phe_duyet' && r.trangThai !== 'da_tu_choi')
     return { quaHan, ruiRoCao, khanCap }
-  }, [])
+  }, [requests])
 
-  const selectedRequest = selectedId ? LEGAL_REQUESTS.find(r => r.id === selectedId) : null
+  const selectedRequest = selectedId ? requests.find(r => r.id === selectedId) : null
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -916,7 +781,23 @@ export default function LegalPage() {
       </div>
 
       {/* Content */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-slate-500">Đang tải yêu cầu pháp lý...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <p className="text-red-600 font-medium mb-2">{error}</p>
+            <button onClick={fetchRequests} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+              Thử lại
+            </button>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="flex gap-6">
@@ -948,7 +829,7 @@ export default function LegalPage() {
                 </table>
               </div>
               <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-                <span>Hiển thị {filtered.length} / {LEGAL_REQUESTS.length} yêu cầu</span>
+                <span>Hiển thị {filtered.length} / {requests.length} yêu cầu</span>
               </div>
             </div>
           </div>
@@ -956,7 +837,7 @@ export default function LegalPage() {
           {/* Detail Panel */}
           {selectedRequest && (
             <div className="w-105 shrink-0 hidden xl:block">
-              <LegalDetail request={selectedRequest} onClose={() => setSelectedId(null)} />
+              <LegalDetail request={selectedRequest} onClose={() => setSelectedId(null)} onApprove={handleApprove} onReject={handleReject} onSubmit={handleSubmit} actionLoading={actionLoading} />
             </div>
           )}
         </div>

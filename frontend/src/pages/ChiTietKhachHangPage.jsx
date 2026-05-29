@@ -1,55 +1,48 @@
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import khachHangService from '../services/khachHangService'
 
-const CUSTOMER_DATA = {
-  id: 'KH-8492',
-  hoTen: 'Trần Thị Bích Ngọc',
-  trangThai: 'Dang_xem',
-  avatar: null,
-  thongTinLienHe: {
-    dienThoai: '+84 912 345 678',
-    email: 'ngoc.tran@example.com',
-  },
-  nhuCau: {
-    mucDo: 'Khách VIP',
-    moTa: 'Khách hàng ưu tiên cao, đang tìm kiếm căn hộ cao cấp tại khu vực Tây Hồ để đầu tư và cho thuê.',
-    nganSach: '5 - 8 Tỷ VNĐ',
-    khuVuc: ['Tây Hồ', 'Ba Đình'],
-    loaiBatDongSan: ['Căn hộ 3PN', 'View Hồ'],
-  },
-  chuyenVienPhuTrach: {
-    hoTen: 'Lê Trọng Tấn',
-    chucVu: 'Senior Broker - Đội B',
-    avatar: null,
-    dienThoai: '0988 123 456',
-    ngayNhanLead: '2 ngày trước',
-  },
-  lichSuTuongTac: [
-    {
-      id: 1,
-      loai: 'Da_dan_khach_xem_nha',
-      tieuDe: 'Đã dẫn khách xem nhà',
-      trangThai: 'Thanh_cong',
-      thoiGian: 'Hôm nay, 14:30',
-      moTa: 'Khách hàng rất ưng ý căn hộ D-08 tại Sun Grand City. Chỗ view hơi khuất so với căn góc nhưng phù hợp ngân sách. Yêu cầu gửi bảng giá chi tiết và phương thức thanh toán.',
-      diaDiem: 'Sun Grand City, Tây Hồ',
-      nguoiThucHien: 'Lê Trọng Tấn',
+function mapCustomer(data) {
+  return {
+    id: data.id || data.maKhachHang || '',
+    hoTen: data.hoTen || data.tenKhachHang || '',
+    trangThai: data.trangThai || 'Dang_xem',
+    avatar: data.avatar || null,
+    thongTinLienHe: {
+      dienThoai: data.soDienThoai || data.dienThoai || '',
+      email: data.email || '',
     },
-    {
-      id: 2,
-      loai: 'Cuoc_goi_tu_van',
-      tieuDe: 'Cuộc gọi tư vấn lần 2',
-      thoiGian: 'Hôm qua, 09:15',
-      moTa: 'Đã trao đổi về các option căn hộ khu vực Tây Hồ. Chốt lịch xem nhà vào chiều nay. Khách có vẻ rất muốn chốt trong tháng này để kịp phong thủy.',
-      nguoiThucHien: 'Lê Trọng Tấn',
+    nhuCau: {
+      mucDo: data.mucDo || 'Thường',
+      moTa: data.moTaNhuCau || data.moTa || '',
+      nganSach: data.nganSach || '',
+      khuVuc: data.khuVuc || [],
+      loaiBatDongSan: data.loaiBatDongSan || [],
     },
-    {
-      id: 3,
-      loai: 'Phan_bo_lead',
-      tieuDe: 'Phân bổ Lead',
-      thoiGian: '2 ngày trước, 10:00',
-      moTa: 'Hệ thống tự động phân bổ khách hàng mới từ chiến dịch "Tây Hồ Luxury" cho Broker Lê Trọng Tấn.',
+    chuyenVienPhuTrach: data.nhanVienPhuTrach ? {
+      hoTen: data.nhanVienPhuTrach.hoTen || '',
+      chucVu: data.nhanVienPhuTrach.chucVu || '',
+      avatar: data.nhanVienPhuTrach.avatar || null,
+      dienThoai: data.nhanVienPhuTrach.soDienThoai || '',
+      ngayNhanLead: data.nhanVienPhuTrach.ngayNhanLead || '',
+    } : {
+      hoTen: '',
+      chucVu: '',
+      avatar: null,
+      dienThoai: '',
+      ngayNhanLead: '',
     },
-  ],
+    lichSuTuongTac: (data.lichSuTuongTac || data.lichSu || []).map(item => ({
+      id: item.id,
+      loai: item.loai,
+      tieuDe: item.tieuDe,
+      trangThai: item.trangThai,
+      thoiGian: item.thoiGian,
+      moTa: item.moTa,
+      diaDiem: item.diaDiem,
+      nguoiThucHien: item.nguoiThucHien,
+    })),
+  }
 }
 
 const TRANG_THAI_CONFIG = {
@@ -79,6 +72,53 @@ const TUONG_TAC_ICONS = {
 
 export default function ChiTietKhachHangPage() {
   const navigate = useNavigate()
+  const { id } = useParams()
+  const [customer, setCustomer] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchCustomer = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await khachHangService.chiTiet(id)
+      setCustomer(mapCustomer(response.data))
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải thông tin khách hàng')
+    } finally {
+      setLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    fetchCustomer()
+  }, [fetchCustomer])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">Đang tải thông tin khách hàng...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 font-medium mb-2">{error}</p>
+          <button onClick={fetchCustomer} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+            Thử lại
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!customer) return null
 
   return (
     <>
@@ -99,14 +139,14 @@ export default function ChiTietKhachHangPage() {
               <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              <span className="text-slate-800 font-medium">{CUSTOMER_DATA.id}</span>
+              <span className="text-slate-800 font-medium">{customer.id}</span>
             </div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-              {CUSTOMER_DATA.hoTen}
+              {customer.hoTen}
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                TRANG_THAI_CONFIG[CUSTOMER_DATA.trangThai]?.color || 'bg-slate-100 text-slate-600'
+                TRANG_THAI_CONFIG[customer.trangThai]?.color || 'bg-slate-100 text-slate-600'
               }`}>
-                {TRANG_THAI_CONFIG[CUSTOMER_DATA.trangThai]?.label || CUSTOMER_DATA.trangThai}
+                {TRANG_THAI_CONFIG[customer.trangThai]?.label || customer.trangThai}
               </span>
             </h1>
           </div>
@@ -150,7 +190,7 @@ export default function ChiTietKhachHangPage() {
                       </span>
                     </div>
                     <p className="text-sm text-slate-600">
-                      {CUSTOMER_DATA.nhuCau.moTa}
+                      {customer.nhuCau.moTa}
                     </p>
                   </div>
                 </div>
@@ -164,7 +204,7 @@ export default function ChiTietKhachHangPage() {
                       <span className="text-slate-500">Số điện thoại</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-800">{CUSTOMER_DATA.thongTinLienHe.dienThoai}</p>
+                      <p className="text-sm font-medium text-slate-800">{customer.thongTinLienHe.dienThoai}</p>
                       <button className="text-xs text-blue-600 hover:text-blue-700 font-medium">
                         Gọi ngay
                       </button>
@@ -179,7 +219,7 @@ export default function ChiTietKhachHangPage() {
                       <span className="text-slate-500">Email</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-800">{CUSTOMER_DATA.thongTinLienHe.email}</p>
+                      <p className="text-sm font-medium text-slate-800">{customer.thongTinLienHe.email}</p>
                       <button className="text-xs text-blue-600 hover:text-blue-700 font-medium">
                         Gửi Email
                       </button>
@@ -192,13 +232,13 @@ export default function ChiTietKhachHangPage() {
                   <p className="text-xs text-slate-500 mb-3">Nhu cầu Hiển thị (Tóm tắt)</p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded-lg">
-                      Ngân sách: {CUSTOMER_DATA.nhuCau.nganSach}
+                      Ngân sách: {customer.nhuCau.nganSach}
                     </span>
                     <span className="px-3 py-1.5 bg-slate-100 text-slate-700 text-sm rounded-lg">
-                      Khu vực: {CUSTOMER_DATA.nhuCau.khuVuc.join(', ')}
+                      Khu vực: {customer.nhuCau.khuVuc.join(', ')}
                     </span>
                     <span className="px-3 py-1.5 bg-slate-100 text-slate-700 text-sm rounded-lg">
-                      Loại: {CUSTOMER_DATA.nhuCau.loaiBatDongSan.join(', ')}
+                      Loại: {customer.nhuCau.loaiBatDongSan.join(', ')}
                     </span>
                   </div>
                 </div>
@@ -225,7 +265,7 @@ export default function ChiTietKhachHangPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {CUSTOMER_DATA.lichSuTuongTac.map((tuongTac) => (
+                  {customer.lichSuTuongTac.map((tuongTac) => (
                     <div key={tuongTac.id} className="flex gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                         tuongTac.loai === 'Da_dan_khach_xem_nha' ? 'bg-blue-100 text-blue-600' :
@@ -283,8 +323,8 @@ export default function ChiTietKhachHangPage() {
                   <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-3">
                     <span className="text-slate-600 font-semibold text-lg">LT</span>
                   </div>
-                  <h3 className="font-semibold text-slate-800">{CUSTOMER_DATA.chuyenVienPhuTrach.hoTen}</h3>
-                  <p className="text-sm text-slate-500">{CUSTOMER_DATA.chuyenVienPhuTrach.chucVu}</p>
+                  <h3 className="font-semibold text-slate-800">{customer.chuyenVienPhuTrach.hoTen}</h3>
+                  <p className="text-sm text-slate-500">{customer.chuyenVienPhuTrach.chucVu}</p>
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-slate-100">
@@ -292,13 +332,13 @@ export default function ChiTietKhachHangPage() {
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
-                    <span className="text-slate-600">{CUSTOMER_DATA.chuyenVienPhuTrach.dienThoai}</span>
+                    <span className="text-slate-600">{customer.chuyenVienPhuTrach.dienThoai}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-slate-600">Đã nhận lead: {CUSTOMER_DATA.chuyenVienPhuTrach.ngayNhanLead}</span>
+                    <span className="text-slate-600">Đã nhận lead: {customer.chuyenVienPhuTrach.ngayNhanLead}</span>
                   </div>
                 </div>
 

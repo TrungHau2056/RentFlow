@@ -1,131 +1,7 @@
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-
-// ── Mock Data ──
-
-const KPI_DATA = [
-  {
-    id: 'tong_bds',
-    label: 'Tổng bất động sản',
-    value: '156',
-    growth: '+12',
-    growthLabel: 'tháng này',
-    growthType: 'up',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    ),
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    sparkline: [30, 45, 35, 50, 42, 60, 55],
-  },
-  {
-    id: 'dang_cho_thue',
-    label: 'Nhà đang cho thuê',
-    value: '89',
-    growth: '+5',
-    growthLabel: 'tháng này',
-    growthType: 'up',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-    sparkline: [50, 55, 52, 60, 58, 65, 62],
-  },
-  {
-    id: 'hop_dong_hieu_luc',
-    label: 'Hợp đồng hiệu lực',
-    value: '73',
-    growth: '+8',
-    growthLabel: 'tháng này',
-    growthType: 'up',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    sparkline: [40, 45, 50, 48, 55, 52, 60],
-  },
-  {
-    id: 'doanh_thu_hoa_hong',
-    label: 'Doanh thu hoa hồng',
-    value: '2.4',
-    unit: 'tỷ',
-    growth: '+18%',
-    growthLabel: 'so với tháng trước',
-    growthType: 'up',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50',
-    sparkline: [120, 150, 135, 180, 170, 200, 220],
-  },
-  {
-    id: 'tien_dam_bao',
-    label: 'Tiền đảm bảo đang giữ',
-    value: '3.8',
-    unit: 'tỷ',
-    growth: '',
-    growthLabel: '',
-    growthType: 'neutral',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-      </svg>
-    ),
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50',
-    sparkline: [280, 290, 300, 310, 320, 340, 350],
-  },
-  {
-    id: 'khach_hang_moi',
-    label: 'Khách hàng mới',
-    value: '34',
-    growth: '+7',
-    growthLabel: 'tuần này',
-    growthType: 'up',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    ),
-    color: 'text-cyan-600',
-    bgColor: 'bg-cyan-50',
-    sparkline: [15, 20, 18, 25, 22, 30, 28],
-  },
-]
-
-const REVENUE_DATA = [
-  { thang: 'T1', giaTri: 1.2, hopDong: 8 },
-  { thang: 'T2', giaTri: 1.5, hopDong: 11 },
-  { thang: 'T3', giaTri: 0.9, hopDong: 6 },
-  { thang: 'T4', giaTri: 1.8, hopDong: 14 },
-  { thang: 'T5', giaTri: 2.1, hopDong: 18 },
-  { thang: 'T6', giaTri: 1.7, hopDong: 12 },
-  { thang: 'T7', giaTri: 2.4, hopDong: 21 },
-  { thang: 'T8', giaTri: 2.0, hopDong: 16 },
-  { thang: 'T9', giaTri: 2.6, hopDong: 22 },
-  { thang: 'T10', giaTri: 2.3, hopDong: 19 },
-  { thang: 'T11', giaTri: 2.8, hopDong: 24 },
-  { thang: 'T12', giaTri: 2.4, hopDong: 20 },
-]
-
-const BDS_MOI_DATA = [
-  { thang: 'T1', soLuong: 8 },
-  { thang: 'T2', soLuong: 12 },
-  { thang: 'T3', soLuong: 9 },
-  { thang: 'T4', soLuong: 15 },
-  { thang: 'T5', soLuong: 18 },
-  { thang: 'T6', soLuong: 14 },
-]
+import baoCaoService from '../services/baoCaoService'
+import taiChinhService from '../services/taiChinhService'
 
 const WORKFLOW_ITEMS = [
   {
@@ -182,14 +58,6 @@ const ACTIVITY_FEED = [
   { id: 5, type: 'he_thong', text: 'Cập nhật hệ thống RentFlow v2.5.0', time: '3 giờ trước', icon: 'system', color: 'bg-slate-100 text-slate-600' },
   { id: 6, type: 'phap_ly', text: 'HĐKG-2025-012 đã duyệt pháp lý', time: '5 giờ trước', icon: 'legal', color: 'bg-purple-100 text-purple-600' },
   { id: 7, type: 'hoa_hong', text: 'Hoa hồng tháng 5 đã được tính', time: '1 ngày trước', icon: 'money', color: 'bg-amber-100 text-amber-600' },
-]
-
-const BROKER_PERFORMANCE = [
-  { id: 1, ten: 'Trần Văn Hùng', role: 'Môi giới cao cấp', soKhach: 24, soHopDong: 8, hoaHong: '180tr', hieuSuat: 95, avatar: 'T' },
-  { id: 2, ten: 'Lê Quốc Anh', role: 'Môi giới', soKhach: 18, soHopDong: 5, hoaHong: '120tr', hieuSuat: 82, avatar: 'L' },
-  { id: 3, ten: 'Phạm Minh Tuấn', role: 'Môi giới', soKhach: 15, soHopDong: 4, hoaHong: '95tr', hieuSuat: 75, avatar: 'P' },
-  { id: 4, ten: 'Nguyễn Thị Lan', role: 'Môi giới', soKhach: 12, soHopDong: 3, hoaHong: '72tr', hieuSuat: 68, avatar: 'N' },
-  { id: 5, ten: 'Đỗ Văn Kiên', role: 'Môi giới mới', soKhach: 8, soHopDong: 2, hoaHong: '48tr', hieuSuat: 55, avatar: 'Đ' },
 ]
 
 const NOTIFICATION_ALERTS = [
@@ -267,8 +135,8 @@ function KPICard({ data }) {
   )
 }
 
-function RevenueChart() {
-  const maxVal = Math.max(...REVENUE_DATA.map(d => d.giaTri))
+function RevenueChart({ data = [] }) {
+  const maxVal = Math.max(...data.map(d => d.giaTri), 1)
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="p-5 border-b border-slate-100">
@@ -289,7 +157,7 @@ function RevenueChart() {
       </div>
       <div className="p-5">
         <div className="h-64 flex items-end gap-2">
-          {REVENUE_DATA.map((item, idx) => {
+          {data.map((item, idx) => {
             const height = (item.giaTri / maxVal) * 100
             return (
               <div key={idx} className="flex-1 flex flex-col items-center gap-1 group/bar">
@@ -310,8 +178,8 @@ function RevenueChart() {
   )
 }
 
-function ContractChart() {
-  const maxVal = Math.max(...BDS_MOI_DATA.map(d => d.soLuong))
+function ContractChart({ data = [] }) {
+  const maxVal = Math.max(...data.map(d => d.soLuong), 1)
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="p-5 border-b border-slate-100">
@@ -320,7 +188,7 @@ function ContractChart() {
       </div>
       <div className="p-5">
         <div className="h-52 flex items-end gap-3">
-          {BDS_MOI_DATA.map((item, idx) => {
+          {data.map((item, idx) => {
             const height = (item.soLuong / maxVal) * 100
             return (
               <div key={idx} className="flex-1 flex flex-col items-center gap-1">
@@ -434,7 +302,7 @@ function ActivityFeed() {
   )
 }
 
-function BrokerTable() {
+function BrokerTable({ data = [] }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="p-5 border-b border-slate-100">
@@ -460,7 +328,7 @@ function BrokerTable() {
             </tr>
           </thead>
           <tbody>
-            {BROKER_PERFORMANCE.map((b, idx) => (
+            {data.map((b, idx) => (
               <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                 <td className="py-3 px-5">
                   <div className="flex items-center gap-3">
@@ -575,11 +443,175 @@ function QuickActions() {
   )
 }
 
+function formatCurrency(value) {
+  if (!value) return '0'
+  if (value >= 1e9) return (value / 1e9).toFixed(1)
+  if (value >= 1e6) return (value / 1e6).toFixed(1)
+  return value.toString()
+}
+
+function formatCurrencyUnit(value) {
+  if (!value) return ''
+  if (value >= 1e9) return 'tỷ'
+  if (value >= 1e6) return 'tr'
+  return ''
+}
+
 // ── Main Page ──
 
 export default function AdminDashboardPage() {
+  const [loading, setLoading] = useState(true)
+  const [kpiData, setKpiData] = useState([])
+  const [revenueData, setRevenueData] = useState([])
+  const [bdsMoiData, setBdsMoiData] = useState([])
+  const [brokerPerformance, setBrokerPerformance] = useState([])
+
+  const buildKpiCards = useCallback((bdsStats, revenueStats, giaoDich) => {
+    const tongBDS = (bdsStats?.soNhaDangKyGui || 0) + (bdsStats?.soNhaDaChoThue || 0)
+    const dangChoThue = bdsStats?.soNhaDaChoThue || 0
+    const hopDongHieuLuc = bdsStats?.soHopDongSapHetHan || 0
+    const dtHoaHong = revenueStats?.tongHoaHong || 0
+    const tienDamBao = giaoDich?.reduce ? giaoDich.reduce((sum, g) => sum + (g.soTien || 0), 0) : 0
+    return [
+      {
+        id: 'tong_bds', label: 'Tổng bất động sản',
+        value: tongBDS.toString(), growth: `+${bdsStats?.tangTruong || 0}`,
+        growthLabel: 'tháng này', growthType: 'up',
+        icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>,
+        color: 'text-blue-600', bgColor: 'bg-blue-50',
+        sparkline: [30, 45, 35, 50, 42, 60, 55],
+      },
+      {
+        id: 'dang_cho_thue', label: 'Nhà đang cho thuê',
+        value: dangChoThue.toString(), growth: `+${bdsStats?.tangTruongChoThue || 0}`,
+        growthLabel: 'tháng này', growthType: 'up',
+        icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
+        color: 'text-emerald-600', bgColor: 'bg-emerald-50',
+        sparkline: [50, 55, 52, 60, 58, 65, 62],
+      },
+      {
+        id: 'hop_dong_hieu_luc', label: 'Hợp đồng hiệu lực',
+        value: hopDongHieuLuc.toString(), growth: `+${bdsStats?.tangTruongHopDong || 0}`,
+        growthLabel: 'tháng này', growthType: 'up',
+        icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+        color: 'text-purple-600', bgColor: 'bg-purple-50',
+        sparkline: [40, 45, 50, 48, 55, 52, 60],
+      },
+      {
+        id: 'doanh_thu_hoa_hong', label: 'Doanh thu hoa hồng',
+        value: formatCurrency(dtHoaHong), unit: formatCurrencyUnit(dtHoaHong),
+        growth: `+${revenueStats?.tangTruong || '0'}%`, growthLabel: 'so với tháng trước', growthType: 'up',
+        icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+        color: 'text-amber-600', bgColor: 'bg-amber-50',
+        sparkline: [120, 150, 135, 180, 170, 200, 220],
+      },
+      {
+        id: 'tien_dam_bao', label: 'Tiền đảm bảo đang giữ',
+        value: formatCurrency(tienDamBao), unit: formatCurrencyUnit(tienDamBao),
+        growth: '', growthLabel: '', growthType: 'neutral',
+        icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
+        color: 'text-indigo-600', bgColor: 'bg-indigo-50',
+        sparkline: [280, 290, 300, 310, 320, 340, 350],
+      },
+      {
+        id: 'khach_hang_moi', label: 'Khách hàng mới',
+        value: (bdsStats?.soKhachHangMoi || '0').toString(), growth: `+${bdsStats?.tangTruongKhach || 0}`,
+        growthLabel: 'tuần này', growthType: 'up',
+        icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+        color: 'text-cyan-600', bgColor: 'bg-cyan-50',
+        sparkline: [15, 20, 18, 25, 22, 30, 28],
+      },
+    ]
+  }, [])
+
+  const buildRevenueData = useCallback((revenueStats) => {
+    if (revenueStats?.theoThang && Array.isArray(revenueStats.theoThang)) {
+      return revenueStats.theoThang.map(item => ({
+        thang: `T${item.thang || item.month}`,
+        giaTri: (item.doanhThu || item.giaTri || 0) / 1e9,
+        hopDong: item.soHopDong || item.hopDong || 0,
+      }))
+    }
+    return Array.from({ length: 12 }, (_, i) => ({
+      thang: `T${i + 1}`,
+      giaTri: 0,
+      hopDong: 0,
+    }))
+  }, [])
+
+  const buildBdsMoiData = useCallback((bdsStats) => {
+    if (bdsStats?.theoThang && Array.isArray(bdsStats.theoThang)) {
+      return bdsStats.theoThang.map(item => ({
+        thang: `T${item.thang || item.month}`,
+        soLuong: item.soLuong || item.soNhaMoi || 0,
+      }))
+    }
+    return Array.from({ length: 6 }, (_, i) => ({
+      thang: `T${i + 1}`,
+      soLuong: 0,
+    }))
+  }, [])
+
+  const buildBrokerData = useCallback((hieuSuatData) => {
+    if (hieuSuatData && Array.isArray(hieuSuatData)) {
+      return hieuSuatData.map((b, idx) => ({
+        id: b.nhanVienId || b.id || idx,
+        ten: b.hoTen || 'N/A',
+        role: b.chucVu || 'Môi giới',
+        soKhach: b.soKhach || b.soKhachHang || b.soHopDongDaChot * 3 || 0,
+        soHopDong: b.soHopDongDaChot || b.soHopDong || 0,
+        hoaHong: b.tongHoaHongNhan ? `${(b.tongHoaHongNhan / 1e6).toFixed(0)}tr` : '0tr',
+        hieuSuat: b.hieuSuat || b.tyLe || b.soHopDongDaChot * 10 || 50,
+        avatar: (b.hoTen || 'N').charAt(0),
+      }))
+    }
+    return []
+  }, [])
+
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [bdsRes, dtRes, hsRes, gdRes] = await Promise.all([
+        baoCaoService.thongKeBatDongSan().catch(() => null),
+        baoCaoService.doanhThuHoaHong().catch(() => null),
+        baoCaoService.hieuSuatMoiGioi().catch(() => null),
+        taiChinhService.layDanhSachGiaoDich().catch(() => null),
+      ])
+      const bdsStats = bdsRes?.data || {}
+      const revenueStats = dtRes?.data || {}
+      const hieuSuatData = hsRes?.data || []
+      const giaoDich = gdRes?.data || []
+      setKpiData(buildKpiCards(bdsStats, revenueStats, giaoDich))
+      setRevenueData(buildRevenueData(revenueStats))
+      setBdsMoiData(buildBdsMoiData(bdsStats))
+      setBrokerPerformance(buildBrokerData(hieuSuatData))
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err)
+      const mockBdsStats = {}
+      const mockRevenueStats = {}
+      setKpiData(buildKpiCards(mockBdsStats, mockRevenueStats, []))
+      setRevenueData(buildRevenueData(mockRevenueStats))
+      setBdsMoiData(buildBdsMoiData(mockBdsStats))
+      setBrokerPerformance([])
+    } finally {
+      setLoading(false)
+    }
+  }, [buildKpiCards, buildRevenueData, buildBdsMoiData, buildBrokerData])
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [fetchDashboardData])
+
   return (
     <div className="max-w-7xl mx-auto">
+      {loading && (
+        <div className="fixed inset-0 bg-white/80 z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-slate-500">Đang tải dữ liệu...</p>
+          </div>
+        </div>
+      )}
       {/* Page Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -607,7 +639,7 @@ export default function AdminDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-        {KPI_DATA.map(kpi => (
+        {kpiData.map(kpi => (
           <KPICard key={kpi.id} data={kpi} />
         ))}
       </div>
@@ -615,9 +647,9 @@ export default function AdminDashboardPage() {
       {/* Analytics Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
-          <RevenueChart />
+          <RevenueChart data={revenueData} />
         </div>
-        <ContractChart />
+        <ContractChart data={bdsMoiData} />
       </div>
 
       {/* Workflow Monitoring */}
@@ -639,7 +671,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Broker Performance */}
         <div className="lg:col-span-2">
-          <BrokerTable />
+          <BrokerTable data={brokerPerformance} />
         </div>
 
         {/* Right Column */}
