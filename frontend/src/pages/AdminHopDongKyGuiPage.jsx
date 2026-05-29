@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
 
 const CONTRACTS = [
   {
@@ -727,7 +726,7 @@ function ContractDetail({ contract, onClose }) {
   )
 }
 
-function AlertCard({ type, title, description, count, icon, color }) {
+function AlertCard({ title, description, count, icon, color }) {
   return (
     <div className={`rounded-xl border p-4 flex items-start gap-3 ${color}`}>
       <div className="shrink-0 mt-0.5">{icon}</div>

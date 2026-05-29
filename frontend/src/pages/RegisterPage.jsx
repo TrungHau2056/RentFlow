@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
+import { isInternalAdminRole } from '../config/roles'
+import { extractUserFromJwt } from '../utils/jwt'
 
 const ROLES = [
   { value: 'CHU_NHA', label: 'Chủ nhà', desc: 'Ký gửi bất động sản cho thuê' },
@@ -8,6 +10,7 @@ const ROLES = [
 ]
 
 export default function RegisterPage() {
+  const navigate = useNavigate()
   const [role, setRole] = useState('CHU_NHA')
   const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '', password: '', confirmPassword: '' })
   const [showPassword, setShowPassword] = useState(false)
@@ -29,7 +32,6 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
-      // TODO: Replace with actual registration API endpoint when available
       const res = await fetch('http://localhost:8080/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,7 +45,19 @@ export default function RegisterPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        // TODO: redirect or show success message
+        const { accessToken, refreshToken } = data.data
+        localStorage.setItem('accessToken', accessToken)
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
+
+        const userInfo = extractUserFromJwt(accessToken, form.email)
+        if (userInfo) {
+          userInfo.hoTen = form.hoTen
+          localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        }
+
+        if (isInternalAdminRole(role)) navigate('/admin')
+        else if (role === 'CHU_NHA') navigate('/dashboard')
+        else navigate('/')
       } else {
         setError(data.message || 'Đăng ký thất bại')
       }

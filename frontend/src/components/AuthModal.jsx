@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { isInternalAdminRole } from '../config/roles'
+import { MOCK_USERS } from '../config/mockUsers'
+import { extractUserFromJwt } from '../utils/jwt'
 
 const MEMBER_BENEFITS = [
   'Xem địa chỉ chi tiết',
@@ -8,37 +11,6 @@ const MEMBER_BENEFITS = [
   'Đặt lịch xem nhà',
   'Theo dõi nhà yêu thích',
   'Nhận thông báo nhà phù hợp',
-]
-
-// TÀI KHOẢN DEMO THEO ROLE
-// ADMIN: admin@rentflow.vn / 123456
-// CHỦ NHÀ: chunha@rentflow.vn / 123456
-// KHÁCH THUÊ: khachthue@rentflow.vn / 123456
-const MOCK_USERS = [
-  {
-    email: 'admin@rentflow.vn',
-    password: '123456',
-    id: 1,
-    hoTen: 'Nguyễn Văn Admin',
-    role: 'ADMIN',
-    avatar: null,
-  },
-  {
-    email: 'chunha@rentflow.vn',
-    password: '123456',
-    id: 2,
-    hoTen: 'Trần Thị Chủ',
-    role: 'CHU_NHA',
-    avatar: null,
-  },
-  {
-    email: 'khachthue@rentflow.vn',
-    password: '123456',
-    id: 3,
-    hoTen: 'Lê Văn Thuê',
-    role: 'KHACH_THUE',
-    avatar: null,
-  },
 ]
 
 function EyeIcon({ visible }) {
@@ -96,8 +68,9 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
 
   const routeAuthenticatedUser = (user) => {
     onLoginSuccess()
-    if (user?.role === 'ADMIN') navigate('/admin')
+    if (isInternalAdminRole(user?.role)) navigate('/admin')
     else if (user?.role === 'CHU_NHA') navigate('/dashboard')
+    else if (user?.role === 'KHACH_THUE' || user?.role === 'KHACH_HANG') navigate('/tenant')
     else navigate('/')
   }
 
@@ -137,10 +110,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
           avatar: matchedUser.avatar,
         },
       })
-      setTimeout(() => {
-        setLoading(false)
-        routeAuthenticatedUser(matchedUser)
-      }, 300)
+      setLoading(false)
+      routeAuthenticatedUser(matchedUser)
       return
     }
 
@@ -152,13 +123,20 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       })
       const data = await response.json()
       if (response.ok) {
+        const { accessToken } = data.data
         storeSession(data.data)
-        routeAuthenticatedUser(data.data.user)
+
+        const userInfo = extractUserFromJwt(accessToken, email)
+        if (userInfo) {
+          localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        }
+
+        routeAuthenticatedUser(userInfo)
       } else {
         setError(data.message || 'Đăng nhập thất bại')
       }
     } catch {
-      setError('Không thể kết nối máy chủ. Dùng tài khoản demo: admin@rentflow.com / 123456')
+      setError('Không thể kết nối máy chủ. Dùng tài khoản demo: admin@rentflow.vn / 123456')
     } finally {
       setLoading(false)
     }
@@ -189,8 +167,15 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       })
       const data = await response.json()
       if (response.ok) {
+        const { accessToken } = data.data
         storeSession(data.data)
-        routeAuthenticatedUser(data.data.user)
+
+        const userInfo = extractUserFromJwt(accessToken, registerForm.email)
+        if (userInfo) {
+          localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        }
+
+        routeAuthenticatedUser(userInfo)
       } else {
         setError(data.message || 'Đăng ký thất bại')
       }

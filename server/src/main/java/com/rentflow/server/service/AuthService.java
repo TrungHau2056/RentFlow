@@ -4,10 +4,12 @@ import com.rentflow.server.dto.request.LoginRequestDTO;
 import com.rentflow.server.dto.request.RefreshRequestDTO;
 import com.rentflow.server.dto.request.RegisterRequestDTO;
 import com.rentflow.server.dto.response.auth.JwtResponseDTO;
+import com.rentflow.server.entity.ChuNha;
 import com.rentflow.server.entity.KhachHang;
 import com.rentflow.server.entity.TaiKhoan;
 import com.rentflow.server.entity.VaiTro;
 import com.rentflow.server.exception.AppException;
+import com.rentflow.server.repository.ChuNhaRepository;
 import com.rentflow.server.repository.KhachHangRepository;
 import com.rentflow.server.repository.TaiKhoanRepository;
 import com.rentflow.server.repository.VaiTroRepository;
@@ -26,6 +28,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final VaiTroRepository vaiTroRepository;
     private final KhachHangRepository khachHangRepository;
+    private final ChuNhaRepository chuNhaRepository;
 
     public JwtResponseDTO login(LoginRequestDTO dto) {
         String username = dto.getEmail();
@@ -49,7 +52,8 @@ public class AuthService {
             throw new AppException(ErrorCode.EMAIL_DA_TON_TAI);
         }
 
-        VaiTro vaiTro = vaiTroRepository.findByTenVaiTro("KHACH_HANG")
+        String tenVaiTro = "CHU_NHA".equals(dto.getVaiTro()) ? "CHU_NHA" : "KHACH_HANG";
+        VaiTro vaiTro = vaiTroRepository.findByTenVaiTro(tenVaiTro)
                 .orElseThrow(() -> new AppException(ErrorCode.VAI_TRO_NOT_FOUND));
 
         TaiKhoan taiKhoan = TaiKhoan.builder()
@@ -60,14 +64,24 @@ public class AuthService {
                 .build();
         taiKhoan = taiKhoanRepository.save(taiKhoan);
 
-        KhachHang khachHang = KhachHang.builder()
-                .taiKhoan(taiKhoan)
-                .hoTen(dto.getHoTen())
-                .email(dto.getEmail())
-                .soDienThoai(dto.getSoDienThoai())
-                .nhuCauThue(dto.getNhuCauThue())
-                .build();
-        khachHangRepository.save(khachHang);
+        if ("CHU_NHA".equals(tenVaiTro)) {
+            ChuNha chuNha = ChuNha.builder()
+                    .taiKhoan(taiKhoan)
+                    .hoTen(dto.getHoTen())
+                    .email(dto.getEmail())
+                    .soDienThoai(dto.getSoDienThoai())
+                    .build();
+            chuNhaRepository.save(chuNha);
+        } else {
+            KhachHang khachHang = KhachHang.builder()
+                    .taiKhoan(taiKhoan)
+                    .hoTen(dto.getHoTen())
+                    .email(dto.getEmail())
+                    .soDienThoai(dto.getSoDienThoai())
+                    .nhuCauThue(dto.getNhuCauThue())
+                    .build();
+            khachHangRepository.save(khachHang);
+        }
 
         String accessToken = jwtService.generateToken(taiKhoan, TokenType.ACCESS);
         String refreshToken = jwtService.generateToken(taiKhoan, TokenType.REFRESH);

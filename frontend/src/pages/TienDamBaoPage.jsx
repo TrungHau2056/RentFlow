@@ -291,11 +291,11 @@ function DepositRow({ deposit, isSelected, onSelect }) {
   )
 }
 
-function DepositDetail({ deposit, onClose }) {
+function DepositDetail({ deposit, onClose, nowTime }) {
   if (!deposit) return null
   const status = STATUS_CONFIG[deposit.status]
   const isOver6Months = !deposit.ngayChoThue && deposit.status === 'dang_giu' &&
-    (Date.now() - new Date(deposit.ngayThu).getTime()) > 180 * 24 * 60 * 60 * 1000
+    (nowTime - new Date(deposit.ngayThu).getTime()) > 180 * 24 * 60 * 60 * 1000
 
   return (
     <div className="bg-white rounded-xl border border-outline-variant shadow-xl overflow-hidden sticky top-6">
@@ -469,6 +469,7 @@ export default function TienDamBaoPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
+  const [nowTime] = useState(() => Date.now())
 
   const filtered = useMemo(() => {
     let result = [...DEPOSITS]
@@ -619,7 +620,7 @@ export default function TienDamBaoPage() {
           {/* Detail Panel */}
           {selectedDeposit && (
             <div className="w-[420px] shrink-0 hidden xl:block">
-              <DepositDetail deposit={selectedDeposit} onClose={() => setSelectedId(null)} />
+              <DepositDetail deposit={selectedDeposit} nowTime={nowTime} onClose={() => setSelectedId(null)} />
             </div>
           )}
         </div>

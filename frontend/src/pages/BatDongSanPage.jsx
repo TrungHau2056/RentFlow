@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
 const QUAN_HUYEN_OPTIONS = [
   { value: 'cau-giay', label: 'Cầu Giấy' },
@@ -191,18 +191,39 @@ const SORT_OPTIONS = [
   { value: 'dien-tich-lon', label: 'Diện tích lớn nhất' },
 ]
 
+function readStoredUser() {
+  const stored = localStorage.getItem('userInfo')
+  if (!stored) return null
+
+  try {
+    return JSON.parse(stored)
+  } catch {
+    localStorage.removeItem('userInfo')
+    return null
+  }
+}
+
 export default function BatDongSanPage() {
-  const [userInfo, setUserInfo] = useState(null)
+  const navigate = useNavigate()
+  const [userInfo] = useState(readStoredUser)
+  const [profileOpen, setProfileOpen] = useState(false)
 
-  useEffect(() => {
-    const stored = localStorage.getItem('userInfo')
-    if (stored) {
-      try { setUserInfo(JSON.parse(stored)) }
-      catch { localStorage.removeItem('userInfo') }
-    }
-  }, [])
+  const initials = userInfo?.hoTen
+    ?.split(' ')
+    .slice(-2)
+    .map((p) => p.charAt(0))
+    .join('')
+    .toUpperCase() || 'U'
 
-  const isTenant = userInfo?.role === 'KHACH_THUE'
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('userInfo')
+    navigate('/')
+    window.location.reload()
+  }
+
+  const canRegisterConsignment = userInfo?.role === 'CHU_NHA'
 
   const [filters, setFilters] = useState({
     districts: [],
@@ -216,6 +237,10 @@ export default function BatDongSanPage() {
   })
   const [sortBy, setSortBy] = useState('moi-nhat')
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchLocation, setSearchLocation] = useState('')
+  const [searchPrice, setSearchPrice] = useState('')
+  const [searchArea, setSearchArea] = useState('')
+  const [searchBedrooms, setSearchBedrooms] = useState('')
 
   const toggleFilter = (key, value) => {
     setFilters(prev => ({
@@ -239,6 +264,30 @@ export default function BatDongSanPage() {
     })
   }
 
+  const filteredProperties = PROPERTY_DATA.filter((property) => {
+    if (filters.districts.length > 0 && !filters.districts.some(d => property.location.includes(d))) return false
+    if (filters.houseType.length > 0 && !filters.houseType.includes(property.type)) return false
+    if (filters.bedrooms.length > 0) {
+      const minBed = Math.min(...filters.bedrooms.filter(b => typeof b === 'number'))
+      if (property.bedrooms < minBed) return false
+    }
+    if (filters.priceRange.min && property.priceRaw < Number(filters.priceRange.min) * 1000000) return false
+    if (filters.priceRange.max && property.priceRaw > Number(filters.priceRange.max) * 1000000) return false
+    if (filters.areaRange.min && property.areaRaw < Number(filters.areaRange.min)) return false
+    if (filters.areaRange.max && property.areaRaw > Number(filters.areaRange.max)) return false
+    if (filters.status.length > 0 && !filters.status.includes(property.status)) return false
+    return true
+  })
+
+  const ITEMS_PER_PAGE = 6
+  const sortedProperties = [...filteredProperties].sort((a, b) => {
+    if (sortBy === 'gia-thap-cao') return a.priceRaw - b.priceRaw
+    if (sortBy === 'gia-cao-thap') return b.priceRaw - a.priceRaw
+    if (sortBy === 'dien-tich-lon') return b.areaRaw - a.areaRaw
+    return b.id - a.id
+  })
+  const totalPages = Math.ceil(sortedProperties.length / ITEMS_PER_PAGE)
+  const paginatedProperties = sortedProperties.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -266,8 +315,8 @@ export default function BatDongSanPage() {
               <Link to="/bat-dong-san" className="text-primary font-medium text-sm">
                 Nhà cho thuê
               </Link>
-              {!isTenant && (
-                <Link to="/bat-dong-san/dang-ky" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+              {canRegisterConsignment && (
+                <Link to="/dashboard/bat-dong-san/dang-ky" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                   Ký gửi nhà
                 </Link>
               )}
@@ -276,7 +325,7 @@ export default function BatDongSanPage() {
               </a>
 
               {/* Links riêng cho khách thuê */}
-              {isTenant && (
+              {userInfo?.role === 'KHACH_THUE' && (
                 <Link to="/tenant/nha-da-luu" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                   Nhà đã lưu
                 </Link>
@@ -284,18 +333,62 @@ export default function BatDongSanPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Link
-                to="/login"
-                className="text-slate-600 font-medium text-sm hover:text-primary transition-colors px-4 py-2"
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                to="/register"
-                className="bg-primary-container hover:bg-primary text-white font-medium text-sm px-5 py-2.5 rounded-lg transition-colors shadow-md shadow-primary-container/30"
-              >
-                Đăng ký
-              </Link>
+              {userInfo ? (
+                <div className="relative flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                    <span className="text-white text-xs font-medium">{initials}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen(!profileOpen)}
+                    className="hidden sm:flex items-center gap-2 rounded-lg py-1 transition-colors hover:bg-slate-50"
+                  >
+                    <div className="text-left">
+                      <p className="text-sm text-slate-800 leading-tight">{userInfo.hoTen}</p>
+                      <p className="text-xs text-slate-500 leading-tight">
+                        {userInfo.role === 'CHU_NHA' ? 'Chủ nhà' : userInfo.role === 'KHACH_THUE' ? 'Khách thuê' : userInfo.role === 'KHACH_HANG' ? 'Khách hàng' : ''}
+                      </p>
+                    </div>
+                    <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {profileOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50">
+                      <Link
+                        to="/tenant/ho-so"
+                        className="block w-full rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        Hồ sơ cá nhân
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => { setProfileOpen(false); handleLogout() }}
+                        className="block w-full rounded-xl px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="text-slate-600 font-medium text-sm hover:text-primary transition-colors px-4 py-2"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="bg-primary-container hover:bg-primary text-white font-medium text-sm px-5 py-2.5 rounded-lg transition-colors shadow-md shadow-primary-container/30"
+                  >
+                    Đăng ký
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -323,10 +416,12 @@ export default function BatDongSanPage() {
                 <input
                   type="text"
                   placeholder="Nhập khu vực..."
+                  value={searchLocation}
+                  onChange={(e) => setSearchLocation(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none"
                 />
               </div>
-              <select className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
+              <select value={searchPrice} onChange={(e) => setSearchPrice(e.target.value)} className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
                 <option value="">Khoảng giá</option>
                 <option value="0-10">Dưới 10 triệu</option>
                 <option value="10-15">10 - 15 triệu</option>
@@ -335,7 +430,7 @@ export default function BatDongSanPage() {
                 <option value="30-50">30 - 50 triệu</option>
                 <option value="50+">Trên 50 triệu</option>
               </select>
-              <select className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
+              <select value={searchArea} onChange={(e) => setSearchArea(e.target.value)} className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
                 <option value="">Diện tích</option>
                 <option value="0-50">Dưới 50 m²</option>
                 <option value="50-80">50 - 80 m²</option>
@@ -343,7 +438,7 @@ export default function BatDongSanPage() {
                 <option value="120-200">120 - 200 m²</option>
                 <option value="200+">Trên 200 m²</option>
               </select>
-              <select className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
+              <select value={searchBedrooms} onChange={(e) => setSearchBedrooms(e.target.value)} className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none appearance-none cursor-pointer">
                 <option value="">Phòng ngủ</option>
                 <option value="1">1 phòng</option>
                 <option value="2">2 phòng</option>
@@ -579,7 +674,7 @@ export default function BatDongSanPage() {
               <div>
                 <h1 className="text-2xl font-bold text-slate-800">Nhà cho thuê</h1>
                 <p className="text-slate-500 text-sm mt-1">
-                  Hiển thị {PROPERTY_DATA.length} kết quả
+                  Hiển thị {sortedProperties.length} kết quả
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -598,7 +693,7 @@ export default function BatDongSanPage() {
 
             {/* Property Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {PROPERTY_DATA.map((property) => (
+              {paginatedProperties.map((property) => (
                 <Link
                   key={property.id}
                   to={`/bat-dong-san/${property.id}`}
@@ -687,7 +782,7 @@ export default function BatDongSanPage() {
                 </svg>
               </button>
 
-              {[1, 2, 3, 4, 5].map((page) => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
@@ -701,11 +796,10 @@ export default function BatDongSanPage() {
                 </button>
               ))}
 
-              <span className="text-slate-400">...</span>
-
               <button
-                onClick={() => setCurrentPage(p => p + 1)}
-                className="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -742,13 +836,13 @@ export default function BatDongSanPage() {
                 {/* Links công cộng */}
                 <li><Link to="/" className="text-slate-400 text-sm hover:text-white transition-colors">Trang chủ</Link></li>
                 <li><Link to="/bat-dong-san" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà cho thuê</Link></li>
-                {!isTenant && (
-                  <li><Link to="/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">Ký gửi nhà</Link></li>
+                {canRegisterConsignment && (
+                  <li><Link to="/dashboard/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">Ký gửi nhà</Link></li>
                 )}
                 <li><a href="#contact" className="text-slate-400 text-sm hover:text-white transition-colors">Liên hệ</a></li>
 
                 {/* Links riêng cho khách thuê */}
-                {isTenant && (
+                {userInfo?.role === 'KHACH_THUE' && (
                   <>
                     <li><Link to="/tenant/nha-da-luu" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà đã lưu</Link></li>
                   </>

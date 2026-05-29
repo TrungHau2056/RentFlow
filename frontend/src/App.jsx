@@ -6,9 +6,10 @@ import QuanLyBatDongSanPage from './pages/QuanLyBatDongSanPage'
 import DangKyKyGuiPage from './pages/DangKyKyGuiPage'
 import ChiTietBatDongSanPage from './pages/ChiTietBatDongSanPage'
 import ChiTietQuanLyBatDongSanPage from './pages/ChiTietQuanLyBatDongSanPage'
-import TaiChinhPage from './pages/TaiChinhPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
+import AdminChuNhaPage from './pages/AdminChuNhaPage'
 import AdminBatDongSanPage from './pages/AdminBatDongSanPage'
+import AdminLichKhaoSatPage from './pages/AdminLichKhaoSatPage'
 import AdminHopDongKyGuiPage from './pages/AdminHopDongKyGuiPage'
 import AdminHopDongThuePage from './pages/AdminHopDongThuePage'
 import ChiTietHopDongKyGuiPage from './pages/ChiTietHopDongKyGuiPage'
@@ -36,6 +37,7 @@ import AccountManagementPage from './pages/AccountManagementPage'
 import AdminLayout from './layouts/AdminLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import TenantLayout from './layouts/TenantLayout'
+import { isInternalAdminRole } from './config/roles'
 
 // Redirect logged-in users to their role-appropriate dashboard
 function HomeRoute() {
@@ -50,9 +52,9 @@ function HomeRoute() {
     return <Navigate to="/home" replace />
   }
 
-  if (user.role === 'ADMIN') return <Navigate to="/admin" replace />
+  if (isInternalAdminRole(user.role)) return <Navigate to="/admin" replace />
   if (user.role === 'CHU_NHA') return <Navigate to="/dashboard" replace />
-  if (user.role === 'KHACH_THUE') return <Navigate to="/tenant" replace />
+  if (user.role === 'KHACH_THUE' || user.role === 'KHACH_HANG') return <Navigate to="/tenant" replace />
   return <Navigate to="/home" replace />
 }
 
@@ -62,7 +64,7 @@ function App() {
       {/* Public / Khách thuê routes */}
       <Route path="/" element={<HomeRoute />} />
       <Route path="/bat-dong-san" element={<BatDongSanPage />} />
-      <Route path="/bat-dong-san/dang-ky" element={<DangKyKyGuiPage />} />
+      <Route path="/bat-dong-san/dang-ky" element={<Navigate to="/dashboard/bat-dong-san/dang-ky" replace />} />
       <Route path="/bat-dong-san/:id" element={<ChiTietBatDongSanPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -85,7 +87,8 @@ function App() {
         <Route path="bat-dong-san" element={<QuanLyBatDongSanPage />} />
         <Route path="bat-dong-san/:id" element={<ChiTietQuanLyBatDongSanPage />} />
         <Route path="bat-dong-san/dang-ky" element={<DangKyKyGuiPage />} />
-        <Route path="tai-chinh" element={<TaiChinhPage />} />
+        <Route path="tai-chinh" element={<Navigate to="/dashboard/tien-dam-bao" replace />} />
+        <Route path="tien-dam-bao" element={<TienDamBaoPage />} />
         <Route path="hop-dong" element={<HopDongKyGuiPage />} />
         <Route path="lich-khao-sat" element={<LichKhaoSatPage />} />
         <Route path="thong-bao" element={<ThongBaoPage />} />
@@ -95,9 +98,11 @@ function App() {
       {/* Admin routes — shared sidebar via AdminLayout */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboardPage />} />
+        <Route path="chu-nha" element={<AdminChuNhaPage />} />
         <Route path="bat-dong-san" element={<AdminBatDongSanPage />} />
         <Route path="hop-dong-ky-gui" element={<AdminHopDongKyGuiPage />} />
         <Route path="hop-dong-thue" element={<AdminHopDongThuePage />} />
+        <Route path="lich-khao-sat" element={<AdminLichKhaoSatPage />} />
         <Route path="lich-xem-nha" element={<LichXemNhaPage />} />
         <Route path="phan-cong-moi-gioi" element={<PhanCongMoiGioiPage />} />
         <Route path="hoa-hong" element={<HoaHongPage />} />
@@ -105,7 +110,8 @@ function App() {
         <Route path="bao-cao-thong-ke" element={<BaoCaoThongKePage />} />
         <Route path="phap-luat" element={<LegalPage />} />
         <Route path="tai-khoan" element={<AccountManagementPage />} />
-        <Route path="customers" element={<CustomersPage />} />
+        <Route path="khach-hang" element={<CustomersPage />} />
+        <Route path="customers" element={<Navigate to="/admin/khach-hang" replace />} />
         <Route path="customers/:id" element={<ChiTietKhachHangPage />} />
         <Route path="hop-dong-ky-gui/:id" element={<ChiTietHopDongKyGuiPage />} />
       </Route>

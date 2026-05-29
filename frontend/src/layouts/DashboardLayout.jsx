@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Outlet } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import Header from '../components/Header'
 
 const MENU_ITEMS = [
   { path: '/dashboard', label: 'Tổng quan', icon: 'dashboard' },
@@ -56,37 +57,24 @@ const ICONS = {
   ),
 }
 
+function readStoredUser() {
+  const stored = localStorage.getItem('userInfo')
+  if (!stored) return null
+
+  try {
+    return JSON.parse(stored)
+  } catch {
+    localStorage.removeItem('userInfo')
+    return null
+  }
+}
+
 export default function DashboardLayout() {
   const location = useLocation()
-  const [userInfo, setUserInfo] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const isLoggedIn = !!userInfo
+  const [userInfo] = useState(readStoredUser)
   const isChuNha = userInfo?.role === 'CHU_NHA'
 
-  useEffect(() => {
-    const stored = localStorage.getItem('userInfo')
-    if (stored) {
-      try {
-        setUserInfo(JSON.parse(stored))
-      } catch {
-        localStorage.removeItem('userInfo')
-      }
-    }
-    setIsLoading(false)
-  }, [])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-surface-container-low flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-primary-container border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-on-surface-variant">Đang tải...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isLoggedIn) {
+  if (!userInfo) {
     return (
       <div className="min-h-screen bg-surface-container-low flex items-center justify-center">
         <div className="text-center max-w-md p-6">
@@ -184,73 +172,11 @@ export default function DashboardLayout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-16 bg-white border-b border-outline-variant flex items-center justify-between px-6">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="text-lg font-semibold text-on-surface">RentFlow</div>
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-outline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm bất động sản..."
-                  className="w-full pl-10 pr-4 py-2 rounded-full border border-outline-variant bg-surface-container-low text-on-surface placeholder:text-outline focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 focus:outline-none text-sm"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isLoggedIn ? (
-              <>
-                <button className="relative p-2 text-on-surface-variant hover:text-on-surface transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
-                </button>
-                <button className="p-2 text-on-surface-variant hover:text-on-surface transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-                <div className="flex items-center gap-2 pl-2">
-                  <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center">
-                    <span className="text-on-primary text-xs font-medium">
-                      {userInfo?.hoTen?.charAt(0)?.toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-on-surface">{userInfo?.hoTen || 'User'}</span>
-                    <button
-                      onClick={() => {
-                        localStorage.removeItem('accessToken')
-                        localStorage.removeItem('refreshToken')
-                        localStorage.removeItem('userInfo')
-                        window.location.href = '/'
-                      }}
-                      className="text-xs text-on-surface-variant hover:text-error transition-colors"
-                    >
-                      Đăng xuất
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/"
-                  className="text-sm text-primary-container font-medium hover:text-primary transition-colors"
-                >
-                  Đăng nhập
-                </Link>
-              </>
-            )}
-          </div>
-        </header>
+        <Header
+          userInfo={userInfo}
+          searchPlaceholder="Tìm kiếm bất động sản..."
+          showSettings
+        />
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-6">

@@ -222,7 +222,6 @@ function BarChart({ data, barKey, lineKey, barLabel, lineLabel }) {
 
 // ── Workflow timeline ────────────────────────────────────────────────
 function WorkflowTimeline({ trangThai }) {
-  const stepMap = { hoan_tat_hd: 1, tinh_hh: 2, cho_duyet: 3, da_thanh_toan: 4 }
   const statusStepMap = { da_thanh_toan: 4, cho_thanh_toan: 3, dang_xu_ly: 2, bi_giu: 2 }
   const currentStep = statusStepMap[trangThai] || 1
 

@@ -30,4 +30,7 @@ public class RegisterRequestDTO {
 
     @Schema(description = "Nhu cầu thuê", example = "Cần thuê căn hộ 2 phòng ngủ")
     private String nhuCauThue;
+
+    @Schema(description = "Vai trò (CHU_NHA hoặc KHACH_THUE)", example = "CHU_NHA")
+    private String vaiTro;
 }

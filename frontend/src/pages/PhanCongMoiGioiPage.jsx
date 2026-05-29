@@ -100,11 +100,6 @@ function formatVND(value) {
   return new Intl.NumberFormat('vi-VN').format(value)
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
 function daysUntil(dateStr) {
   if (!dateStr) return null
   return Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24))

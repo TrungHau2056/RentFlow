@@ -125,10 +125,6 @@ function formatVND(amount) {
   return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ'
 }
 
-function formatVNDfull(amount) {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
-}
-
 function Sparkline({ data, width = 80, height = 28, color = '#3b82f6' }) {
   const max = Math.max(...data)
   const min = Math.min(...data)
@@ -211,34 +207,37 @@ function DonutChart({ data, size = 160, strokeWidth = 28 }) {
   const total = data.reduce((sum, d) => sum + d.count || sum + d.value, 0)
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
-  let offset = 0
+  const segments = data.reduce((acc, item) => {
+    const val = item.count || item.value
+    const pct = val / total
+    const dashArray = `${pct * circumference} ${(1 - pct) * circumference}`
+    const dashOffset = -acc.offset * circumference
+
+    return {
+      offset: acc.offset + pct,
+      items: [...acc.items, { ...item, pct, dashArray, dashOffset }],
+    }
+  }, { offset: 0, items: [] }).items
 
   return (
     <div className="flex items-center gap-6">
       <svg width={size} height={size} className="shrink-0">
-        {data.map((item, i) => {
-          const val = item.count || item.value
-          const pct = val / total
-          const dashArray = `${pct * circumference} ${(1 - pct) * circumference}`
-          const dashOffset = -offset * circumference
-          offset += pct
-          return (
-            <circle
-              key={i}
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={item.color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={dashArray}
-              strokeDashoffset={dashOffset}
-              strokeLinecap="round"
-              transform={`rotate(-90 ${size / 2} ${size / 2})`}
-              className="transition-all duration-500"
-            />
-          )
-        })}
+        {segments.map((item, i) => (
+          <circle
+            key={i}
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={item.dashArray}
+            strokeDashoffset={item.dashOffset}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            className="transition-all duration-500"
+          />
+        ))}
         <text x={size / 2} y={size / 2 - 8} textAnchor="middle" className="text-2xl font-bold" fill="#051a3e">{total}</text>
         <text x={size / 2} y={size / 2 + 12} textAnchor="middle" className="text-xs" fill="#434654">tổng</text>
       </svg>

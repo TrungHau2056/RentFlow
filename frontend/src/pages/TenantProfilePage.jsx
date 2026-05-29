@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 const DISTRICTS = [
-  'Quận 1', 'Quận 2', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7',
-  'Quận 8', 'Quận 9', 'Quận 10', 'Quận 11', 'Quận 12', 'Bình Thạnh',
-  'Gò Vấp', 'Phú Nhuận', 'Tân Bình', 'Tân Phú', 'Bình Tân', 'Thủ Đức',
-  'Bình Chánh', 'Hóc Môn', 'Củ Chi', 'Nhà Bè', 'Cần Giờ'
+  'Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Hai Bà Trưng', 'Tây Hồ',
+  'Cầu Giấy', 'Thanh Xuân', 'Hà Đông', 'Long Biên', 'Nam Từ Liêm',
+  'Bắc Từ Liêm', 'Hoàng Mai', 'Gia Lâm', 'Hoài Đức', 'Mê Linh',
+  'Sóc Sơn', 'Thanh Trì', 'Thạch Thất', 'Đông Anh', 'Chương Mỹ',
 ]
 
 const PROPERTY_TYPES = [
@@ -36,7 +36,7 @@ const MOCK_USER = {
   soDienThoai: '0901 234 567',
   ngaySinh: '1990-05-15',
   gioiTinh: 'male',
-  diaChi: '123 Đường Nguyễn Huệ, Quận 1, TP.HCM',
+  diaChi: '123 Đường Nguyễn Trãi, Quận Thanh Xuân, Hà Nội',
   avatar: null,
   memberSince: '2025-01-15',
   membershipLevel: 'Premium',
@@ -46,7 +46,7 @@ const MOCK_USER = {
 }
 
 const MOCK_PREFERENCES = {
-  districts: ['Quận 1', 'Quận 2', 'Bình Thạnh'],
+  districts: ['Cầu Giấy', 'Thanh Xuân', 'Tây Hồ'],
   minPrice: 15,
   maxPrice: 30,
   propertyTypes: ['can_ho', 'studio'],
@@ -393,7 +393,6 @@ export default function TenantProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showToast, setShowToast] = useState(false)
-  const [activeTab, setActiveTab] = useState('profile')
 
   const [formData, setFormData] = useState({
     hoTen: user.hoTen,
@@ -649,7 +648,13 @@ export default function TenantProfilePage() {
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">Khoảng giá</label>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex gap-4">
+                  <PriceSlider
+                    min={preferences.minPrice}
+                    max={preferences.maxPrice}
+                    value={{ min: preferences.minPrice, max: preferences.maxPrice }}
+                    onChange={({ min }) => setPreferences({ ...preferences, minPrice: min })}
+                  />
+                  <div className="mt-4 flex gap-4">
                     <div className="flex-1">
                       <label className="mb-1 block text-xs text-slate-500">Từ</label>
                       <input

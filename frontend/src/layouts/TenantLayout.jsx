@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import Header from '../components/Header'
 
 const MENU_ITEMS = [
   { id: 'tong-quan', label: 'Tổng quan', icon: 'dashboard', path: '/tenant' },
@@ -45,15 +46,8 @@ export default function TenantLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [userInfo] = useState(readStoredUser)
-  const [activeMenu, setActiveMenu] = useState('tong-quan')
-  const [profileOpen, setProfileOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  // Sync active menu with current path
-  useEffect(() => {
-    const currentItem = MENU_ITEMS.find(item => location.pathname === item.path)
-    if (currentItem) setActiveMenu(currentItem.id)
-  }, [location.pathname])
+  const activeMenu = MENU_ITEMS.find(item => location.pathname === item.path)?.id || 'tong-quan'
 
   const logout = () => {
     localStorage.removeItem('accessToken')
@@ -81,7 +75,7 @@ export default function TenantLayout() {
     )
   }
 
-  if (userInfo.role !== 'KHACH_THUE') {
+  if (userInfo.role !== 'KHACH_THUE' && userInfo.role !== 'KHACH_HANG') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <div className="max-w-sm rounded-3xl border border-slate-200 bg-white p-8 text-center">
@@ -94,13 +88,6 @@ export default function TenantLayout() {
       </div>
     )
   }
-
-  const initials = userInfo.hoTen
-    ?.split(' ')
-    .slice(-2)
-    .map((part) => part.charAt(0))
-    .join('')
-    .toUpperCase() || 'KH'
 
   const sidebarContent = (
     <>
@@ -171,60 +158,17 @@ export default function TenantLayout() {
       )}
 
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 flex h-20 items-center gap-4 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 xl:px-8">
-          <button
-            type="button"
-            aria-label="Mở menu"
-            onClick={() => setMobileMenuOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-600 lg:hidden"
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-
-          <div className="hidden flex-1 md:block">
-            <div className="relative max-w-md">
-              <svg className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M21 21l-5-5m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="search"
-                placeholder="Tìm nhà theo khu vực, giá thuê..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm outline-none transition focus:border-primary-container focus:bg-white focus:ring-4 focus:ring-blue-100"
-              />
-            </div>
-          </div>
-
-          <div className="ml-auto flex items-center gap-3">
-            <button type="button" className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
-              <NavIcon icon="bell" />
-              <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full border-2 border-white bg-orange-500" />
-            </button>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:bg-slate-50"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-container text-sm font-bold text-white">{initials}</span>
-                <span className="hidden text-left sm:block">
-                  <span className="block text-sm font-semibold text-on-surface">{userInfo.hoTen}</span>
-                  <span className="block text-xs text-slate-500">Khách hàng</span>
-                </span>
-                <svg className="hidden h-4 w-4 text-slate-400 sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {profileOpen && (
-                <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                  <button type="button" className="block w-full rounded-xl px-3 py-2.5 text-left text-sm text-slate-600 hover:bg-slate-50">Hồ sơ cá nhân</button>
-                  <button type="button" onClick={logout} className="block w-full rounded-xl px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50">Đăng xuất</button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
+        <Header
+          userInfo={userInfo}
+          searchPlaceholder="Tìm nhà theo khu vực, giá thuê..."
+          searchHidden
+          showMobileMenu
+          onMobileMenuToggle={() => setMobileMenuOpen(true)}
+          profileLabel="Khách hàng"
+          sticky
+          height="h-20"
+          onLogout={logout}
+        />
 
         <main className="p-4 sm:p-6 xl:p-8">
           <Outlet context={{ userInfo }} />
