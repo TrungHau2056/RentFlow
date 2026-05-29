@@ -1,138 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-
-const DEPOSITS = [
-  {
-    id: 1,
-    maPhieu: 'PDB-2025-001',
-    tenBDS: 'Biệt thự Vinhomes Cao cấp',
-    hopDong: 'HDKG-2025-001',
-    ngayThu: '2025-01-01',
-    soTien: 10000000,
-    status: 'dang_giu',
-    ngayCapNhat: '2025-01-01',
-    diaChiBDS: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    moiGioi: 'Trần Văn Hùng',
-    ngayChoThue: null,
-    lichSu: [
-      { ngay: '2025-01-01', loai: 'Thu tiền đảm bảo', nguoi: 'Nguyễn Thị Minh', status: 'completed' },
-    ],
-    refundWorkflow: null,
-  },
-  {
-    id: 2,
-    maPhieu: 'PDB-2025-002',
-    tenBDS: 'Căn hộ Midtown Sài Đồng',
-    hopDong: 'HDKG-2025-002',
-    ngayThu: '2025-02-01',
-    soTien: 5000000,
-    status: 'dang_giu',
-    ngayCapNhat: '2025-02-01',
-    diaChiBDS: '29 Liễu Giai, Ba Đình, Hà Nội',
-    moiGioi: 'Lê Quốc Anh',
-    ngayChoThue: null,
-    lichSu: [
-      { ngay: '2025-02-01', loai: 'Thu tiền đảm bảo', nguoi: 'Phạm Thị Hương', status: 'completed' },
-    ],
-    refundWorkflow: null,
-  },
-  {
-    id: 3,
-    maPhieu: 'PDB-2025-003',
-    tenBDS: 'Nhà phố cổ khu phố cổ',
-    hopDong: 'HDKG-2024-015',
-    ngayThu: '2025-02-01',
-    soTien: 8000000,
-    status: 'dang_giu',
-    ngayCapNhat: '2025-02-01',
-    diaChiBDS: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    moiGioi: 'Trần Văn Hùng',
-    ngayChoThue: null,
-    lichSu: [
-      { ngay: '2025-02-01', loai: 'Thu tiền đảm bảo', nguoi: 'Phạm Thị Hương', status: 'completed' },
-    ],
-    refundWorkflow: null,
-  },
-  {
-    id: 4,
-    maPhieu: 'PDB-2024-008',
-    tenBDS: 'Biệt thự sân vườn Tây Hồ',
-    hopDong: 'HDKG-2024-008',
-    ngayThu: '2024-12-01',
-    soTien: 15000000,
-    status: 'da_hoan_tra',
-    ngayCapNhat: '2025-12-15',
-    diaChiBDS: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    moiGioi: 'Trần Văn Hùng',
-    ngayChoThue: '2025-01-15',
-    lichSu: [
-      { ngay: '2024-12-01', loai: 'Thu tiền đảm bảo', nguoi: 'Nguyễn Thị Minh', status: 'completed' },
-      { ngay: '2025-01-15', loai: 'Nhà đã cho thuê', nguoi: 'Trần Văn Hùng', status: 'completed' },
-      { ngay: '2025-12-01', loai: 'Hết hạn hợp đồng', nguoi: 'Nguyễn Thị Minh', status: 'completed' },
-      { ngay: '2025-12-10', loai: 'Duyệt hoàn trả', nguoi: 'Nguyễn Thị Minh', status: 'completed' },
-      { ngay: '2025-12-15', loai: 'Đã hoàn trả', nguoi: 'Kế toán', status: 'completed' },
-    ],
-    refundWorkflow: { step: 4 },
-  },
-  {
-    id: 5,
-    maPhieu: 'PDB-2025-004',
-    tenBDS: 'Căn hộ Studio Times City',
-    hopDong: 'HDKG-2025-003',
-    ngayThu: '2025-03-01',
-    soTien: 3000000,
-    status: 'dang_giu',
-    ngayCapNhat: '2025-03-01',
-    diaChiBDS: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    moiGioi: 'Lê Quốc Anh',
-    ngayChoThue: null,
-    lichSu: [
-      { ngay: '2025-03-01', loai: 'Thu tiền đảm bảo', nguoi: 'Phạm Thị Hương', status: 'completed' },
-    ],
-    refundWorkflow: null,
-  },
-  {
-    id: 6,
-    maPhieu: 'PDB-2024-005',
-    tenBDS: 'Nhà mặt phố Đống Đa',
-    hopDong: 'HDKG-2024-005',
-    ngayThu: '2024-11-01',
-    soTien: 7000000,
-    status: 'da_khau_tru',
-    ngayCapNhat: '2025-04-20',
-    diaChiBDS: '88 Láng Hạ, Đống Đa, Hà Nội',
-    moiGioi: 'Trần Văn Hùng',
-    ngayChoThue: '2024-12-01',
-    lichSu: [
-      { ngay: '2024-11-01', loai: 'Thu tiền đảm bảo', nguoi: 'Nguyễn Thị Minh', status: 'completed' },
-      { ngay: '2024-12-01', loai: 'Nhà đã cho thuê', nguoi: 'Trần Văn Hùng', status: 'completed' },
-      { ngay: '2025-03-15', loai: 'Sửa chữa đường ống – Khấu trừ 2.500.000đ', nguoi: 'Kế toán', status: 'completed' },
-      { ngay: '2025-04-20', loai: 'Đã khấu trừ phần phí sửa chữa', nguoi: 'Kế toán', status: 'completed' },
-    ],
-    refundWorkflow: null,
-    khauTru: 2500000,
-  },
-  {
-    id: 7,
-    maPhieu: 'PDB-2024-012',
-    tenBDS: 'Penthouse Keangnam',
-    hopDong: 'HDKG-2024-012',
-    ngayThu: '2024-10-01',
-    soTien: 20000000,
-    status: 'cho_xu_ly_hoan_tra',
-    ngayCapNhat: '2025-05-10',
-    diaChiBDS: 'Tòa Keangnam, Phạm Hùng, Cầu Giấy, Hà Nội',
-    moiGioi: 'Trần Văn Hùng',
-    ngayChoThue: null,
-    lichSu: [
-      { ngay: '2024-10-01', loai: 'Thu tiền đảm bảo', nguoi: 'Nguyễn Thị Minh', status: 'completed' },
-      { ngay: '2025-03-10', loai: 'Hợp đồng tạm dừng', nguoi: 'Phạm Thị Hương', status: 'completed' },
-      { ngay: '2025-05-05', loai: 'Yêu cầu hoàn trả', nguoi: 'Chủ nhà', status: 'completed' },
-      { ngay: '2025-05-10', loai: 'Đang xử lý hoàn trả', nguoi: 'Nguyễn Thị Minh', status: 'processing' },
-    ],
-    refundWorkflow: { step: 2 },
-  },
-]
+import taiChinhService from '../services/taiChinhService'
 
 const STATUS_CONFIG = {
   dang_giu: { label: 'Đang giữ', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
@@ -170,6 +38,38 @@ function KPICard({ icon, label, value, color, bgColor, isCurrency }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function DepositsIcon() {
+  return (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  )
+}
+
+function ShieldIcon() {
+  return (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  )
+}
+
+function MinusIcon() {
+  return (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  )
+}
+
+function ReceiptIcon() {
+  return (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+    </svg>
   )
 }
 
@@ -465,14 +365,140 @@ function EmptyState() {
   )
 }
 
+function mapGiaoDichToDeposit(gd) {
+  const trangThaiMap = {
+    HOAN_THANH: 'da_hoan_tra',
+    CHO_XU_LY: 'dang_giu',
+    DA_HUY: 'da_khau_tru',
+  }
+  return {
+    id: gd.id,
+    maPhieu: `GD-${String(gd.id).padStart(5, '0')}`,
+    tenBDS: gd.hopDongKyGuiId ? `HĐ ký gửi #${gd.hopDongKyGuiId}` : `HĐ thuê #${gd.hopDongThueId}`,
+    hopDong: gd.hopDongKyGuiId ? `HDKG-${String(gd.hopDongKyGuiId).padStart(4, '0')}` : `HDT-${String(gd.hopDongThueId).padStart(4, '0')}`,
+    ngayThu: gd.ngayGiaoDich ? gd.ngayGiaoDich.split('T')[0] : '',
+    soTien: Number(gd.soTien),
+    status: trangThaiMap[gd.trangThai] || 'dang_giu',
+    ngayCapNhat: gd.ngayGiaoDich ? gd.ngayGiaoDich.split('T')[0] : '',
+    diaChiBDS: '',
+    moiGioi: gd.nhanVienKeToanHoTen || '',
+    ngayChoThue: null,
+    lichSu: [
+      {
+        ngay: gd.ngayGiaoDich ? gd.ngayGiaoDich.split('T')[0] : '',
+        loai: gd.loaiGiaoDich === 'TIEN_DAM_BAO' ? 'Thu tiền đảm bảo' : gd.loaiGiaoDich === 'HOAN_TRA_DAM_BAO' ? 'Hoàn trả tiền đảm bảo' : gd.loaiGiaoDich === 'HOA_HONG' ? 'Ghi nhận hoa hồng' : 'Giao dịch',
+        nguoi: gd.nhanVienKeToanHoTen || 'Kế toán',
+        status: gd.trangThai === 'HOAN_THANH' ? 'completed' : 'processing',
+      },
+    ],
+    refundWorkflow: null,
+  }
+}
+
+function mapEligibleToDeposit(el) {
+  return {
+    id: el.hopDongKyGuiId + 1000,
+    maPhieu: `EL-${String(el.hopDongKyGuiId).padStart(4, '0')}`,
+    tenBDS: el.batDongSanDiaChi || `BĐS #${el.batDongSanId}`,
+    hopDong: `HDKG-${String(el.hopDongKyGuiId).padStart(4, '0')}`,
+    ngayThu: el.ngayBatDau || '',
+    soTien: Number(el.tienDamBaoChuaChi),
+    status: 'cho_xu_ly_hoan_tra',
+    ngayCapNhat: '',
+    diaChiBDS: el.batDongSanDiaChi || '',
+    moiGioi: el.chuNhaHoTen || '',
+    ngayChoThue: null,
+    lichSu: [
+      { ngay: el.ngayBatDau || '', loai: 'Hết hạn ký gửi', nguoi: 'Hệ thống', status: 'completed' },
+    ],
+    refundWorkflow: { step: 1 },
+    eligibleRefund: true,
+    hopDongKyGuiId: el.hopDongKyGuiId,
+    tienDamBao: Number(el.tienDamBaoChuaChi),
+  }
+}
+
 export default function TienDamBaoPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
   const [nowTime] = useState(() => Date.now())
+  const [deposits, setDeposits] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showGhiNhanModal, setShowGhiNhanModal] = useState(false)
+  const [ghiNhanHopDongId, setGhiNhanHopDongId] = useState('')
+  const [showHoanTraModal, setShowHoanTraModal] = useState(false)
+  const [hoanTraHopDongId, setHoanTraHopDongId] = useState('')
+  const [lyDoHoanTra, setLyDoHoanTra] = useState('')
+  const [eligibleContracts, setEligibleContracts] = useState([])
+  const [actionLoading, setActionLoading] = useState(false)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [gdRes, elRes] = await Promise.all([
+        taiChinhService.layDanhSachGiaoDich().catch(() => null),
+        taiChinhService.quetHopDongDuDieuKienHoanTra().catch(() => null),
+      ])
+      const items = []
+      if (gdRes?.data && Array.isArray(gdRes.data)) {
+        gdRes.data.forEach(gd => items.push(mapGiaoDichToDeposit(gd)))
+      }
+      if (elRes?.data && Array.isArray(elRes.data)) {
+        elRes.data.forEach(el => items.push(mapEligibleToDeposit(el)))
+        setEligibleContracts(elRes.data)
+      }
+      if (items.length > 0) {
+        setDeposits(items)
+      }
+    } catch (err) {
+      console.error('Failed to fetch deposits:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const handleGhiNhanThu = useCallback(async () => {
+    const id = parseInt(ghiNhanHopDongId, 10)
+    if (!id) return
+    setActionLoading(true)
+    try {
+      await taiChinhService.ghiNhanThu(id)
+      setShowGhiNhanModal(false)
+      setGhiNhanHopDongId('')
+      fetchData()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Ghi nhận thu thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [ghiNhanHopDongId, fetchData])
+
+  const handleHoanTra = useCallback(async () => {
+    const id = parseInt(hoanTraHopDongId, 10)
+    if (!id || !lyDoHoanTra.trim()) return
+    setActionLoading(true)
+    try {
+      await taiChinhService.hoanTra(id, lyDoHoanTra)
+      setShowHoanTraModal(false)
+      setHoanTraHopDongId('')
+      setLyDoHoanTra('')
+      fetchData()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Hoàn trả thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [hoanTraHopDongId, lyDoHoanTra, fetchData])
 
   const filtered = useMemo(() => {
-    let result = [...DEPOSITS]
+    let result = [...deposits]
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(d =>
@@ -483,59 +509,89 @@ export default function TienDamBaoPage() {
     }
     if (filterStatus !== 'all') result = result.filter(d => d.status === filterStatus)
     return result
-  }, [searchQuery, filterStatus])
+  }, [searchQuery, filterStatus, deposits])
 
   const kpiData = useMemo(() => ({
-    total: DEPOSITS.reduce((sum, d) => sum + d.soTien, 0),
-    holding: DEPOSITS.filter(d => d.status === 'dang_giu').reduce((sum, d) => sum + d.soTien, 0),
-    deducted: DEPOSITS.filter(d => d.status === 'da_khau_tru').reduce((sum, d) => sum + d.soTien, 0),
-    refunded: DEPOSITS.filter(d => d.status === 'da_hoan_tra').reduce((sum, d) => sum + d.soTien, 0),
-  }), [])
+    total: deposits.reduce((sum, d) => sum + d.soTien, 0),
+    holding: deposits.filter(d => d.status === 'dang_giu').reduce((sum, d) => sum + d.soTien, 0),
+    deducted: deposits.filter(d => d.status === 'da_khau_tru' || d.status === 'da_hoan_tra').reduce((sum, d) => sum + d.soTien, 0),
+    refunded: deposits.filter(d => d.status === 'da_hoan_tra').reduce((sum, d) => sum + d.soTien, 0),
+  }), [deposits])
 
-  const selectedDeposit = selectedId ? DEPOSITS.find(d => d.id === selectedId) : null
+  const selectedDeposit = selectedId ? deposits.find(d => d.id === selectedId) : null
+
+  if (loading) {
+    return (
+      <div className="max-w-[1600px] mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-on-surface">Quản lý tiền đảm bảo</h1>
+          <p className="text-on-surface-variant text-sm mt-1">Đang tải dữ liệu...</p>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-[1600px] mx-auto">
       {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-on-surface">Quản lý tiền đảm bảo</h1>
-        <p className="text-on-surface-variant text-sm mt-1">Theo dõi trạng thái khoản tiền đảm bảo của các bất động sản ký gửi</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface">Quản lý tiền đảm bảo</h1>
+          <p className="text-on-surface-variant text-sm mt-1">Theo dõi trạng thái khoản tiền đảm bảo của các bất động sản ký gửi</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGhiNhanModal(true)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Ghi nhận thu
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const res = await taiChinhService.quetHopDongDuDieuKienHoanTra()
+                if (res?.data && res.data.length > 0) {
+                  setEligibleContracts(res.data)
+                  setHoanTraHopDongId(String(res.data[0].hopDongKyGuiId))
+                  setShowHoanTraModal(true)
+                } else {
+                  alert('Không có hợp đồng nào đủ điều kiện hoàn trả')
+                }
+              } catch {
+                alert('Không thể quét hợp đồng hoàn trả')
+              }
+            }}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Hoàn trả
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {error}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <KPICard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
-          label="Tổng tiền đảm bảo"
-          value={kpiData.total}
-          color="text-blue-600"
-          bgColor="bg-blue-50"
-          isCurrency
-        />
-        <KPICard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>}
-          label="Đang giữ"
-          value={kpiData.holding}
-          color="text-indigo-600"
-          bgColor="bg-indigo-50"
-          isCurrency
-        />
-        <KPICard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-          label="Đã khấu trừ"
-          value={kpiData.deducted}
-          color="text-orange-600"
-          bgColor="bg-orange-50"
-          isCurrency
-        />
-        <KPICard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" /></svg>}
-          label="Đã hoàn trả"
-          value={kpiData.refunded}
-          color="text-emerald-600"
-          bgColor="bg-emerald-50"
-          isCurrency
-        />
+        <KPICard icon={<DepositsIcon />} label="Tổng tiền đảm bảo" value={kpiData.total} color="text-blue-600" bgColor="bg-blue-50" isCurrency />
+        <KPICard icon={<ShieldIcon />} label="Đang giữ" value={kpiData.holding} color="text-indigo-600" bgColor="bg-indigo-50" isCurrency />
+        <KPICard icon={<MinusIcon />} label="Đã khấu trừ / Hoàn trả" value={kpiData.deducted} color="text-orange-600" bgColor="bg-orange-50" isCurrency />
+        <KPICard icon={<ReceiptIcon />} label="Đã hoàn trả" value={kpiData.refunded} color="text-emerald-600" bgColor="bg-emerald-50" isCurrency />
       </div>
 
       {/* Deposit Flow Infographic */}
@@ -558,7 +614,6 @@ export default function TienDamBaoPage() {
               className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface placeholder:text-outline focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none text-sm"
             />
           </div>
-
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -570,7 +625,6 @@ export default function TienDamBaoPage() {
             ))}
           </select>
         </div>
-
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
           <p className="text-sm text-on-surface-variant">
             Hiển thị <span className="font-semibold text-on-surface">{filtered.length}</span> khoản tiền đảm bảo
@@ -594,9 +648,7 @@ export default function TienDamBaoPage() {
         <EmptyState />
       ) : (
         <div className="flex gap-6">
-          {/* Deposit List */}
           <div className="flex-1">
-            {/* Table Header */}
             <div className="grid grid-cols-[144px_1fr_176px_auto_32px] gap-4 px-4 py-2.5 mb-2">
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Mã phiếu</span>
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Bất động sản</span>
@@ -604,7 +656,6 @@ export default function TienDamBaoPage() {
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Trạng thái</span>
               <span />
             </div>
-
             <div className="space-y-3">
               {filtered.map(deposit => (
                 <DepositRow
@@ -616,13 +667,103 @@ export default function TienDamBaoPage() {
               ))}
             </div>
           </div>
-
-          {/* Detail Panel */}
           {selectedDeposit && (
             <div className="w-[420px] shrink-0 hidden xl:block">
               <DepositDetail deposit={selectedDeposit} nowTime={nowTime} onClose={() => setSelectedId(null)} />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Ghi nhận thu Modal */}
+      {showGhiNhanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-on-surface mb-4">Ghi nhận thu tiền đảm bảo</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">ID Hợp đồng ký gửi</label>
+                <input
+                  type="number"
+                  value={ghiNhanHopDongId}
+                  onChange={(e) => setGhiNhanHopDongId(e.target.value)}
+                  placeholder="Nhập ID hợp đồng ký gửi"
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-700">
+                Số tiền: <strong>1.000.000 VNĐ</strong> (theo cấu hình hệ thống)
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowGhiNhanModal(false); setGhiNhanHopDongId('') }}
+                className="px-4 py-2 border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-slate-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleGhiNhanThu}
+                disabled={actionLoading || !ghiNhanHopDongId}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                {actionLoading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Xác nhận ghi nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hoàn trả Modal */}
+      {showHoanTraModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
+            <h3 className="text-lg font-bold text-on-surface mb-4">Hoàn trả tiền đảm bảo</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">Chọn hợp đồng</label>
+                <select
+                  value={hoanTraHopDongId}
+                  onChange={(e) => setHoanTraHopDongId(e.target.value)}
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="">-- Chọn --</option>
+                  {eligibleContracts.map((el) => (
+                    <option key={el.hopDongKyGuiId} value={el.hopDongKyGuiId}>
+                      HDKG-{String(el.hopDongKyGuiId).padStart(4, '0')} - {el.batDongSanDiaChi || `BĐS #${el.batDongSanId}`} ({Number(el.tienDamBaoChuaChi).toLocaleString()}đ)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">Lý do chấm dứt</label>
+                <textarea
+                  value={lyDoHoanTra}
+                  onChange={(e) => setLyDoHoanTra(e.target.value)}
+                  rows={3}
+                  placeholder="Nhập lý do hoàn trả..."
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowHoanTraModal(false); setHoanTraHopDongId(''); setLyDoHoanTra('') }}
+                className="px-4 py-2 border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:bg-slate-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleHoanTra}
+                disabled={actionLoading || !hoanTraHopDongId || !lyDoHoanTra.trim()}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                {actionLoading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Xác nhận hoàn trả
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
