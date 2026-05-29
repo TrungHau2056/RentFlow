@@ -1,154 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-
-const SURVEYS = [
-  {
-    id: 1,
-    tenBDS: 'Căn hộ Midtown Sài Đồng',
-    bdsId: 2,
-    ngayKhaoSat: '2025-06-02',
-    gioKhaoSat: '09:00',
-    diaChi: '29 Liễu Giai, Ba Đình, Hà Nội',
-    nhanVien: 'Trần Văn Hùng',
-    sdtNV: '0912 345 678',
-    chucVu: 'Môi giới cao cấp',
-    status: 'cho_xac_nhan',
-    ghiChu: 'Cần kiểm tra nội thất và hệ thống điện nước. Chủ nhà có mặt lúc khảo sát.',
-    ketQua: null,
-    hinhAnh: [],
-    workflowStep: 2,
-    ngayDangKy: '2025-05-25',
-  },
-  {
-    id: 2,
-    tenBDS: 'Kiot mặt đường Kim Mã',
-    bdsId: 8,
-    ngayKhaoSat: '2025-06-03',
-    gioKhaoSat: '14:30',
-    diaChi: '142 Kim Mã, Ba Đình, Hà Nội',
-    nhanVien: 'Lê Quốc Anh',
-    sdtNV: '0987 654 321',
-    chucVu: 'Môi giới',
-    status: 'cho_xac_nhan',
-    ghiChu: 'Kiot mặt đường, cần đánh giá lưu lượng người qua lại và tiềm năng kinh doanh.',
-    ketQua: null,
-    hinhAnh: [],
-    workflowStep: 2,
-    ngayDangKy: '2025-05-28',
-  },
-  {
-    id: 3,
-    tenBDS: 'Nhà phố cổ khu phố cổ',
-    bdsId: 3,
-    ngayKhaoSat: '2025-05-28',
-    gioKhaoSat: '10:00',
-    diaChi: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    nhanVien: 'Trần Văn Hùng',
-    sdtNV: '0912 345 678',
-    chucVu: 'Môi giới cao cấp',
-    status: 'da_xac_nhan',
-    ghiChu: 'Nhà phố kinh doanh, cần kiểm tra kết cấu và giấy phép kinh doanh.',
-    ketQua: null,
-    hinhAnh: [],
-    workflowStep: 2,
-    ngayDangKy: '2025-05-20',
-  },
-  {
-    id: 4,
-    tenBDS: 'Biệt thự Vinhomes Cao cấp',
-    bdsId: 1,
-    ngayKhaoSat: '2025-05-15',
-    gioKhaoSat: '08:30',
-    diaChi: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    nhanVien: 'Trần Văn Hùng',
-    sdtNV: '0912 345 678',
-    chucVu: 'Môi giới cao cấp',
-    status: 'da_hoan_thanh',
-    ghiChu: 'Biệt thự cao cấp, kiểm tra toàn bộ tiện ích và hồ bơi.',
-    ketQua: {
-      danhGia: 'Tốt',
-      chiTiet: 'Bất động sản ở trạng thái rất tốt. Kết cấu vững chắc, nội thất cao cấp, hồ bơi và sân vườn được bảo trì tốt. Phù hợp cho khách thuê cao cấp.',
-      khuyenNghi: 'Nên định giá 45-50 triệu/tháng. Có thể tiếp xúc khách thuê doanh nhân nước ngoài.',
-      trangThaiXuLy: 'Chờ ký hợp đồng',
-      hinhAnh: [
-        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop',
-      ],
-    },
-    hinhAnh: [],
-    workflowStep: 3,
-    ngayDangKy: '2025-05-10',
-  },
-  {
-    id: 5,
-    tenBDS: 'Nhà mặt phố Đống Đa',
-    bdsId: 6,
-    ngayKhaoSat: '2025-04-20',
-    gioKhaoSat: '15:00',
-    diaChi: '88 Láng Hạ, Đống Đa, Hà Nội',
-    nhanVien: 'Lê Quốc Anh',
-    sdtNV: '0987 654 321',
-    chucVu: 'Môi giới',
-    status: 'da_hoan_thanh',
-    ghiChu: 'Nhà mặt phố, kiểm tra mặt tiền và chỗ để xe.',
-    ketQua: {
-      danhGia: 'Khá',
-      chiTiet: 'Nhà mặt tiền rộng, vị trí kinh doanh tốt. Cần sửa chữa nhẹ phần mái và sơn lại tường. Chỗ để xe đủ cho 2 ô tô.',
-      khuyenNghi: 'Nên sửa chữa nhỏ trước khi cho thuê. Định giá 20-22 triệu/tháng.',
-      trangThaiXuLy: 'Đang hiển thị',
-      hinhAnh: [
-        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
-      ],
-    },
-    hinhAnh: [],
-    workflowStep: 4,
-    ngayDangKy: '2025-04-15',
-  },
-  {
-    id: 6,
-    tenBDS: 'Căn hộ Studio Times City',
-    bdsId: 5,
-    ngayKhaoSat: '2025-05-10',
-    gioKhaoSat: '11:00',
-    diaChi: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    nhanVien: 'Lê Quốc Anh',
-    sdtNV: '0987 654 321',
-    chucVu: 'Môi giới',
-    status: 'da_huy',
-    ghiChu: 'Chủ nhà yêu cầu hủy do việc cá nhân.',
-    ketQua: null,
-    hinhAnh: [],
-    workflowStep: 2,
-    ngayDangKy: '2025-05-05',
-    lyDoHuy: 'Chủ nhà bận việc cá nhân, yêu cầu dời lịch.',
-  },
-  {
-    id: 7,
-    tenBDS: 'Biệt thự sân vườn Tây Hồ',
-    bdsId: 4,
-    ngayKhaoSat: '2025-03-10',
-    gioKhaoSat: '09:00',
-    diaChi: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    nhanVien: 'Trần Văn Hùng',
-    sdtNV: '0912 345 678',
-    chucVu: 'Môi giới cao cấp',
-    status: 'da_hoan_thanh',
-    ghiChu: 'Biệt thự sân vườn, kiểm tra toàn bộ khuôn viên.',
-    ketQua: {
-      danhGia: 'Xuất sắc',
-      chiTiet: 'Biệt thự sân vườn rộng 450m², khu vực yên tĩnh gần hồ Tây. Bể bơi riêng, garage 2 xe, an ninh 24/7. Trạng thái hoàn hảo.',
-      khuyenNghi: 'Định giá 60-65 triệu/tháng. Khách mục tiêu: chuyên gia nước ngoài, lãnh đạo doanh nghiệp.',
-      trangThaiXuLy: 'Đã cho thuê',
-      hinhAnh: [
-        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=400&h=300&fit=crop',
-      ],
-    },
-    hinhAnh: [],
-    workflowStep: 5,
-    ngayDangKy: '2025-03-05',
-  },
-]
+import viewingService from '../services/viewingService'
 
 const STATUS_CONFIG = {
   cho_xac_nhan: { label: 'Chờ xác nhận', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -185,6 +37,36 @@ function formatDateShort(dateStr) {
 
 function getDayOfWeek(dateStr) {
   return DAYS_VN[new Date(dateStr).getDay()]
+}
+
+const STATUS_MAP = {
+  CHO_XAC_NHAN: 'cho_xac_nhan',
+  DA_XAC_NHAN: 'da_xac_nhan',
+  DA_HOAN_THANH: 'da_hoan_thanh',
+  DA_HUY: 'da_huy',
+}
+
+function mapSurvey(item) {
+  const thoiGian = item.thoiGian ? new Date(item.thoiGian) : new Date()
+  const ngayKhaoSat = thoiGian.toISOString().slice(0, 10)
+  const gioKhaoSat = thoiGian.toTimeString().slice(0, 5)
+  return {
+    id: item.id,
+    tenBDS: item.diaChiBatDongSan || `BĐS #${item.batDongSanId}`,
+    bdsId: item.batDongSanId,
+    ngayKhaoSat,
+    gioKhaoSat,
+    diaChi: item.diaChiBatDongSan || '',
+    nhanVien: item.tenNhanVien || '',
+    sdtNV: '',
+    chucVu: '',
+    status: STATUS_MAP[item.trangThai] || item.trangThai?.toLowerCase() || 'cho_xac_nhan',
+    ghiChu: '',
+    ketQua: null,
+    hinhAnh: [],
+    workflowStep: 2,
+    ngayDangKy: ngayKhaoSat,
+  }
 }
 
 function KPICard({ icon, label, value, color, bgColor }) {
@@ -595,9 +477,23 @@ export default function LichKhaoSatPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState('list')
   const [selectedId, setSelectedId] = useState(null)
+  const [surveys, setSurveys] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    viewingService.getSurveyAppointments()
+      .then(res => {
+        if (res?.data) {
+          setSurveys(res.data.map(mapSurvey))
+        }
+      })
+      .catch(() => setSurveys([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(() => {
-    let result = [...SURVEYS]
+    let result = [...surveys]
     if (activeTab !== 'all') result = result.filter(s => s.status === activeTab)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
@@ -608,16 +504,26 @@ export default function LichKhaoSatPage() {
       )
     }
     return result
-  }, [activeTab, searchQuery])
+  }, [activeTab, searchQuery, surveys])
 
   const kpiData = useMemo(() => ({
-    total: SURVEYS.length,
-    choXacNhan: SURVEYS.filter(s => s.status === 'cho_xac_nhan').length,
-    daXacNhan: SURVEYS.filter(s => s.status === 'da_xac_nhan').length,
-    daHoanThanh: SURVEYS.filter(s => s.status === 'da_hoan_thanh').length,
-  }), [])
+    total: surveys.length,
+    choXacNhan: surveys.filter(s => s.status === 'cho_xac_nhan').length,
+    daXacNhan: surveys.filter(s => s.status === 'da_xac_nhan').length,
+    daHoanThanh: surveys.filter(s => s.status === 'da_hoan_thanh').length,
+  }), [surveys])
 
-  const selectedSurvey = selectedId ? SURVEYS.find(s => s.id === selectedId) : null
+  const selectedSurvey = selectedId ? surveys.find(s => s.id === selectedId) : null
+
+  if (loading) {
+    return (
+      <div className="max-w-[1600px] mx-auto">
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-[1600px] mx-auto">

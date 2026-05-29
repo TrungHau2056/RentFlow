@@ -171,6 +171,8 @@ public class BatDongSanService {
                 .giaThue(bds.getGiaThue())
                 .loaiNha(bds.getLoaiNha())
                 .huong(bds.getHuong())
+                .soPhongNgu(bds.getSoPhongNgu())
+                .soPhongVeSinh(bds.getSoPhongVeSinh())
                 .trangThai(bds.getTrangThai())
                 .build();
     }

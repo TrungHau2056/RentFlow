@@ -28,6 +28,12 @@ public class BatDongSanSummaryDTO {
     @Schema(description = "Hướng", example = "Đông Nam")
     private String huong;
 
+    @Schema(description = "Số phòng ngủ", example = "2")
+    private Integer soPhongNgu;
+
+    @Schema(description = "Số phòng vệ sinh", example = "1")
+    private Integer soPhongVeSinh;
+
     @Schema(description = "Trạng thái", example = "CHO_THUE")
     private String trangThai;
 }
