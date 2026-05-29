@@ -1,266 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-
-const PROPERTIES = [
-  {
-    id: 1,
-    ten: 'Biệt thự Vinhomes Cao cấp',
-    loaiNha: 'Biệt thự',
-    giaThue: 50000000,
-    dienTich: 350,
-    soPhong: 5,
-    soTang: 3,
-    diaChi: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    khuVuc: 'Cầu Giấy',
-    chuNha: 'Nguyễn Văn Minh',
-    sdtChuNha: '0901 234 567',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    trangThai: 'dang_hien_thi',
-    trangThaiThue: 'dang_cho_thue',
-    hopDong: 'HĐKG-2025-001',
-    ngayDangKy: '2025-03-15',
-    luotXem: 234,
-    khachQuanTam: 12,
-    moTa: 'Biệt thự cao cấp với hồ bơi riêng, sân vườn rộng, garage 2 xe. Nội thất nhập khẩu châu Âu. An ninh 24/7.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 4,
-  },
-  {
-    id: 2,
-    ten: 'Căn hộ Midtown Sài Đồng',
-    loaiNha: 'Căn hộ',
-    giaThue: 15000000,
-    dienTich: 85,
-    soPhong: 2,
-    soTang: 12,
-    diaChi: '29 Liễu Giai, Ba Đình, Hà Nội',
-    khuVuc: 'Ba Đình',
-    chuNha: 'Trần Thị Hoa',
-    sdtChuNha: '0987 654 321',
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    trangThai: 'cho_khao_sat',
-    trangThaiThue: 'chua_cho_thue',
-    hopDong: null,
-    ngayDangKy: '2025-05-25',
-    luotXem: 56,
-    khachQuanTam: 3,
-    moTa: 'Căn hộ 2 phòng ngủ view hồ Tây, đầy đủ nội thất. Gần metro, trường học, bệnh viện.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 2,
-  },
-  {
-    id: 3,
-    ten: 'Nhà phố cổ khu phố cổ',
-    loaiNha: 'Nhà phố',
-    giaThue: 25000000,
-    dienTich: 120,
-    soPhong: 4,
-    soTang: 4,
-    diaChi: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    khuVuc: 'Hoàn Kiếm',
-    chuNha: 'Lê Quốc Bảo',
-    sdtChuNha: '0912 345 678',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    trangThai: 'da_xac_nhan',
-    trangThaiThue: 'dang_cho_thue',
-    hopDong: 'HĐKG-2025-005',
-    ngayDangKy: '2025-04-20',
-    luotXem: 189,
-    khachQuanTam: 8,
-    moTa: 'Nhà phố kinh doanh mặt tiền Hàng Bài, 4 tầng, thang máy. Phù hợp văn phòng, showroom.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 4,
-  },
-  {
-    id: 4,
-    ten: 'Biệt thự sân vườn Tây Hồ',
-    loaiNha: 'Biệt thự',
-    giaThue: 65000000,
-    dienTich: 450,
-    soPhong: 6,
-    soTang: 3,
-    diaChi: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    khuVuc: 'Tây Hồ',
-    chuNha: 'Phạm Minh Tuấn',
-    sdtChuNha: '0903 456 789',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    trangThai: 'dang_cho_thue',
-    trangThaiThue: 'da_cho_thue',
-    hopDong: 'HĐKG-2025-002',
-    ngayDangKy: '2025-02-10',
-    luotXem: 312,
-    khachQuanTam: 15,
-    moTa: 'Biệt thự sân vườn 450m², bể bơi riêng, garage 2 xe, an ninh 24/7. Khu vực yên tĩnh gần hồ Tây.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 6,
-  },
-  {
-    id: 5,
-    ten: 'Căn hộ Studio Times City',
-    loaiNha: 'Căn hộ',
-    giaThue: 8000000,
-    dienTich: 35,
-    soPhong: 1,
-    soTang: 18,
-    diaChi: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    khuVuc: 'Hai Bà Trưng',
-    chuNha: 'Nguyễn Thị Lan',
-    sdtChuNha: '0965 432 109',
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    trangThai: 'dang_hien_thi',
-    trangThaiThue: 'chua_cho_thue',
-    hopDong: 'HĐKG-2025-006',
-    ngayDangKy: '2025-05-01',
-    luotXem: 145,
-    khachQuanTam: 6,
-    moTa: 'Studio đầy đủ nội thất, view thành phố. Gần Vincom, trường học, bệnh viện. Phù hợp người ở đơn.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 4,
-  },
-  {
-    id: 6,
-    ten: 'Nhà mặt phố Đống Đa',
-    loaiNha: 'Nhà phố',
-    giaThue: 22000000,
-    dienTich: 95,
-    soPhong: 3,
-    soTang: 5,
-    diaChi: '88 Láng Hạ, Đống Đa, Hà Nội',
-    khuVuc: 'Đống Đa',
-    chuNha: 'Đỗ Văn Kiên',
-    sdtChuNha: '0978 111 222',
-    moiGioi: 'Phạm Minh Tuấn',
-    sdtMoiGioi: '0903 456 789',
-    trangThai: 'cho_ky_hop_dong',
-    trangThaiThue: 'chua_cho_thue',
-    hopDong: null,
-    ngayDangKy: '2025-05-18',
-    luotXem: 78,
-    khachQuanTam: 4,
-    moTa: 'Nhà mặt tiền Láng Hạ, 5 tầng có thang máy, chỗ để xe 2 ô tô. Phù hợp văn phòng công ty.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 3,
-  },
-  {
-    id: 7,
-    ten: 'Văn phòng hạng B Cầu Giấy',
-    loaiNha: 'Văn phòng',
-    giaThue: 35000000,
-    dienTich: 200,
-    soPhong: 8,
-    soTang: 10,
-    diaChi: 'Tòa Keangnam, Phạm Hùng, Cầu Giấy, Hà Nội',
-    khuVuc: 'Cầu Giấy',
-    chuNha: 'Công ty CP Đầu tư ABC',
-    sdtChuNha: '024-1234-5678',
-    moiGioi: 'Nguyễn Thị Lan',
-    sdtMoiGioi: '0912 888 999',
-    trangThai: 'cho_tiep_nhan',
-    trangThaiThue: 'chua_cho_thue',
-    hopDong: null,
-    ngayDangKy: '2025-05-29',
-    luotXem: 12,
-    khachQuanTam: 0,
-    moTa: 'Văn phòng hạng B, 200m², tầng 10 view thành phố. Nội thất cơ bản, điều hòa trung tâm.',
-    hinhAnh: [],
-    workflowStep: 1,
-  },
-  {
-    id: 8,
-    ten: 'Kiot mặt đường Kim Mã',
-    loaiNha: 'Kiot',
-    giaThue: 12000000,
-    dienTich: 25,
-    soPhong: 1,
-    soTang: 1,
-    diaChi: '142 Kim Mã, Ba Đình, Hà Nội',
-    khuVuc: 'Ba Đình',
-    chuNha: 'Vũ Thị Mai',
-    sdtChuNha: '0988 777 666',
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    trangThai: 'cho_khao_sat',
-    trangThaiThue: 'chua_cho_thue',
-    hopDong: null,
-    ngayDangKy: '2025-05-28',
-    luotXem: 34,
-    khachQuanTam: 2,
-    moTa: 'Kiot mặt đường Kim Mã, lưu lượng người qua lại đông. Phù hợp kinh doanh nhỏ, cafe, tiện lợi.',
-    hinhAnh: [],
-    workflowStep: 2,
-  },
-  {
-    id: 9,
-    ten: 'Căn hộ 3PN The Manor',
-    loaiNha: 'Căn hộ',
-    giaThue: 28000000,
-    dienTich: 130,
-    soPhong: 3,
-    soTang: 8,
-    diaChi: 'The Manor, Mai Dich, Cầu Giấy, Hà Nội',
-    khuVuc: 'Cầu Giấy',
-    chuNha: 'Hoàng Đức Thắng',
-    sdtChuNha: '0911 222 333',
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    trangThai: 'dang_hien_thi',
-    trangThaiThue: 'dang_cho_thue',
-    hopDong: 'HĐKG-2025-008',
-    ngayDangKy: '2025-04-05',
-    luotXem: 198,
-    khachQuanTam: 9,
-    moTa: 'Căn hộ 3PN cao cấp The Manor, nội thất đầy đủ, view hồ, ban công rộng. Khu đô thị an ninh.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 5,
-  },
-  {
-    id: 10,
-    ten: 'Shophouse Sun Grand City',
-    loaiNha: 'Shophouse',
-    giaThue: 45000000,
-    dienTich: 180,
-    soPhong: 4,
-    soTang: 4,
-    diaChi: 'Sun Grand City, Thụy Khuê, Tây Hồ, Hà Nội',
-    khuVuc: 'Tây Hồ',
-    chuNha: 'Phạm Hữu Đức',
-    sdtChuNha: '0904 555 666',
-    moiGioi: 'Nguyễn Thị Lan',
-    sdtMoiGioi: '0912 888 999',
-    trangThai: 'da_ket_thuc',
-    trangThaiThue: 'chua_cho_thue',
-    hopDong: 'HĐKG-2024-015',
-    ngayDangKy: '2024-06-01',
-    luotXem: 267,
-    khachQuanTam: 11,
-    moTa: 'Shophouse 4 tầng mặt tiền Thụy Khuê, phù hợp kinh doanh và ở. View hồ Tây, khu đô thị cao cấp.',
-    hinhAnh: [
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
-    ],
-    workflowStep: 6,
-  },
-]
+import batDongSanService from '../services/batDongSanService'
 
 const STATUS_CONFIG = {
   cho_tiep_nhan: { label: 'Chờ tiếp nhận', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
@@ -675,9 +415,29 @@ export default function AdminBatDongSanPage() {
   const [filterTrangThai, setFilterTrangThai] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchProperties = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await batDongSanService.danhSach()
+      setProperties(response.data || [])
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải danh sách bất động sản')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchProperties()
+  }, [fetchProperties])
 
   const filtered = useMemo(() => {
-    let result = [...PROPERTIES]
+    let result = [...properties]
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(p =>
@@ -702,14 +462,42 @@ export default function AdminBatDongSanPage() {
   }, [searchQuery, filterLoai, filterKhuVuc, filterTrangThai, sortBy])
 
   const kpiData = useMemo(() => ({
-    total: PROPERTIES.length,
-    dangHienThi: PROPERTIES.filter(p => p.trangThai === 'dang_hien_thi').length,
-    dangChoThue: PROPERTIES.filter(p => p.trangThaiThue === 'da_cho_thue').length,
-    choKhaoSat: PROPERTIES.filter(p => p.trangThai === 'cho_khao_sat').length,
-    choKyHD: PROPERTIES.filter(p => p.trangThai === 'cho_ky_hop_dong').length,
-  }), [])
+    total: properties.length,
+    dangHienThi: properties.filter(p => p.trangThai === 'dang_hien_thi').length,
+    dangChoThue: properties.filter(p => p.trangThaiThue === 'da_cho_thue').length,
+    choKhaoSat: properties.filter(p => p.trangThai === 'cho_khao_sat').length,
+    choKyHD: properties.filter(p => p.trangThai === 'cho_ky_hop_dong').length,
+  }), [properties])
 
-  const selectedProperty = selectedId ? PROPERTIES.find(p => p.id === selectedId) : null
+  const selectedProperty = selectedId ? properties.find(p => p.id === selectedId) : null
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-md">
+          <svg className="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p className="text-red-700 font-medium mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+          <button onClick={fetchProperties} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+            Thử lại
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -869,7 +657,7 @@ export default function AdminBatDongSanPage() {
                 </table>
               </div>
               <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-                <span>Hiển thị {filtered.length} / {PROPERTIES.length} bất động sản</span>
+                <span>Hiển thị {filtered.length} / {properties.length} bất động sản</span>
               </div>
             </div>
           </div>

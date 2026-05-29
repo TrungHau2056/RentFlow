@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import chuNhaService from '../services/chuNhaService'
 
 const STATUS_CONFIG = {
   dang_hop_tac: {
@@ -14,171 +15,6 @@ const STATUS_CONFIG = {
     className: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
   },
 }
-
-const LANDLORDS = [
-  {
-    id: 'CN-0001',
-    name: 'Nguyễn Văn Minh',
-    phone: '0901 234 567',
-    email: 'minh.nguyen@rentflow.vn',
-    cccd: '001084003921',
-    address: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    district: 'Cầu Giấy',
-    status: 'dang_hop_tac',
-    propertyCount: 4,
-    activeContracts: 3,
-    rentedProperties: 2,
-    depositAmount: 180000000,
-    manager: 'Trần Văn Hùng',
-    joinedAt: '15/03/2025',
-    properties: [
-      { id: 'BĐS-1201', name: 'Biệt thự Vinhomes Riverside', type: 'Biệt thự', rent: 50000000, status: 'Đang cho thuê' },
-      { id: 'BĐS-1202', name: 'Căn hộ 3PN The Manor', type: 'Căn hộ', rent: 28000000, status: 'Đang hiển thị' },
-      { id: 'BĐS-1203', name: 'Shophouse Sun Grand City', type: 'Shophouse', rent: 42000000, status: 'Chờ khảo sát' },
-    ],
-    contracts: [
-      { id: 'HĐKG-2025-001', property: 'Biệt thự Vinhomes Riverside', period: '01/04/2025 - 31/03/2026', status: 'Hiệu lực' },
-      { id: 'HĐKG-2025-008', property: 'Căn hộ 3PN The Manor', period: '10/04/2025 - 09/04/2026', status: 'Hiệu lực' },
-    ],
-    deposits: [
-      { id: 'GD-9001', date: '02/04/2025', type: 'Thu tiền đảm bảo', amount: 100000000, note: 'Biệt thự Vinhomes Riverside' },
-      { id: 'GD-9042', date: '12/04/2025', type: 'Thu tiền đảm bảo', amount: 80000000, note: 'Căn hộ 3PN The Manor' },
-    ],
-    timeline: [
-      { time: 'Hôm nay, 09:30', title: 'Cập nhật điều khoản gia hạn hợp đồng', by: 'Pháp luật' },
-      { time: '28/05/2026, 15:10', title: 'Gọi xác nhận lịch bàn giao căn hộ', by: 'Trần Văn Hùng' },
-      { time: '20/05/2026, 11:45', title: 'Nhận thêm hồ sơ ký gửi shophouse', by: 'Nhân viên đại lý' },
-    ],
-  },
-  {
-    id: 'CN-0002',
-    name: 'Trần Thị Hoa',
-    phone: '0987 654 321',
-    email: 'hoa.tran@rentflow.vn',
-    cccd: '001186009112',
-    address: '29 Liễu Giai, Ba Đình, Hà Nội',
-    district: 'Ba Đình',
-    status: 'dang_hop_tac',
-    propertyCount: 2,
-    activeContracts: 2,
-    rentedProperties: 1,
-    depositAmount: 95000000,
-    manager: 'Lê Quốc Anh',
-    joinedAt: '22/02/2025',
-    properties: [
-      { id: 'BĐS-1310', name: 'Căn hộ Midtown Sài Đồng', type: 'Căn hộ', rent: 15000000, status: 'Đang cho thuê' },
-      { id: 'BĐS-1311', name: 'Kiot mặt đường Kim Mã', type: 'Kiot', rent: 12000000, status: 'Đang hiển thị' },
-    ],
-    contracts: [
-      { id: 'HĐKG-2025-014', property: 'Căn hộ Midtown Sài Đồng', period: '01/03/2025 - 28/02/2026', status: 'Hiệu lực' },
-      { id: 'HĐKG-2025-016', property: 'Kiot mặt đường Kim Mã', period: '15/05/2025 - 14/05/2026', status: 'Hiệu lực' },
-    ],
-    deposits: [
-      { id: 'GD-9110', date: '01/03/2025', type: 'Thu tiền đảm bảo', amount: 60000000, note: 'Căn hộ Midtown Sài Đồng' },
-      { id: 'GD-9188', date: '15/05/2025', type: 'Thu tiền đảm bảo', amount: 35000000, note: 'Kiot mặt đường Kim Mã' },
-    ],
-    timeline: [
-      { time: '27/05/2026, 10:00', title: 'Gửi báo cáo tình trạng khách thuê', by: 'Lê Quốc Anh' },
-      { time: '15/05/2026, 14:20', title: 'Hoàn tất ký gửi kiot Kim Mã', by: 'Pháp luật' },
-      { time: '05/05/2026, 08:40', title: 'Cập nhật số tài khoản nhận thanh toán', by: 'Kế toán' },
-    ],
-  },
-  {
-    id: 'CN-0003',
-    name: 'Lê Quốc Bảo',
-    phone: '0912 345 678',
-    email: 'bao.le@rentflow.vn',
-    cccd: '001079004556',
-    address: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    district: 'Hoàn Kiếm',
-    status: 'can_cham_soc',
-    propertyCount: 3,
-    activeContracts: 1,
-    rentedProperties: 1,
-    depositAmount: 70000000,
-    manager: 'Nguyễn Thị Lan',
-    joinedAt: '05/04/2025',
-    properties: [
-      { id: 'BĐS-1420', name: 'Nhà phố cổ Hàng Bài', type: 'Nhà phố', rent: 25000000, status: 'Đang cho thuê' },
-      { id: 'BĐS-1421', name: 'Căn hộ dịch vụ Tràng Tiền', type: 'Căn hộ dịch vụ', rent: 18000000, status: 'Chờ bổ sung hồ sơ' },
-    ],
-    contracts: [
-      { id: 'HĐKG-2025-021', property: 'Nhà phố cổ Hàng Bài', period: '10/04/2025 - 09/04/2026', status: 'Hiệu lực' },
-    ],
-    deposits: [
-      { id: 'GD-9210', date: '10/04/2025', type: 'Thu tiền đảm bảo', amount: 70000000, note: 'Nhà phố cổ Hàng Bài' },
-    ],
-    timeline: [
-      { time: '26/05/2026, 16:30', title: 'Nhắc bổ sung giấy ủy quyền tài sản', by: 'Pháp luật' },
-      { time: '22/05/2026, 09:15', title: 'Chủ nhà phản hồi cần điều chỉnh giá thuê', by: 'Nguyễn Thị Lan' },
-      { time: '18/05/2026, 13:00', title: 'Đặt lịch khảo sát căn hộ dịch vụ', by: 'Nhân viên đại lý' },
-    ],
-  },
-  {
-    id: 'CN-0004',
-    name: 'Phạm Minh Tuấn',
-    phone: '0903 456 789',
-    email: 'tuan.pham@rentflow.vn',
-    cccd: '001082007432',
-    address: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    district: 'Tây Hồ',
-    status: 'dang_hop_tac',
-    propertyCount: 5,
-    activeContracts: 4,
-    rentedProperties: 3,
-    depositAmount: 260000000,
-    manager: 'Phạm Minh Tuấn',
-    joinedAt: '10/01/2025',
-    properties: [
-      { id: 'BĐS-1501', name: 'Biệt thự sân vườn Tây Hồ', type: 'Biệt thự', rent: 65000000, status: 'Đang cho thuê' },
-      { id: 'BĐS-1502', name: 'Penthouse view hồ Tây', type: 'Penthouse', rent: 78000000, status: 'Đang hiển thị' },
-      { id: 'BĐS-1503', name: 'Nhà phố Xuân Diệu', type: 'Nhà phố', rent: 45000000, status: 'Đang cho thuê' },
-    ],
-    contracts: [
-      { id: 'HĐKG-2025-002', property: 'Biệt thự sân vườn Tây Hồ', period: '01/02/2025 - 31/01/2026', status: 'Hiệu lực' },
-      { id: 'HĐKG-2025-024', property: 'Penthouse view hồ Tây', period: '01/05/2025 - 30/04/2026', status: 'Hiệu lực' },
-      { id: 'HĐKG-2025-025', property: 'Nhà phố Xuân Diệu', period: '12/05/2025 - 11/05/2026', status: 'Hiệu lực' },
-    ],
-    deposits: [
-      { id: 'GD-9301', date: '01/02/2025', type: 'Thu tiền đảm bảo', amount: 120000000, note: 'Biệt thự sân vườn Tây Hồ' },
-      { id: 'GD-9360', date: '01/05/2025', type: 'Thu tiền đảm bảo', amount: 90000000, note: 'Penthouse view hồ Tây' },
-      { id: 'GD-9368', date: '12/05/2025', type: 'Thu tiền đảm bảo', amount: 50000000, note: 'Nhà phố Xuân Diệu' },
-    ],
-    timeline: [
-      { time: '29/05/2026, 08:20', title: 'Phê duyệt đăng mới penthouse', by: 'Admin' },
-      { time: '24/05/2026, 17:45', title: 'Đối soát tiền đảm bảo tháng 5', by: 'Kế toán' },
-      { time: '12/05/2026, 10:25', title: 'Ký hợp đồng ký gửi nhà phố Xuân Diệu', by: 'Pháp luật' },
-    ],
-  },
-  {
-    id: 'CN-0005',
-    name: 'Đỗ Văn Kiên',
-    phone: '0978 111 222',
-    email: 'kien.do@rentflow.vn',
-    cccd: '001075008001',
-    address: '88 Láng Hạ, Đống Đa, Hà Nội',
-    district: 'Đống Đa',
-    status: 'tam_dung',
-    propertyCount: 1,
-    activeContracts: 0,
-    rentedProperties: 0,
-    depositAmount: 0,
-    manager: 'Lê Quốc Anh',
-    joinedAt: '18/05/2025',
-    properties: [
-      { id: 'BĐS-1701', name: 'Nhà mặt phố Đống Đa', type: 'Nhà phố', rent: 22000000, status: 'Tạm dừng ký gửi' },
-    ],
-    contracts: [
-      { id: 'HĐKG-2025-029', property: 'Nhà mặt phố Đống Đa', period: 'Chưa hiệu lực', status: 'Chờ ký' },
-    ],
-    deposits: [],
-    timeline: [
-      { time: '25/05/2026, 15:00', title: 'Tạm dừng xử lý do thiếu giấy tờ sở hữu', by: 'Pháp luật' },
-      { time: '20/05/2026, 09:35', title: 'Gọi xác minh nhu cầu ký gửi', by: 'Lê Quốc Anh' },
-      { time: '18/05/2026, 11:10', title: 'Tạo hồ sơ chủ nhà mới', by: 'Nhân viên đại lý' },
-    ],
-  },
-]
 
 const TABS = [
   { id: 'profile', label: 'Thông tin cá nhân' },
@@ -441,7 +277,31 @@ function LandlordDrawer({ landlord, activeTab, setActiveTab, onClose }) {
   )
 }
 
+const mapLandlord = (l) => ({
+  id: l.id || '',
+  name: l.hoTen || '',
+  phone: l.soDienThoai || '',
+  email: l.email || '',
+  cccd: l.cccd || '',
+  address: l.diaChi || l.address || '',
+  district: l.quanHuyen || l.district || '',
+  status: l.trangThai || l.status || 'tam_dung',
+  propertyCount: l.soBDSKyGui || l.propertyCount || 0,
+  activeContracts: l.soHopDongHieuLuc || l.activeContracts || 0,
+  rentedProperties: l.soBDSDaThue || l.rentedProperties || 0,
+  depositAmount: l.tienDamBao || l.depositAmount || 0,
+  manager: l.nhanVienPhuTrach || l.manager || '',
+  joinedAt: l.ngayBatDau || l.joinedAt || '',
+  properties: l.danhSachBDS || l.properties || [],
+  contracts: l.danhSachHopDong || l.contracts || [],
+  deposits: l.danhSachGiaoDich || l.deposits || [],
+  timeline: l.lichSuHoatDong || l.timeline || [],
+})
+
 export default function AdminChuNhaPage() {
+  const [landlords, setLandlords] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [nameSearch, setNameSearch] = useState('')
   const [phoneSearch, setPhoneSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -449,16 +309,34 @@ export default function AdminChuNhaPage() {
   const [selectedLandlord, setSelectedLandlord] = useState(null)
   const [activeTab, setActiveTab] = useState('profile')
 
+  const fetchLandlords = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await chuNhaService.danhSach()
+      setLandlords((res?.data || []).map(mapLandlord))
+    } catch (err) {
+      console.error('Failed to fetch landlords:', err)
+      setError('Không thể tải danh sách chủ nhà')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchLandlords()
+  }, [fetchLandlords])
+
   const districts = useMemo(
-    () => Array.from(new Set(LANDLORDS.map((landlord) => landlord.district))),
-    [],
+    () => Array.from(new Set(landlords.map((landlord) => landlord.district))),
+    [landlords],
   )
 
   const filteredLandlords = useMemo(() => {
     const normalizedName = nameSearch.trim().toLowerCase()
     const normalizedPhone = phoneSearch.trim()
 
-    return LANDLORDS.filter((landlord) => {
+    return landlords.filter((landlord) => {
       const matchesName = !normalizedName ||
         landlord.name.toLowerCase().includes(normalizedName) ||
         landlord.id.toLowerCase().includes(normalizedName) ||
@@ -469,20 +347,20 @@ export default function AdminChuNhaPage() {
 
       return matchesName && matchesPhone && matchesStatus && matchesDistrict
     })
-  }, [districtFilter, nameSearch, phoneSearch, statusFilter])
+  }, [districtFilter, nameSearch, phoneSearch, statusFilter, landlords])
 
   const kpis = useMemo(() => {
-    const activeLandlords = LANDLORDS.filter((landlord) => landlord.status === 'dang_hop_tac')
-    const rentedLandlords = LANDLORDS.filter((landlord) => landlord.rentedProperties > 0)
-    const activeContracts = LANDLORDS.reduce((sum, landlord) => sum + landlord.activeContracts, 0)
+    const activeLandlords = landlords.filter((landlord) => landlord.status === 'dang_hop_tac')
+    const rentedLandlords = landlords.filter((landlord) => landlord.rentedProperties > 0)
+    const activeContracts = landlords.reduce((sum, landlord) => sum + landlord.activeContracts, 0)
 
     return [
-      { label: 'Tổng chủ nhà', value: LANDLORDS.length, detail: 'Hồ sơ đang quản lý', accent: 'bg-blue-100' },
+      { label: 'Tổng chủ nhà', value: landlords.length, detail: 'Hồ sơ đang quản lý', accent: 'bg-blue-100' },
       { label: 'Đang hợp tác', value: activeLandlords.length, detail: 'Chủ nhà còn hoạt động', accent: 'bg-emerald-100' },
       { label: 'Có nhà đang cho thuê', value: rentedLandlords.length, detail: 'Có ít nhất 1 BĐS đã thuê', accent: 'bg-amber-100' },
       { label: 'Hợp đồng ký gửi hiệu lực', value: activeContracts, detail: 'Tổng hợp đồng còn hiệu lực', accent: 'bg-indigo-100' },
     ]
-  }, [])
+  }, [landlords])
 
   function openDrawer(landlord, tab = 'profile') {
     setSelectedLandlord(landlord)
@@ -495,7 +373,15 @@ export default function AdminChuNhaPage() {
         <header className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Quản lý chủ nhà</h1>
-            <p className="mt-1 text-sm text-slate-500">Theo dõi chủ nhà và bất động sản ký gửi</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {loading && (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                  Đang tải...
+                </span>
+              )}
+              {!loading && (error || 'Theo dõi chủ nhà và bất động sản ký gửi')}
+            </p>
           </div>
           <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

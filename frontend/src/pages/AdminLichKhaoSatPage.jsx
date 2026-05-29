@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import lichHenKhaoSatService from '../services/lichHenKhaoSatService'
 
 const STATUS_CONFIG = {
   cho_xac_nhan: {
@@ -29,98 +30,6 @@ const WORKFLOW_STEPS = [
   'Đã khảo sát',
   'Chờ hợp đồng',
   'Hoàn tất',
-]
-
-const SURVEYS = [
-  {
-    id: 'KS-2026-001',
-    property: 'Biệt thự Vinhomes Riverside',
-    owner: 'Nguyễn Văn Minh',
-    phone: '0901 234 567',
-    inspector: 'Trần Văn Hùng',
-    time: '09:00',
-    date: '2026-05-29',
-    address: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    district: 'Cầu Giấy',
-    status: 'da_xac_nhan',
-    note: 'Chủ nhà có mặt, cần kiểm tra hồ bơi và hệ thống điện nước.',
-    workflowStep: 2,
-    result: null,
-  },
-  {
-    id: 'KS-2026-002',
-    property: 'Căn hộ Midtown Sài Đồng',
-    owner: 'Trần Thị Hoa',
-    phone: '0987 654 321',
-    inspector: 'Lê Quốc Anh',
-    time: '14:30',
-    date: '2026-05-29',
-    address: '29 Liễu Giai, Ba Đình, Hà Nội',
-    district: 'Ba Đình',
-    status: 'cho_xac_nhan',
-    note: 'Cần xác nhận lại thang máy và chỗ để xe với ban quản lý.',
-    workflowStep: 2,
-    result: null,
-  },
-  {
-    id: 'KS-2026-003',
-    property: 'Nhà phố cổ Hàng Bài',
-    owner: 'Lê Quốc Bảo',
-    phone: '0912 345 678',
-    inspector: 'Nguyễn Thị Lan',
-    time: '10:15',
-    date: '2026-05-30',
-    address: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    district: 'Hoàn Kiếm',
-    status: 'hoan_thanh',
-    note: 'Nhà mặt tiền kinh doanh, ưu tiên kiểm tra kết cấu và giấy phép.',
-    workflowStep: 3,
-    result: {
-      rating: 'Cần chỉnh sửa',
-      condition: 'Kết cấu tốt, tường tầng 2 có dấu ẩm nhẹ, mặt tiền phù hợp kinh doanh.',
-      furniture: 'Nội thất cơ bản, cần bổ sung điều hòa và rèm cửa.',
-      images: ['Mặt tiền', 'Phòng khách', 'Tầng 2'],
-      attachments: ['bien-ban-khao-sat.pdf'],
-      note: 'Đề xuất sửa chống thấm trước khi tạo hợp đồng ký gửi.',
-    },
-  },
-  {
-    id: 'KS-2026-004',
-    property: 'Biệt thự sân vườn Tây Hồ',
-    owner: 'Phạm Minh Tuấn',
-    phone: '0903 456 789',
-    inspector: 'Phạm Minh Tuấn',
-    time: '15:00',
-    date: '2026-06-02',
-    address: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    district: 'Tây Hồ',
-    status: 'hoan_thanh',
-    note: 'Khảo sát toàn bộ sân vườn, hồ bơi, garage và phòng kỹ thuật.',
-    workflowStep: 4,
-    result: {
-      rating: 'Tốt',
-      condition: 'Hiện trạng rất tốt, sân vườn được chăm sóc, hệ thống nước ổn định.',
-      furniture: 'Nội thất cao cấp, đủ thiết bị gia dụng và phòng ngủ.',
-      images: ['Sân vườn', 'Phòng khách', 'Hồ bơi'],
-      attachments: ['hinh-anh-khao-sat.zip', 'bien-ban.pdf'],
-      note: 'Đủ điều kiện chuyển sang tạo hợp đồng ký gửi.',
-    },
-  },
-  {
-    id: 'KS-2026-005',
-    property: 'Nhà mặt phố Đống Đa',
-    owner: 'Đỗ Văn Kiên',
-    phone: '0978 111 222',
-    inspector: 'Lê Quốc Anh',
-    time: '08:30',
-    date: '2026-06-04',
-    address: '88 Láng Hạ, Đống Đa, Hà Nội',
-    district: 'Đống Đa',
-    status: 'da_huy',
-    note: 'Chủ nhà chưa chuẩn bị đủ giấy tờ sở hữu.',
-    workflowStep: 2,
-    result: null,
-  },
 ]
 
 const WEEK_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
@@ -496,15 +405,51 @@ function SurveyDrawer({ survey, onClose }) {
 
 export default function AdminLichKhaoSatPage() {
   const [calendarMode, setCalendarMode] = useState('week')
-  const [selectedSurvey, setSelectedSurvey] = useState(SURVEYS[0])
+  const [selectedSurvey, setSelectedSurvey] = useState(null)
+  const [surveys, setSurveys] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchSurveys = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await lichHenKhaoSatService.danhSach()
+      setSurveys(res.data || [])
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi tải dữ liệu')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchSurveys()
+  }, [fetchSurveys])
 
   const kpis = useMemo(() => [
-    { label: 'Tổng lịch khảo sát', value: SURVEYS.length, note: 'Toàn bộ lịch trong pipeline', accent: 'bg-slate-200' },
-    { label: 'Chờ xác nhận', value: SURVEYS.filter((survey) => survey.status === 'cho_xac_nhan').length, note: 'Cần gọi xác nhận', accent: 'bg-amber-100' },
-    { label: 'Đã xác nhận', value: SURVEYS.filter((survey) => survey.status === 'da_xac_nhan').length, note: 'Sẵn sàng khảo sát', accent: 'bg-blue-100' },
-    { label: 'Hoàn thành', value: SURVEYS.filter((survey) => survey.status === 'hoan_thanh').length, note: 'Đã có kết quả khảo sát', accent: 'bg-emerald-100' },
-    { label: 'Hủy', value: SURVEYS.filter((survey) => survey.status === 'da_huy').length, note: 'Cần xử lý lại lịch', accent: 'bg-rose-100' },
-  ], [])
+    { label: 'Tổng lịch khảo sát', value: surveys.length, note: 'Toàn bộ lịch trong pipeline', accent: 'bg-slate-200' },
+    { label: 'Chờ xác nhận', value: surveys.filter((survey) => survey.status === 'cho_xac_nhan').length, note: 'Cần gọi xác nhận', accent: 'bg-amber-100' },
+    { label: 'Đã xác nhận', value: surveys.filter((survey) => survey.status === 'da_xac_nhan').length, note: 'Sẵn sàng khảo sát', accent: 'bg-blue-100' },
+    { label: 'Hoàn thành', value: surveys.filter((survey) => survey.status === 'hoan_thanh').length, note: 'Đã có kết quả khảo sát', accent: 'bg-emerald-100' },
+    { label: 'Hủy', value: surveys.filter((survey) => survey.status === 'da_huy').length, note: 'Cần xử lý lại lịch', accent: 'bg-rose-100' },
+  ], [surveys])
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  )
+  if (error) return (
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <div className="text-center">
+        <p className="text-lg font-semibold text-red-600">{error}</p>
+        <button onClick={fetchSurveys} className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+          Thử lại
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
@@ -555,7 +500,7 @@ export default function AdminLichKhaoSatPage() {
           </div>
         </section>
 
-        <CalendarView mode={calendarMode} surveys={SURVEYS} onOpen={setSelectedSurvey} />
+        <CalendarView mode={calendarMode} surveys={surveys} onOpen={setSelectedSurvey} />
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-4 py-3">
@@ -575,7 +520,7 @@ export default function AdminLichKhaoSatPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {SURVEYS.map((survey) => (
+                {surveys.map((survey) => (
                   <tr key={survey.id} className="transition hover:bg-slate-50">
                     <td className="px-4 py-4 text-sm font-bold text-slate-900">{survey.id}</td>
                     <td className="px-4 py-4">
