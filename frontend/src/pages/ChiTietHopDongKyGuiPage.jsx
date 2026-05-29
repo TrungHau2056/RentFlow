@@ -1,51 +1,42 @@
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import hopDongKyGuiService from '../services/hopDongKyGuiService'
 
-const CONTRACT_DATA = {
-  maHopDong: 'KG-2023-0892',
-  trangThai: 'cho_xu_ly',
-  chuNha: {
-    hoTen: 'Nguyễn Văn A',
-  cmnd: '0901234567',
-  email: 'a.nguyen@email.com',
-  },
-  batDongSan: {
-    ten: 'Căn hộ Vinhomes Landmark 81',
-    diaChi: 'Tầng 45, Căn 02, Quận Bình Thạnh',
-  },
-  giaTriDinhGia: 8500000000,
-  phiHoaHong: 0.02,
-  soTienHoaHong: 170000000,
-  ngayBatDau: '15/10/2023',
-  ngayKetThuc: '15/04/2024',
-  hoSoPhapLy: {
-    hopLe: true,
-    ghiChu: 'Giấy chứng nhận quyền sở hữu bản gốc đã được đối chiếu. Không có tranh chấp tại thời điểm kiểm tra.',
-  },
-  nguoiDuyet: 'Lê Thị B (Trưởng ban PL)',
-  taiLieuDinhKem: [
-    { ten: 'Ban_Scan_HopDong.pdf', dungLuong: '2.4 MB', loai: 'pdf' },
-    { ten: 'So_Hong_MatTruoc.jpg', dungLuong: '1.1 MB', loai: 'image' },
-  ],
-  lichSu: [
-    {
-      buoc: 'Tạo bản nháp',
-      nguoiThucHien: 'Trần Văn C (Môi giới)',
-      thoiGian: '09:00 - 11/10/2023',
-      daHoanThanh: true,
+function mapContract(data) {
+  return {
+    maHopDong: data.maHopDong || data.ma || '',
+    trangThai: data.trangThai || 'cho_xu_ly',
+    chuNha: {
+      hoTen: data.chuNha?.hoTen || data.tenChuNha || '',
+      cmnd: data.chuNha?.cmnd || data.soDienThoai || '',
+      email: data.chuNha?.email || data.email || '',
     },
-    {
-      buoc: 'Pháp lý xác nhận hồ sơ',
-      nguoiThucHien: 'Chị chức: Đã kiểm tra bản gốc',
-      thoiGian: '10:15 - 12/10/2023',
-      daHoanThanh: true,
+    batDongSan: {
+      ten: data.batDongSan?.ten || data.tenBatDongSan || '',
+      diaChi: data.batDongSan?.diaChi || data.diaChiBatDongSan || '',
     },
-    {
-      buoc: 'Chuyển sang Chờ duyệt cuối',
-      nguoiThucHien: 'Bởi Lê Thị B (Pháp lý)',
-      thoiGian: '14:30 - 12/10/2023',
-      daHoanThanh: true,
+    giaTriDinhGia: data.giaTriDinhGia || data.giaTri || 0,
+    phiHoaHong: data.phiHoaHong || data.tyLeHoaHong || 0,
+    soTienHoaHong: data.soTienHoaHong || data.tienHoaHong || 0,
+    ngayBatDau: data.ngayBatDau || data.ngayKy || '',
+    ngayKetThuc: data.ngayKetThuc || data.ngayHetHan || '',
+    hoSoPhapLy: {
+      hopLe: data.hoSoPhapLy?.hopLe ?? data.phapLyHopLe ?? true,
+      ghiChu: data.hoSoPhapLy?.ghiChu || data.ghiChuPhapLy || '',
     },
-  ],
+    nguoiDuyet: data.nguoiDuyet || '',
+    taiLieuDinhKem: (data.taiLieuDinhKem || data.taiLieu || []).map(f => ({
+      ten: f.ten || f.tenFile || '',
+      dungLuong: f.dungLuong || '',
+      loai: f.loai || 'pdf',
+    })),
+    lichSu: (data.lichSu || []).map(item => ({
+      buoc: item.buoc || item.noiDung || '',
+      nguoiThucHien: item.nguoiThucHien || item.nguoi || '',
+      thoiGian: item.thoiGian || item.ngay || '',
+      daHoanThanh: item.daHoanThanh ?? true,
+    })),
+  }
 }
 
 const STEPS = [
@@ -61,6 +52,53 @@ const formatCurrency = (amount) => {
 
 export default function ChiTietHopDongKyGuiPage() {
   const navigate = useNavigate()
+  const { id } = useParams()
+  const [contract, setContract] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchContract = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await hopDongKyGuiService.chiTiet(id)
+      setContract(mapContract(response.data))
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải hợp đồng')
+    } finally {
+      setLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    fetchContract()
+  }, [fetchContract])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">Đang tải hợp đồng...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 font-medium mb-2">{error}</p>
+          <button onClick={fetchContract} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+            Thử lại
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!contract) return null
 
   return (
     <>
@@ -95,7 +133,7 @@ export default function ChiTietHopDongKyGuiPage() {
       <main className="flex-1 overflow-auto p-6">
           {/* Contract ID & Status */}
           <div className="mb-6">
-            <p className="text-sm text-slate-500 mb-1">Mã hợp đồng: <span className="font-medium text-slate-700">{CONTRACT_DATA.maHopDong}</span></p>
+            <p className="text-sm text-slate-500 mb-1">Mã hợp đồng: <span className="font-medium text-slate-700">{contract.maHopDong}</span></p>
           </div>
 
           {/* Progress Bar */}
@@ -160,31 +198,31 @@ export default function ChiTietHopDongKyGuiPage() {
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Chủ nhà (Bên ký gửi)</p>
-                    <p className="text-sm font-medium text-slate-800">{CONTRACT_DATA.chuNha.hoTen}</p>
-                    <p className="text-xs text-slate-500">{CONTRACT_DATA.chuNha.cmnd} | {CONTRACT_DATA.chuNha.email}</p>
+                    <p className="text-sm font-medium text-slate-800">{contract.chuNha.hoTen}</p>
+                    <p className="text-xs text-slate-500">{contract.chuNha.cmnd} | {contract.chuNha.email}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Bất động sản</p>
-                    <p className="text-sm font-medium text-slate-800">{CONTRACT_DATA.batDongSan.ten}</p>
-                    <p className="text-xs text-slate-500">{CONTRACT_DATA.batDongSan.diaChi}</p>
+                    <p className="text-sm font-medium text-slate-800">{contract.batDongSan.ten}</p>
+                    <p className="text-xs text-slate-500">{contract.batDongSan.diaChi}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Giá trị định giá</p>
-                    <p className="text-sm font-medium text-slate-800">{formatCurrency(CONTRACT_DATA.giaTriDinhGia)}</p>
+                    <p className="text-sm font-medium text-slate-800">{formatCurrency(contract.giaTriDinhGia)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Phí hoa hồng</p>
                     <p className="text-sm font-medium text-slate-800">
-                      {CONTRACT_DATA.phiHoaHong * 100}% ({formatCurrency(CONTRACT_DATA.soTienHoaHong)})
+                      {contract.phiHoaHong * 100}% ({formatCurrency(contract.soTienHoaHong)})
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Ngày bắt đầu</p>
-                    <p className="text-sm font-medium text-slate-800">{CONTRACT_DATA.ngayBatDau}</p>
+                    <p className="text-sm font-medium text-slate-800">{contract.ngayBatDau}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Ngày kết thúc</p>
-                    <p className="text-sm font-medium text-slate-800">{CONTRACT_DATA.ngayKetThuc}</p>
+                    <p className="text-sm font-medium text-slate-800">{contract.ngayKetThuc}</p>
                   </div>
                 </div>
               </div>
@@ -198,7 +236,7 @@ export default function ChiTietHopDongKyGuiPage() {
                   Tài liệu đính kèm
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {CONTRACT_DATA.taiLieuDinhKem.map((file, idx) => (
+                  {contract.taiLieuDinhKem.map((file, idx) => (
                     <div key={idx} className="border border-slate-200 rounded-lg p-4 text-center hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer">
                       {file.loai === 'pdf' ? (
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
@@ -244,11 +282,11 @@ export default function ChiTietHopDongKyGuiPage() {
                 </div>
                 <div className="bg-slate-50 rounded-lg p-3 mb-4">
                   <p className="text-xs text-slate-500 mb-1">Ghi chú từ Bộ phận Pháp lý:</p>
-                  <p className="text-sm text-slate-700">{CONTRACT_DATA.hoSoPhapLy.ghiChu}</p>
+                  <p className="text-sm text-slate-700">{contract.hoSoPhapLy.ghiChu}</p>
                 </div>
                 <div className="pt-3 border-t border-slate-100">
                   <p className="text-xs text-slate-500">Người duyệt:</p>
-                  <p className="text-sm font-medium text-slate-700">{CONTRACT_DATA.nguoiDuyet}</p>
+                  <p className="text-sm font-medium text-slate-700">{contract.nguoiDuyet}</p>
                 </div>
               </div>
 
@@ -263,7 +301,7 @@ export default function ChiTietHopDongKyGuiPage() {
                 <div className="relative">
                   <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200" />
                   <div className="space-y-4">
-                    {CONTRACT_DATA.lichSu.map((item, idx) => (
+                    {contract.lichSu.map((item, idx) => (
                       <div key={idx} className="relative flex gap-3 pl-8">
                         <div className={`absolute left-0 w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                           item.daHoanThanh ? 'bg-blue-800 border-blue-800' : 'bg-white border-slate-300'

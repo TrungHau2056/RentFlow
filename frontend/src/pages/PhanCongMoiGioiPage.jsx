@@ -1,78 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-
-// ── Mock data ────────────────────────────────────────────────────────
-const MOCK_BROKERS = [
-  {
-    id: 1,
-    ten: 'Trần Văn Hùng',
-    sdt: '0912 345 678',
-    email: 'tranvanhung@rentflow.vn',
-    avatar: 'TVH',
-    soKhachDangPhuTrach: 5,
-    tyLeChot: 40,
-    lichXemSapToi: 3,
-    hoaHongThang: 15000000,
-    khachHang: [1, 3, 5, 8, 10],
-  },
-  {
-    id: 2,
-    ten: 'Lê Quốc Anh',
-    sdt: '0987 654 321',
-    email: 'lequocanh@rentflow.vn',
-    avatar: 'LQA',
-    soKhachDangPhuTrach: 4,
-    tyLeChot: 33,
-    lichXemSapToi: 2,
-    hoaHongThang: 12000000,
-    khachHang: [2, 6, 9, 12],
-  },
-  {
-    id: 3,
-    ten: 'Phạm Minh Tuấn',
-    sdt: '0903 456 789',
-    email: 'phamminhtuan@rentflow.vn',
-    avatar: 'PMT',
-    soKhachDangPhuTrach: 6,
-    tyLeChot: 50,
-    lichXemSapToi: 4,
-    hoaHongThang: 22000000,
-    khachHang: [4, 7, 11, 13, 14, 15],
-  },
-  {
-    id: 4,
-    ten: 'Nguyễn Thị Lan',
-    sdt: '0912 888 999',
-    email: 'nguyenthilan@rentflow.vn',
-    avatar: 'NTL',
-    soKhachDangPhuTrach: 3,
-    tyLeChot: 67,
-    lichXemSapToi: 2,
-    hoaHongThang: 18000000,
-    khachHang: [16, 17, 18],
-  },
-]
-
-const MOCK_CUSTOMERS = [
-  { id: 1, ten: 'Nguyễn Văn Minh', sdt: '0901 234 567', nhuCau: 'Căn hộ 2PN', khuVuc: 'Hai Bà Trưng', khoangGia: '10-15tr', moiGioiId: 1, trangThai: 'dang_tu_van', priority: 'cao', ghiChu: 'Cần gấp trong tháng 6', deadline: '2025-06-15' },
-  { id: 2, ten: 'Lê Thị Hương', sdt: '0988 555 666', nhuCau: 'Nhà mặt phố', khuVuc: 'Cầu Giấy', khoangGia: '25-40tr', moiGioiId: 2, trangThai: 'da_dat_lich', priority: 'trung_binh', ghiChu: '', deadline: '2025-06-20' },
-  { id: 3, ten: 'Phạm Đức Anh', sdt: '0965 111 222', nhuCau: 'Căn hộ 3PN', khuVuc: 'Cầu Giấy', khoangGia: '20-30tr', moiGioiId: 1, trangThai: 'dang_dam_phan', priority: 'cao', ghiChu: 'Đã xem 2 BĐS, đang so sánh giá', deadline: '2025-06-10' },
-  { id: 4, ten: 'Vũ Minh Trí', sdt: '0965 333 444', nhuCau: 'Nhà phố', khuVuc: 'Đống Đa', khoangGia: '15-25tr', moiGioiId: 3, trangThai: 'dang_tu_van', priority: 'thap', ghiChu: '', deadline: '2025-07-01' },
-  { id: 5, ten: 'Trần Hương Giang', sdt: '0988 777 888', nhuCau: 'Căn hộ Studio', khuVuc: 'Hai Bà Trưng', khoangGia: '5-10tr', moiGioiId: 1, trangThai: 'da_dat_lich', priority: 'trung_binh', ghiChu: 'Ưu tiên gần metro', deadline: '2025-06-18' },
-  { id: 6, ten: 'Đỗ Quang Hải', sdt: '0905 222 333', nhuCau: 'Kiot kinh doanh', khuVuc: 'Ba Đình', khoangGia: '8-15tr', moiGioiId: 2, trangThai: 'da_ky_hop_dong', priority: 'cao', ghiChu: 'Đã ký HĐT-2024-005', deadline: null },
-  { id: 7, ten: 'Mai Phương Thảo', sdt: '0966 777 888', nhuCau: 'Văn phòng hạng B', khuVuc: 'Cầu Giấy', khoangGia: '30-50tr', moiGioiId: 3, trangThai: 'dang_dam_phan', priority: 'cao', ghiChu: 'Khách công ty, cần hóa đơn VAT', deadline: '2025-06-05' },
-  { id: 8, ten: 'Công ty TNHH ABC', sdt: '024-3555-7890', nhuCau: 'Shophouse', khuVuc: 'Tây Hồ', khoangGia: '40-60tr', moiGioiId: 1, trangThai: 'dang_dam_phan', priority: 'cao', ghiChu: 'Đại diện: anh Hoàng, cần xem lại 31/05', deadline: '2025-05-31' },
-  { id: 9, ten: 'Hoàng Đức Thắng', sdt: '0911 222 333', nhuCau: 'Căn hộ 3PN', khuVuc: 'Cầu Giấy', khoangGia: '20-30tr', moiGioiId: 2, trangThai: 'da_dat_lich', priority: 'trung_binh', ghiChu: 'Xem trực tiếp lần 2', deadline: '2025-06-12' },
-  { id: 10, ten: 'Nguyễn Đức Anh', sdt: '0911 444 555', nhuCau: 'Căn hộ 2PN', khuVuc: 'Hai Bà Trưng', khoangGia: '12-18tr', moiGioiId: 1, trangThai: 'da_ky_hop_dong', priority: 'trung_binh', ghiChu: 'Đã ký hợp đồng thuê', deadline: null },
-  { id: 11, ten: 'Trịnh Minh Quân', sdt: '0933 888 999', nhuCau: 'Căn hộ 1PN', khuVuc: 'Thanh Xuân', khoangGia: '6-10tr', moiGioiId: 3, trangThai: 'chua_phan_cong', priority: 'trung_binh', ghiChu: '', deadline: null },
-  { id: 12, ten: 'Phan Thị Mai', sdt: '0977 444 555', nhuCau: 'Nhà nguyên căn', khuVuc: 'Long Biên', khoangGia: '12-20tr', moiGioiId: 2, trangThai: 'dang_tu_van', priority: 'thap', ghiChu: 'Tìm nhà yên tĩnh', deadline: '2025-07-15' },
-  { id: 13, ten: 'Bùi Văn Hòa', sdt: '0922 111 333', nhuCau: 'Văn phòng hạng C', khuVuc: 'Đống Đa', khoangGia: '10-20tr', moiGioiId: 3, trangThai: 'chua_phan_cong', priority: 'cao', ghiChu: 'Cần gấp, mở công ty tháng 7', deadline: '2025-06-30' },
-  { id: 14, ten: 'Ngô Thị Hạnh', sdt: '0955 666 777', nhuCau: 'Căn hộ 2PN', khuVuc: 'Nam Từ Liêm', khoangGia: '10-15tr', moiGioiId: 3, trangThai: 'da_dat_lich', priority: 'trung_binh', ghiChu: '', deadline: '2025-06-08' },
-  { id: 15, ten: 'Lý Minh Khoa', sdt: '0944 222 888', nhuCau: 'Đất nền', khuVuc: 'Hoài Đức', khoangGia: '5-10tr', moiGioiId: 3, trangThai: 'dang_tu_van', priority: 'thap', ghiChu: 'Tìm đất làm kho', deadline: null },
-  { id: 16, ten: 'Đặng Thanh Tùng', sdt: '0966 333 111', nhuCau: 'Căn hộ 2PN cao cấp', khuVuc: 'Tây Hồ', khoangGia: '25-35tr', moiGioiId: 4, trangThai: 'dang_tu_van', priority: 'cao', ghiChu: 'Khách VIP, cần chăm sóc kỹ', deadline: '2025-06-10' },
-  { id: 17, ten: 'Vũ Thị Ngọc', sdt: '0988 111 444', nhuCau: 'Nhà mặt phố', khuVuc: 'Ba Đình', khoangGia: '30-50tr', moiGioiId: 4, trangThai: 'da_dat_lich', priority: 'cao', ghiChu: 'Mở văn phòng luật', deadline: '2025-06-03' },
-  { id: 18, ten: 'Hồ Văn Nam', sdt: '0911 555 999', nhuCau: 'Căn hộ Studio', khuVuc: 'Hà Đông', khoangGia: '4-7tr', moiGioiId: 4, trangThai: 'da_ky_hop_dong', priority: 'thap', ghiChu: '', deadline: null },
-]
+import khachHangService from '../services/khachHangService'
+import quanTriService from '../services/quanTriService'
 
 const KANBAN_COLUMNS = [
   { key: 'chua_phan_cong', label: 'Chưa phân công', color: 'border-t-slate-400', bg: 'bg-slate-50', headerBg: 'bg-slate-100' },
@@ -226,9 +155,9 @@ function BrokerCard({ broker, isSelected, onSelect }) {
 }
 
 // ── Kanban customer card ─────────────────────────────────────────────
-function KanbanCard({ customer, onAssign }) {
+function KanbanCard({ customer, onAssign, brokers }) {
   const priority = PRIORITY_CONFIG[customer.priority]
-  const broker = MOCK_BROKERS.find(b => b.id === customer.moiGioiId)
+  const broker = (brokers || []).find(b => b.id === customer.moiGioiId)
   const colorSet = broker ? BROKER_COLORS[(broker.id - 1) % BROKER_COLORS.length] : null
   const days = daysUntil(customer.deadline)
 
@@ -303,17 +232,17 @@ function KanbanCard({ customer, onAssign }) {
 }
 
 // ── Broker detail panel ──────────────────────────────────────────────
-function BrokerDetailPanel({ broker, onClose }) {
+function BrokerDetailPanel({ broker, onClose, customers }) {
   if (!broker) return null
   const colorSet = BROKER_COLORS[(broker.id - 1) % BROKER_COLORS.length]
-  const customers = MOCK_CUSTOMERS.filter(c => c.moiGioiId === broker.id)
+  const customersOfBroker = (customers || []).filter(c => c.moiGioiId === broker.id)
   const workloadMax = 8
 
   const statusGroups = {
-    dang_tu_van: customers.filter(c => c.trangThai === 'dang_tu_van'),
-    da_dat_lich: customers.filter(c => c.trangThai === 'da_dat_lich'),
-    dang_dam_phan: customers.filter(c => c.trangThai === 'dang_dam_phan'),
-    da_ky_hop_dong: customers.filter(c => c.trangThai === 'da_ky_hop_dong'),
+    dang_tu_van: customersOfBroker.filter(c => c.trangThai === 'dang_tu_van'),
+    da_dat_lich: customersOfBroker.filter(c => c.trangThai === 'da_dat_lich'),
+    dang_dam_phan: customersOfBroker.filter(c => c.trangThai === 'dang_dam_phan'),
+    da_ky_hop_dong: customersOfBroker.filter(c => c.trangThai === 'da_ky_hop_dong'),
   }
 
   return (
@@ -382,7 +311,7 @@ function BrokerDetailPanel({ broker, onClose }) {
 
         {/* Customer list by status */}
         <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Khách hàng ({customers.length})</h4>
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Khách hàng ({customersOfBroker.length})</h4>
           <div className="space-y-3">
             {Object.entries(statusGroups).filter(([, c]) => c.length > 0).map(([status, custs]) => {
               const statusLabels = {
@@ -444,7 +373,7 @@ function BrokerDetailPanel({ broker, onClose }) {
 }
 
 // ── Assignment modal ─────────────────────────────────────────────────
-function AssignmentModal({ customer, onClose }) {
+function AssignmentModal({ customer, onClose, brokers }) {
   const [selectedBroker, setSelectedBroker] = useState('')
   const [priority, setPriority] = useState(customer?.priority || 'trung_binh')
   const [ghiChu, setGhiChu] = useState('')
@@ -498,7 +427,7 @@ function AssignmentModal({ customer, onClose }) {
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Môi giới phụ trách *</label>
             <div className="space-y-2">
-              {MOCK_BROKERS.map(b => {
+              {brokers.map(b => {
                 const colorSet = BROKER_COLORS[(b.id - 1) % BROKER_COLORS.length]
                 const isSelected = selectedBroker === String(b.id)
                 return (
@@ -598,11 +527,64 @@ export default function PhanCongMoiGioiPage() {
   const [assignModal, setAssignModal] = useState(null)
   const [search, setSearch] = useState('')
   const [filterPriority, setFilterPriority] = useState('all')
+  const [brokers, setBrokers] = useState([])
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const selectedBroker = useMemo(() => MOCK_BROKERS.find(b => b.id === selectedBrokerId), [selectedBrokerId])
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [brokerRes, customerRes] = await Promise.all([
+        quanTriService.danhSachTaiKhoan(),
+        khachHangService.danhSach(),
+      ])
+      const accounts = brokerRes.data || []
+      const mappedBrokers = accounts.filter(acc => acc.vaiTro === 'NHAN_VIEN_DAI_LY').map(acc => ({
+        id: acc.id,
+        ten: acc.tenNhanVien || acc.hoTen || '',
+        sdt: acc.soDienThoai || '',
+        email: acc.email || '',
+        avatar: (acc.tenNhanVien || acc.hoTen || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'NV',
+        soKhachDangPhuTrach: acc.soKhachDangPhuTrach || 0,
+        tyLeChot: acc.tyLeChot || 0,
+        lichXemSapToi: acc.lichXemSapToi || 0,
+        hoaHongThang: acc.hoaHongThang || 0,
+        khachHang: acc.danhSachKhachHang || [],
+      }))
+
+      const mappedCustomers = (customerRes.data || []).map(c => ({
+        id: c.id,
+        ten: c.tenKhachHang || c.hoTen || '',
+        sdt: c.soDienThoai || '',
+        nhuCau: c.nhuCau || '',
+        khuVuc: c.khuVuc || '',
+        khoangGia: c.khoangGia || '',
+        moiGioiId: c.moiGioiId || c.nhanVienId || null,
+        trangThai: c.trangThai || 'chua_phan_cong',
+        priority: c.priority || c.doUuTien || 'trung_binh',
+        ghiChu: c.ghiChu || '',
+        deadline: c.deadline || null,
+      }))
+
+      setBrokers(mappedBrokers)
+      setCustomers(mappedCustomers)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi tải dữ liệu')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const selectedBroker = useMemo(() => brokers.find(b => b.id === selectedBrokerId), [selectedBrokerId, brokers])
 
   const filteredCustomers = useMemo(() => {
-    let list = [...MOCK_CUSTOMERS]
+    let list = [...customers]
     if (search) {
       const q = search.toLowerCase()
       list = list.filter(c => c.ten.toLowerCase().includes(q) || c.nhuCau.toLowerCase().includes(q) || c.khuVuc.toLowerCase().includes(q) || c.sdt.includes(q))
@@ -611,7 +593,7 @@ export default function PhanCongMoiGioiPage() {
       list = list.filter(c => c.priority === filterPriority)
     }
     return list
-  }, [search, filterPriority])
+  }, [search, filterPriority, customers])
 
   const kanbanData = useMemo(() => {
     const groups = {}
@@ -623,11 +605,27 @@ export default function PhanCongMoiGioiPage() {
   }, [filteredCustomers])
 
   const kpi = useMemo(() => ({
-    totalBrokers: MOCK_BROKERS.length,
-    totalProcessing: MOCK_CUSTOMERS.filter(c => c.trangThai !== 'chua_phan_cong' && c.trangThai !== 'da_ky_hop_dong').length,
-    unassigned: MOCK_CUSTOMERS.filter(c => c.trangThai === 'chua_phan_cong').length,
-    successThisMonth: MOCK_CUSTOMERS.filter(c => c.trangThai === 'da_ky_hop_dong').length,
-  }), [])
+    totalBrokers: brokers.length,
+    totalProcessing: customers.filter(c => c.trangThai !== 'chua_phan_cong' && c.trangThai !== 'da_ky_hop_dong').length,
+    unassigned: customers.filter(c => c.trangThai === 'chua_phan_cong').length,
+    successThisMonth: customers.filter(c => c.trangThai === 'da_ky_hop_dong').length,
+  }), [brokers, customers])
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  )
+  if (error) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <p className="text-lg font-semibold text-red-600">{error}</p>
+        <button onClick={fetchData} className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+          Thử lại
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -686,21 +684,21 @@ export default function PhanCongMoiGioiPage() {
         <AlertCard
           icon="⚠️"
           title="Lead chưa xử lý"
-          count={MOCK_CUSTOMERS.filter(c => c.trangThai === 'chua_phan_cong').length}
+          count={customers.filter(c => c.trangThai === 'chua_phan_cong').length}
           detail="Khách hàng chưa được phân công môi giới"
           variant="amber"
         />
         <AlertCard
           icon="🔥"
           title="Môi giới quá tải"
-          count={MOCK_BROKERS.filter(b => b.soKhachDangPhuTrach >= 8).length}
+          count={brokers.filter(b => b.soKhachDangPhuTrach >= 8).length}
           detail="Môi giới vượt ngưỡng workload tối đa"
           variant="red"
         />
         <AlertCard
           icon="⏰"
           title="Chưa follow-up"
-          count={MOCK_CUSTOMERS.filter(c => c.deadline && daysUntil(c.deadline) !== null && daysUntil(c.deadline) <= 0 && c.trangThai !== 'da_ky_hop_dong').length}
+          count={customers.filter(c => c.deadline && daysUntil(c.deadline) !== null && daysUntil(c.deadline) <= 0 && c.trangThai !== 'da_ky_hop_dong').length}
           detail="Khách hàng quá deadline follow-up"
           variant="blue"
         />
@@ -713,10 +711,10 @@ export default function PhanCongMoiGioiPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-800">Môi giới</h2>
-              <span className="text-xs text-slate-400">{MOCK_BROKERS.length} người</span>
+              <span className="text-xs text-slate-400">{brokers.length} người</span>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {MOCK_BROKERS.map(b => (
+              {brokers.map(b => (
                 <BrokerCard key={b.id} broker={b} isSelected={selectedBrokerId === b.id} onSelect={setSelectedBrokerId} />
               ))}
             </div>
@@ -770,7 +768,7 @@ export default function PhanCongMoiGioiPage() {
                     {/* Cards */}
                     <div className="p-3 space-y-3 min-h-48">
                       {cards.map(c => (
-                        <KanbanCard key={c.id} customer={c} onAssign={setAssignModal} />
+                        <KanbanCard key={c.id} customer={c} onAssign={setAssignModal} brokers={brokers} />
                       ))}
                       {cards.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-8 text-slate-300">
@@ -795,7 +793,7 @@ export default function PhanCongMoiGioiPage() {
               <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Tỷ lệ chuyển đổi</p>
                 <div className="space-y-3">
-                  {MOCK_BROKERS.map(b => {
+                  {brokers.map(b => {
                     const colorSet = BROKER_COLORS[(b.id - 1) % BROKER_COLORS.length]
                     return (
                       <div key={b.id}>
@@ -816,8 +814,8 @@ export default function PhanCongMoiGioiPage() {
               <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Hợp đồng thành công</p>
                 <div className="space-y-3">
-                  {MOCK_BROKERS.map(b => {
-                    const success = MOCK_CUSTOMERS.filter(c => c.moiGioiId === b.id && c.trangThai === 'da_ky_hop_dong').length
+                  {brokers.map(b => {
+                    const success = customers.filter(c => c.moiGioiId === b.id && c.trangThai === 'da_ky_hop_dong').length
                     return (
                       <div key={b.id} className="flex items-center justify-between">
                         <span className="text-xs text-slate-600">{b.ten}</span>
@@ -835,7 +833,7 @@ export default function PhanCongMoiGioiPage() {
               <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Hoa hồng tháng</p>
                 <div className="space-y-3">
-                  {MOCK_BROKERS.map(b => (
+                  {brokers.map(b => (
                     <div key={b.id} className="flex items-center justify-between">
                       <span className="text-xs text-slate-600">{b.ten}</span>
                       <span className="text-xs font-bold text-blue-700">{formatVND(b.hoaHongThang)}đ</span>
@@ -848,8 +846,8 @@ export default function PhanCongMoiGioiPage() {
               <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Khách hàng active</p>
                 <div className="space-y-3">
-                  {MOCK_BROKERS.map(b => {
-                    const active = MOCK_CUSTOMERS.filter(c => c.moiGioiId === b.id && c.trangThai !== 'da_ky_hop_dong').length
+                  {brokers.map(b => {
+                    const active = customers.filter(c => c.moiGioiId === b.id && c.trangThai !== 'da_ky_hop_dong').length
                     return (
                       <div key={b.id}>
                         <div className="flex items-center justify-between mb-1">
@@ -869,7 +867,7 @@ export default function PhanCongMoiGioiPage() {
         {/* Broker detail panel */}
         {selectedBroker && (
           <div className="hidden xl:block w-105 shrink-0">
-            <BrokerDetailPanel broker={selectedBroker} onClose={() => setSelectedBrokerId(null)} />
+            <BrokerDetailPanel broker={selectedBroker} onClose={() => setSelectedBrokerId(null)} customers={customers} />
           </div>
         )}
       </div>
@@ -888,7 +886,7 @@ export default function PhanCongMoiGioiPage() {
 
       {/* Assignment modal */}
       {assignModal && (
-        <AssignmentModal customer={assignModal} onClose={() => setAssignModal(null)} />
+        <AssignmentModal customer={assignModal} onClose={() => setAssignModal(null)} brokers={brokers} />
       )}
     </div>
   )

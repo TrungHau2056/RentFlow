@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import khachHangService from '../services/khachHangService'
 
 const LEAD_STATUS = {
   lead_moi: {
@@ -28,164 +29,6 @@ const ACTIVITY_STYLE = {
   meeting: { label: 'Meeting', className: 'bg-slate-100 text-slate-700' },
   follow_up: { label: 'Follow-up', className: 'bg-rose-100 text-rose-700' },
 }
-
-const CUSTOMERS = [
-  {
-    id: 'KH-1001',
-    name: 'Trần Thị Bích Ngọc',
-    phone: '0912 345 678',
-    email: 'ngoc.tran@example.com',
-    demand: 'Căn hộ 2PN gần trung tâm',
-    propertyType: 'Căn hộ',
-    area: 'Tây Hồ',
-    budget: '18 - 25 triệu',
-    broker: 'Trần Văn Hùng',
-    status: 'dang_tu_van',
-    source: 'Website',
-    cccd: '001188004212',
-    address: '12 Thụy Khuê, Tây Hồ, Hà Nội',
-    lastContact: '29/05/2026',
-    priority: 'Cao',
-    viewingSchedules: [
-      { id: 'LX-201', time: '30/05/2026 09:30', property: 'Căn hộ 2PN Watermark', status: 'Đã xác nhận' },
-      { id: 'LX-202', time: '01/06/2026 16:00', property: 'Căn hộ 2PN D’. Le Roi Soleil', status: 'Chờ phản hồi' },
-    ],
-    activities: [
-      { type: 'call', time: 'Hôm nay, 09:10', title: 'Gọi xác nhận ngân sách và thời gian chuyển vào', by: 'Trần Văn Hùng' },
-      { type: 'message', time: '28/05/2026, 19:20', title: 'Gửi shortlist 3 căn hộ Tây Hồ', by: 'Trần Văn Hùng' },
-      { type: 'viewing', time: '27/05/2026, 10:00', title: 'Đã xem căn hộ Watermark', by: 'Lễ tân giao dịch' },
-    ],
-    contracts: [],
-  },
-  {
-    id: 'KH-1002',
-    name: 'Nguyễn Văn Minh',
-    phone: '0903 456 789',
-    email: 'minh.nguyen@example.com',
-    demand: 'Nhà phố làm văn phòng',
-    propertyType: 'Nhà phố',
-    area: 'Cầu Giấy',
-    budget: '35 - 50 triệu',
-    broker: 'Lê Quốc Anh',
-    status: 'lead_moi',
-    source: 'Hotline',
-    cccd: '001082009822',
-    address: '88 Duy Tân, Cầu Giấy, Hà Nội',
-    lastContact: '29/05/2026',
-    priority: 'Trung bình',
-    viewingSchedules: [
-      { id: 'LX-203', time: '31/05/2026 14:30', property: 'Nhà phố Trung Kính', status: 'Mới tạo' },
-    ],
-    activities: [
-      { type: 'call', time: 'Hôm nay, 08:45', title: 'Tiếp nhận lead từ hotline', by: 'CSKH' },
-      { type: 'follow_up', time: 'Hôm nay, 09:00', title: 'Tạo nhiệm vụ gọi tư vấn lần 1', by: 'Lê Quốc Anh' },
-    ],
-    contracts: [],
-  },
-  {
-    id: 'KH-1003',
-    name: 'Lê Hoàng Anh',
-    phone: '0918 567 890',
-    email: 'anh.le@example.com',
-    demand: 'Biệt thự cho gia đình 5 người',
-    propertyType: 'Biệt thự',
-    area: 'Tây Hồ',
-    budget: '70 - 90 triệu',
-    broker: 'Nguyễn Thị Lan',
-    status: 'dang_dam_phan',
-    source: 'Referral',
-    cccd: '001079003455',
-    address: '46 Xuân Diệu, Tây Hồ, Hà Nội',
-    lastContact: '28/05/2026',
-    priority: 'Cao',
-    viewingSchedules: [
-      { id: 'LX-204', time: '26/05/2026 15:00', property: 'Biệt thự sân vườn Tây Hồ', status: 'Hoàn tất' },
-      { id: 'LX-205', time: '29/05/2026 17:00', property: 'Villa Ciputra K3', status: 'Đã xác nhận' },
-    ],
-    activities: [
-      { type: 'negotiation', time: '28/05/2026, 16:30', title: 'Đàm phán giảm giá thuê 5%', by: 'Nguyễn Thị Lan' },
-      { type: 'meeting', time: '27/05/2026, 11:00', title: 'Meeting cùng chủ nhà về điều khoản nuôi thú cưng', by: 'Pháp luật' },
-      { type: 'viewing', time: '26/05/2026, 15:00', title: 'Khách xem biệt thự sân vườn Tây Hồ', by: 'Nguyễn Thị Lan' },
-    ],
-    contracts: [],
-  },
-  {
-    id: 'KH-1004',
-    name: 'Phạm Thị Lan',
-    phone: '0905 678 901',
-    email: 'lan.pham@example.com',
-    demand: 'Studio gần khu phố cổ',
-    propertyType: 'Studio',
-    area: 'Hoàn Kiếm',
-    budget: '10 - 14 triệu',
-    broker: 'Trần Văn Hùng',
-    status: 'da_ky_hop_dong',
-    source: 'Facebook',
-    cccd: '001190007611',
-    address: '22 Hàng Bạc, Hoàn Kiếm, Hà Nội',
-    lastContact: '25/05/2026',
-    priority: 'Đã chốt',
-    viewingSchedules: [
-      { id: 'LX-206', time: '22/05/2026 09:00', property: 'Studio Tràng Tiền', status: 'Hoàn tất' },
-    ],
-    activities: [
-      { type: 'contract', time: '25/05/2026, 14:00', title: 'Ký hợp đồng thuê Studio Tràng Tiền', by: 'Pháp luật' },
-      { type: 'negotiation', time: '24/05/2026, 10:30', title: 'Thống nhất tiền cọc và ngày nhận nhà', by: 'Trần Văn Hùng' },
-      { type: 'viewing', time: '22/05/2026, 09:00', title: 'Khách xem Studio Tràng Tiền', by: 'Trần Văn Hùng' },
-    ],
-    contracts: [
-      { id: 'HĐT-2026-041', property: 'Studio Tràng Tiền', period: '01/06/2026 - 31/05/2027', value: '12 triệu/tháng', status: 'Hiệu lực' },
-    ],
-  },
-  {
-    id: 'KH-1005',
-    name: 'Đỗ Văn Tuấn',
-    phone: '0913 789 012',
-    email: 'tuan.do@example.com',
-    demand: 'Căn hộ 3PN cho chuyên gia',
-    propertyType: 'Căn hộ 3PN',
-    area: 'Nam Từ Liêm',
-    budget: '25 - 35 triệu',
-    broker: 'Lê Quốc Anh',
-    status: 'dang_tu_van',
-    source: 'LinkedIn',
-    cccd: '001085002998',
-    address: '10 Mễ Trì, Nam Từ Liêm, Hà Nội',
-    lastContact: '27/05/2026',
-    priority: 'Trung bình',
-    viewingSchedules: [
-      { id: 'LX-207', time: '02/06/2026 10:00', property: 'Căn hộ The Matrix One', status: 'Đã xác nhận' },
-    ],
-    activities: [
-      { type: 'message', time: '27/05/2026, 18:00', title: 'Gửi bảng so sánh 4 căn hộ Nam Từ Liêm', by: 'Lê Quốc Anh' },
-      { type: 'call', time: '27/05/2026, 09:40', title: 'Tư vấn nhu cầu cho chuyên gia nước ngoài', by: 'Lê Quốc Anh' },
-    ],
-    contracts: [],
-  },
-  {
-    id: 'KH-1006',
-    name: 'Vũ Thị Hồng',
-    phone: '0907 890 123',
-    email: 'hong.vu@example.com',
-    demand: 'Căn hộ dịch vụ có dọn phòng',
-    propertyType: 'Căn hộ dịch vụ',
-    area: 'Ba Đình',
-    budget: '20 - 28 triệu',
-    broker: 'Phạm Minh Tuấn',
-    status: 'lead_moi',
-    source: 'Zalo OA',
-    cccd: '001192004321',
-    address: '18 Kim Mã, Ba Đình, Hà Nội',
-    lastContact: '29/05/2026',
-    priority: 'Cao',
-    viewingSchedules: [],
-    activities: [
-      { type: 'message', time: 'Hôm nay, 10:15', title: 'Khách nhắn tin hỏi căn hộ dịch vụ Ba Đình', by: 'CSKH' },
-      { type: 'follow_up', time: 'Hôm nay, 10:20', title: 'Chuyển lead cho môi giới phụ trách', by: 'Quản lý sale' },
-    ],
-    contracts: [],
-  },
-]
 
 const TABS = [
   { id: 'profile', label: 'Thông tin cá nhân' },
@@ -503,7 +346,31 @@ function CustomerDrawer({ customer, activeTab, setActiveTab, onClose }) {
   )
 }
 
+const mapCustomer = (c) => ({
+  id: c.id || '',
+  name: c.hoTen || '',
+  phone: c.soDienThoai || '',
+  email: c.email || '',
+  demand: c.nhuCau || c.demand || '',
+  propertyType: c.loaiBatDongSan || c.propertyType || '',
+  area: c.khuVuc || c.area || '',
+  budget: c.nganSach || c.budget || '',
+  broker: c.moiGioiPhuTrach || c.broker || '',
+  status: c.trangThai || c.status || 'lead_moi',
+  source: c.nguonLead || c.source || '',
+  cccd: c.cccd || '',
+  address: c.diaChi || c.address || '',
+  lastContact: c.lanLienHeCuoi || c.lastContact || '',
+  priority: c.doUuTien || c.priority || '',
+  viewingSchedules: c.lichXemNha || c.viewingSchedules || [],
+  activities: c.lichSuHoatDong || c.activities || [],
+  contracts: c.hopDongThue || c.contracts || [],
+})
+
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [areaFilter, setAreaFilter] = useState('all')
   const [budgetFilter, setBudgetFilter] = useState('all')
   const [brokerFilter, setBrokerFilter] = useState('all')
@@ -511,12 +378,30 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [activeTab, setActiveTab] = useState('profile')
 
-  const areas = useMemo(() => Array.from(new Set(CUSTOMERS.map((customer) => customer.area))), [])
-  const budgets = useMemo(() => Array.from(new Set(CUSTOMERS.map((customer) => customer.budget))), [])
-  const brokers = useMemo(() => Array.from(new Set(CUSTOMERS.map((customer) => customer.broker))), [])
+  const fetchCustomers = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await khachHangService.danhSach()
+      setCustomers((res?.data || []).map(mapCustomer))
+    } catch (err) {
+      console.error('Failed to fetch customers:', err)
+      setError('Không thể tải danh sách khách hàng')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCustomers()
+  }, [fetchCustomers])
+
+  const areas = useMemo(() => Array.from(new Set(customers.map((customer) => customer.area))), [customers])
+  const budgets = useMemo(() => Array.from(new Set(customers.map((customer) => customer.budget))), [customers])
+  const brokers = useMemo(() => Array.from(new Set(customers.map((customer) => customer.broker))), [customers])
 
   const filteredCustomers = useMemo(() => (
-    CUSTOMERS.filter((customer) => {
+    customers.filter((customer) => {
       const matchesArea = areaFilter === 'all' || customer.area === areaFilter
       const matchesBudget = budgetFilter === 'all' || customer.budget === budgetFilter
       const matchesBroker = brokerFilter === 'all' || customer.broker === brokerFilter
@@ -524,23 +409,23 @@ export default function CustomersPage() {
 
       return matchesArea && matchesBudget && matchesBroker && matchesStatus
     })
-  ), [areaFilter, brokerFilter, budgetFilter, statusFilter])
+  ), [areaFilter, brokerFilter, budgetFilter, statusFilter, customers])
 
   const kpis = useMemo(() => [
-    { label: 'Tổng khách hàng', value: CUSTOMERS.length, note: 'Khách thuê trong CRM', accent: 'bg-slate-200' },
-    { label: 'Lead mới', value: CUSTOMERS.filter((customer) => customer.status === 'lead_moi').length, note: 'Cần gọi tư vấn', accent: 'bg-blue-100' },
-    { label: 'Đang tư vấn', value: CUSTOMERS.filter((customer) => customer.status === 'dang_tu_van').length, note: 'Đang chăm sóc nhu cầu', accent: 'bg-amber-100' },
-    { label: 'Đã ký hợp đồng', value: CUSTOMERS.filter((customer) => customer.status === 'da_ky_hop_dong').length, note: 'Chuyển thành khách thuê', accent: 'bg-emerald-100' },
-  ], [])
+    { label: 'Tổng khách hàng', value: customers.length, note: 'Khách thuê trong CRM', accent: 'bg-slate-200' },
+    { label: 'Lead mới', value: customers.filter((customer) => customer.status === 'lead_moi').length, note: 'Cần gọi tư vấn', accent: 'bg-blue-100' },
+    { label: 'Đang tư vấn', value: customers.filter((customer) => customer.status === 'dang_tu_van').length, note: 'Đang chăm sóc nhu cầu', accent: 'bg-amber-100' },
+    { label: 'Đã ký hợp đồng', value: customers.filter((customer) => customer.status === 'da_ky_hop_dong').length, note: 'Chuyển thành khách thuê', accent: 'bg-emerald-100' },
+  ], [customers])
 
   const recentActivities = useMemo(
-    () => CUSTOMERS.flatMap((customer) => (
+    () => customers.flatMap((customer) => (
       customer.activities.slice(0, 1).map((activity) => ({
         ...activity,
         title: `${customer.name}: ${activity.title}`,
       }))
     )).slice(0, 5),
-    [],
+    [customers],
   )
 
   function openDrawer(customer, tab = 'profile') {
@@ -554,7 +439,15 @@ export default function CustomersPage() {
         <header className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Quản lý khách hàng</h1>
-            <p className="mt-1 text-sm text-slate-500">Theo dõi khách thuê và cơ hội kinh doanh</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {loading && (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                  Đang tải...
+                </span>
+              )}
+              {!loading && (error || 'Theo dõi khách thuê và cơ hội kinh doanh')}
+            </p>
           </div>
           <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

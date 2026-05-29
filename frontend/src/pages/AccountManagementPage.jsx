@@ -1,114 +1,7 @@
-import { useMemo, useState } from 'react'
-
-const USERS = [
-  {
-    id: 1,
-    name: 'Nguyễn Minh Quân',
-    initials: 'MQ',
-    email: 'admin@rentflow.vn',
-    phone: '0902 114 229',
-    role: 'Admin',
-    status: 'Đang hoạt động',
-    created: '12/03/2024',
-    lastLogin: 'Hôm nay, 08:42',
-    twoFactor: true,
-    attempts: 0,
-    device: 'MacBook Pro - Chrome, Hà Nội',
-    modules: ['Toàn bộ hệ thống', 'Quản trị bảo mật', 'Báo cáo'],
-    history: ['Cập nhật quyền Nhân viên đại lý', 'Xuất báo cáo truy cập hệ thống'],
-  },
-  {
-    id: 2,
-    name: 'Lê Thu Hương',
-    initials: 'TH',
-    email: 'huong.mg@rentflow.vn',
-    phone: '0988 326 551',
-    role: 'Môi giới',
-    status: 'Đang hoạt động',
-    created: '04/11/2024',
-    lastLogin: 'Hôm nay, 09:16',
-    twoFactor: true,
-    attempts: 1,
-    device: 'iPhone 15 - Safari, Ba Đình',
-    modules: ['Bất động sản', 'Lịch xem nhà', 'Khách hàng'],
-    history: ['Đặt lịch xem căn hộ RF-2041', 'Cập nhật hồ sơ khách thuê'],
-  },
-  {
-    id: 3,
-    name: 'Trần Đức Anh',
-    initials: 'ĐA',
-    email: 'ducanh.daily@rentflow.vn',
-    phone: '0914 882 102',
-    role: 'Nhân viên đại lý',
-    status: 'Đang hoạt động',
-    created: '21/01/2025',
-    lastLogin: 'Hôm qua, 16:28',
-    twoFactor: false,
-    attempts: 2,
-    device: 'Windows 11 - Edge, Cầu Giấy',
-    modules: ['Chủ nhà', 'Hợp đồng ký gửi', 'Lịch khảo sát'],
-    history: ['Tạo hồ sơ chủ nhà mới', 'Gửi hợp đồng chờ duyệt'],
-  },
-  {
-    id: 4,
-    name: 'Phạm Bảo Ngọc',
-    initials: 'BN',
-    email: 'ngoc.phaply@rentflow.vn',
-    phone: '0963 571 488',
-    role: 'Pháp luật',
-    status: 'Đang hoạt động',
-    created: '09/05/2024',
-    lastLogin: '25/05/2026, 14:11',
-    twoFactor: true,
-    attempts: 0,
-    device: 'Dell XPS - Chrome, Đống Đa',
-    modules: ['Pháp luật', 'Hợp đồng thuê', 'Hợp đồng ký gửi'],
-    history: ['Phê duyệt hồ sơ pháp lý RF-HD-319', 'Yêu cầu bổ sung giấy tờ'],
-  },
-  {
-    id: 5,
-    name: 'Vũ Thanh Tùng',
-    initials: 'TT',
-    email: 'tung.mg@rentflow.vn',
-    phone: '0977 640 301',
-    role: 'Môi giới',
-    status: 'Bị khóa',
-    created: '17/02/2025',
-    lastLogin: '18/05/2026, 21:30',
-    twoFactor: false,
-    attempts: 5,
-    device: 'Thiết bị lạ - IP 171.240.xxx.xxx',
-    modules: ['Bất động sản', 'Lịch xem nhà'],
-    history: ['Tài khoản bị khóa tự động', '5 lần đăng nhập thất bại'],
-  },
-  {
-    id: 6,
-    name: 'Hoàng Hải Yến',
-    initials: 'HY',
-    email: 'yen.daily@rentflow.vn',
-    phone: '0904 731 910',
-    role: 'Nhân viên đại lý',
-    status: 'Chờ kích hoạt',
-    created: '25/05/2026',
-    lastLogin: 'Chưa đăng nhập',
-    twoFactor: false,
-    attempts: 0,
-    device: 'Chưa có thiết bị',
-    modules: ['Chủ nhà', 'Bất động sản'],
-    history: ['Gửi email kích hoạt tài khoản'],
-  },
-]
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import quanTriService from '../services/quanTriService'
 
 const ROLE_OPTIONS = ['Tất cả role', 'Admin', 'Môi giới', 'Nhân viên đại lý', 'Pháp luật']
-
-const KPI_CARDS = [
-  { label: 'Tổng tài khoản', value: '248', detail: '+12 tháng này', tone: 'blue', icon: 'users' },
-  { label: 'Đang hoạt động', value: '231', detail: '93,1% tổng số', tone: 'green', icon: 'check' },
-  { label: 'Tài khoản bị khóa', value: '05', detail: 'Cần xem xét', tone: 'orange', icon: 'lock' },
-  { label: 'Role Admin', value: '04', detail: 'Quyền cao nhất', tone: 'violet', icon: 'shield' },
-  { label: 'Role Môi giới', value: '126', detail: '+8 đang hoạt động', tone: 'blue', icon: 'briefcase' },
-  { label: 'Role Pháp luật', value: '12', detail: '2 yêu cầu mới', tone: 'green', icon: 'document' },
-]
 
 const PERMISSIONS = {
   Admin: [
@@ -144,6 +37,42 @@ const AUDIT_LOGS = [
 ]
 
 const PERMISSION_LABELS = ['Xem', 'Tạo', 'Sửa', 'Xóa', 'Duyệt']
+
+function initials(name) {
+  return name
+    .split(' ')
+    .slice(-2)
+    .map((part) => part[0])
+    .toUpperCase()
+    .join('')
+}
+
+const statusMap = (status) => {
+  const map = { ACTIVE: 'Đang hoạt động', LOCKED: 'Bị khóa', PENDING: 'Chờ kích hoạt' }
+  return map[status] || status
+}
+
+const roleMap = (role) => {
+  const map = { QUAN_TRI_VIEN: 'Admin', NHAN_VIEN_DAI_LY: 'Nhân viên đại lý', MOI_GIOI: 'Môi giới', PHAP_LUAT: 'Pháp luật' }
+  return map[role] || role
+}
+
+const mapUser = (u) => ({
+  id: u.id,
+  name: u.hoTen || '',
+  initials: initials(u.hoTen || ''),
+  email: u.email || '',
+  phone: u.soDienThoai || '',
+  role: roleMap(u.tenVaiTro),
+  status: statusMap(u.trangThai),
+  created: u.ngayTao || '',
+  lastLogin: u.lanDangNhapCuoi || '',
+  twoFactor: u.haiYeuTo || false,
+  attempts: u.soLanThuSai || 0,
+  device: u.thietBi || '',
+  modules: u.modules || [],
+  history: u.lichSu || [],
+})
 
 function Icon({ name, className = 'h-5 w-5' }) {
   const paths = {
@@ -225,6 +154,7 @@ function PermissionMark({ allowed }) {
 }
 
 function UserDetail({ user, onAction, inModal = false }) {
+  if (!user) return null
   return (
     <div className={`${inModal ? '' : 'rounded-2xl border border-slate-200 bg-white'} overflow-hidden`}>
       <div className="border-b border-slate-100 p-5">
@@ -292,6 +222,8 @@ function UserDetail({ user, onAction, inModal = false }) {
 }
 
 function CreateAccountModal({ onClose, onCreate }) {
+  const [formData, setFormData] = useState({ hoTen: '', email: '', tenVaiTro: 'Nhân viên đại lý', haiYeuTo: true })
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
@@ -307,26 +239,26 @@ function CreateAccountModal({ onClose, onCreate }) {
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <label className="sm:col-span-2">
             <span className="mb-2 block text-xs font-semibold text-slate-600">Họ và tên</span>
-            <input className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="Nhập tên nhân viên" />
+            <input value={formData.hoTen} onChange={(e) => setFormData((prev) => ({ ...prev, hoTen: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="Nhập tên nhân viên" />
           </label>
           <label>
             <span className="mb-2 block text-xs font-semibold text-slate-600">Email công việc</span>
-            <input className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="email@rentflow.vn" />
+            <input value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="email@rentflow.vn" />
           </label>
           <label>
             <span className="mb-2 block text-xs font-semibold text-slate-600">Role</span>
-            <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100">
+            <select value={formData.tenVaiTro} onChange={(e) => setFormData((prev) => ({ ...prev, tenVaiTro: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100">
               {ROLE_OPTIONS.slice(1).map((role) => <option key={role}>{role}</option>)}
             </select>
           </label>
         </div>
         <label className="mt-4 flex items-center gap-2.5 text-sm text-slate-600">
-          <input defaultChecked type="checkbox" className="h-4 w-4 accent-blue-600" />
+          <input checked={formData.haiYeuTo} onChange={(e) => setFormData((prev) => ({ ...prev, haiYeuTo: e.target.checked }))} type="checkbox" className="h-4 w-4 accent-blue-600" />
           Yêu cầu bật xác thực hai lớp khi đăng nhập lần đầu
         </label>
         <div className="mt-7 flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">Hủy</button>
-          <button type="button" onClick={onCreate} className="flex-1 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">Tạo & gửi lời mời</button>
+          <button type="button" onClick={() => onCreate(formData)} className="flex-1 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">Tạo & gửi lời mời</button>
         </div>
       </div>
     </div>
@@ -334,26 +266,63 @@ function CreateAccountModal({ onClose, onCreate }) {
 }
 
 export default function AccountManagementPage() {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('Tất cả role')
   const [statusFilter, setStatusFilter] = useState('Tất cả trạng thái')
-  const [selectedId, setSelectedId] = useState(1)
+  const [selectedId, setSelectedId] = useState(null)
   const [permissionRole, setPermissionRole] = useState('Admin')
   const [mobileDetail, setMobileDetail] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [notice, setNotice] = useState('')
 
+  const fetchUsers = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await quanTriService.danhSachTaiKhoan()
+      const mapped = (res?.data || []).map(mapUser)
+      setUsers(mapped)
+    } catch (err) {
+      console.error('Failed to fetch users:', err)
+      setError('Không thể tải danh sách tài khoản')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
+
+  useEffect(() => {
+    if (selectedId === null && users.length > 0) {
+      setSelectedId(users[0].id)
+    }
+  }, [users, selectedId])
+
+  const KPI_CARDS = useMemo(() => [
+    { label: 'Tổng tài khoản', value: String(users.length), detail: '+12 tháng này', tone: 'blue', icon: 'users' },
+    { label: 'Đang hoạt động', value: String(users.filter((u) => u.status === 'Đang hoạt động').length), detail: users.length ? `${Math.round(users.filter((u) => u.status === 'Đang hoạt động').length / users.length * 100)}% tổng số` : '0% tổng số', tone: 'green', icon: 'check' },
+    { label: 'Tài khoản bị khóa', value: String(users.filter((u) => u.status === 'Bị khóa').length), detail: 'Cần xem xét', tone: 'orange', icon: 'lock' },
+    { label: 'Role Admin', value: String(users.filter((u) => u.role === 'Admin').length), detail: 'Quyền cao nhất', tone: 'violet', icon: 'shield' },
+    { label: 'Role Môi giới', value: String(users.filter((u) => u.role === 'Môi giới').length), detail: `${users.filter((u) => u.role === 'Môi giới' && u.status === 'Đang hoạt động').length} đang hoạt động`, tone: 'blue', icon: 'briefcase' },
+    { label: 'Role Pháp luật', value: String(users.filter((u) => u.role === 'Pháp luật').length), detail: '2 yêu cầu mới', tone: 'green', icon: 'document' },
+  ], [users])
+
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return USERS.filter((user) => {
+    return users.filter((user) => {
       const matchesQuery = !query || `${user.name} ${user.email} ${user.phone}`.toLowerCase().includes(query)
       const matchesRole = roleFilter === 'Tất cả role' || user.role === roleFilter
       const matchesStatus = statusFilter === 'Tất cả trạng thái' || user.status === statusFilter
       return matchesQuery && matchesRole && matchesStatus
     })
-  }, [roleFilter, search, statusFilter])
+  }, [roleFilter, search, statusFilter, users])
 
-  const selectedUser = USERS.find((user) => user.id === selectedId) || USERS[0]
+  const selectedUser = users.find((user) => user.id === selectedId) || (users.length > 0 ? users[0] : null)
 
   const chooseUser = (user) => {
     setSelectedId(user.id)
@@ -361,8 +330,46 @@ export default function AccountManagementPage() {
     setMobileDetail(true)
   }
 
-  const showAction = (message) => {
-    setNotice(`${message} cho ${selectedUser.name}`)
+  const showAction = async (message) => {
+    if (!selectedUser) return
+    if (message === 'Xác nhận khóa tài khoản') {
+      const newStatus = selectedUser.status === 'Bị khóa' ? 'ACTIVE' : 'LOCKED'
+      try {
+        await quanTriService.doiTrangThai(selectedUser.id, newStatus)
+        setNotice(`${newStatus === 'LOCKED' ? 'Đã khóa' : 'Đã mở khóa'} tài khoản ${selectedUser.name}`)
+        fetchUsers()
+      } catch {
+        setNotice('Không thể thay đổi trạng thái tài khoản')
+      }
+    } else if (message === 'Xác nhận xóa tài khoản') {
+      try {
+        await quanTriService.xoaTaiKhoan(selectedUser.id)
+        setNotice(`Đã xóa tài khoản ${selectedUser.name}`)
+        setSelectedId(null)
+        fetchUsers()
+      } catch {
+        setNotice('Không thể xóa tài khoản')
+      }
+    } else if (message === 'Mở chỉnh sửa vai trò') {
+      setNotice(`Chức năng đổi role cho ${selectedUser.name} đang phát triển`)
+    } else if (message === 'Mở trình chỉnh sửa quyền') {
+      setNotice(`Chức năng chỉnh sửa quyền cho ${selectedUser.name} đang phát triển`)
+    } else if (message === 'Gửi yêu cầu đặt lại mật khẩu') {
+      setNotice(`Đã gửi yêu cầu đặt lại mật khẩu cho ${selectedUser.name}`)
+    } else {
+      setNotice(`${message} cho ${selectedUser.name}`)
+    }
+  }
+
+  const handleCreate = async (data) => {
+    try {
+      await quanTriService.taoTaiKhoan(data)
+      setCreateOpen(false)
+      setNotice('Đã tạo lời mời kích hoạt tài khoản mới')
+      fetchUsers()
+    } catch {
+      setNotice('Không thể tạo tài khoản')
+    }
   }
 
   return (
@@ -374,7 +381,15 @@ export default function AccountManagementPage() {
             BẢO MẬT & PHÂN QUYỀN
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Quản lý tài khoản &amp; phân quyền</h1>
-          <p className="mt-1 text-sm text-slate-500">Quản lý người dùng nội bộ và quyền truy cập hệ thống</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {loading && (
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                Đang tải...
+              </span>
+            )}
+            {!loading && (error || 'Quản lý người dùng nội bộ và quyền truy cập hệ thống')}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none">
@@ -404,7 +419,7 @@ export default function AccountManagementPage() {
             <div className="flex flex-col gap-4 border-b border-slate-100 p-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="font-semibold text-slate-900">Danh sách tài khoản nội bộ</h2>
-                <p className="mt-1 text-xs text-slate-500">Hiển thị {filteredUsers.length} trên 248 tài khoản</p>
+                <p className="mt-1 text-xs text-slate-500">Hiển thị {filteredUsers.length} trên {users.length} tài khoản</p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <div className="relative">
@@ -514,12 +529,12 @@ export default function AccountManagementPage() {
 
         <aside className="hidden xl:block">
           <div className="sticky top-0">
-            <UserDetail user={selectedUser} onAction={showAction} />
+            {selectedUser && <UserDetail user={selectedUser} onAction={showAction} />}
           </div>
         </aside>
       </div>
 
-      {mobileDetail && (
+      {mobileDetail && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-end bg-slate-950/40 p-3 backdrop-blur-sm xl:hidden" onClick={() => setMobileDetail(false)}>
           <div className="max-h-[90vh] w-full overflow-y-auto rounded-3xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex justify-end px-4 pt-3">
@@ -530,7 +545,7 @@ export default function AccountManagementPage() {
         </div>
       )}
 
-      {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} onCreate={() => { setCreateOpen(false); setNotice('Đã tạo lời mời kích hoạt tài khoản mới') }} />}
+      {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} onCreate={handleCreate} />}
     </div>
   )
 }

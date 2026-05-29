@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import contractService from '../services/contractService'
+import hopDongKyGuiService from '../services/hopDongKyGuiService'
 
 const STATUS_CONFIG = {
   cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -32,6 +33,12 @@ const SORT_OPTIONS = [
   { key: 'amount_desc', label: 'Tiền ĐB cao nhất' },
   { key: 'amount_asc', label: 'Tiền ĐB thấp nhất' },
 ]
+
+const CLAUSE_STATUS = {
+  cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  da_duyet: { label: 'Đã duyệt', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  tu_choi: { label: 'Từ chối', color: 'bg-red-50 text-red-700 border-red-200' },
+}
 
 const STATUS_MAP = {
   NHAP: 'cho_duyet',
@@ -190,8 +197,8 @@ function WorkflowTimeline({ currentStep }) {
 }
 
 function ContractRow({ contract, isSelected, onSelect }) {
-  const status = STATUS_CONFIG[contract.trangThai]
-  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy]
+  const status = STATUS_CONFIG[contract.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: contract.trangThai }
+  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy] || { color: 'bg-slate-100 text-slate-500', dot: 'bg-slate-400', label: contract.trangThaiPhapLy }
   const daysLeft = daysUntil(contract.ngayHetHan)
 
   return (
@@ -206,7 +213,7 @@ function ContractRow({ contract, isSelected, onSelect }) {
       <td className="py-3 px-4">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-blue-700">{contract.chuNha.charAt(0) || '?'}</span>
+            <span className="text-xs font-semibold text-blue-700">{contract.chuNha?.charAt(0) || '?'}</span>
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-slate-800 truncate">{contract.chuNha || '—'}</p>
@@ -245,8 +252,8 @@ function ContractRow({ contract, isSelected, onSelect }) {
 
 function ContractDetail({ contract, onClose }) {
   if (!contract) return null
-  const status = STATUS_CONFIG[contract.trangThai]
-  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy]
+  const status = STATUS_CONFIG[contract.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: contract.trangThai }
+  const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy] || { color: 'bg-slate-100 text-slate-500', dot: 'bg-slate-400', label: contract.trangThaiPhapLy }
   const daysLeft = daysUntil(contract.ngayHetHan)
 
   return (
@@ -344,7 +351,7 @@ function ContractDetail({ contract, onClose }) {
               </div>
             </div>
             {contract.giaThue > 0 && (
-              <p className="text-xs text-emerald-600 mt-1">Tương đương {Math.round(Number(contract.tienDamBao) / Number(contract.giaThue))} tháng tiền thuê</p>
+              <p className="text-xs text-emerald-600 mt-1">Tương đương {Math.round(contract.tienDamBao / contract.giaThue)} tháng tiền thuê</p>
             )}
           </div>
         </div>
@@ -356,6 +363,30 @@ function ContractDetail({ contract, onClose }) {
           </div>
         </div>
 
+        {/* Additional Clauses */}
+        {(contract.dieuKhoanPhatSinh || []).length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Điều khoản phát sinh</h4>
+            <div className="space-y-2">
+              {(contract.dieuKhoanPhatSinh || []).map((dk, i) => {
+                const clauseStatus = CLAUSE_STATUS[dk.trangThai]
+                return (
+                  <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-slate-700 flex-1">{dk.noiDung}</p>
+                      <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-medium border ${clauseStatus.color}`}>
+                        {clauseStatus.label}
+                      </span>
+                    </div>
+                    {dk.ghiChu && <p className="text-xs text-slate-400 mt-1.5 italic">{dk.ghiChu}</p>}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* PDF */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">File hợp đồng</h4>
           <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center">
@@ -369,6 +400,97 @@ function ContractDetail({ contract, onClose }) {
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Tiến trình pháp lý</h4>
           <WorkflowTimeline currentStep={contract.workflowStep} />
+        </div>
+
+        {/* Activity History */}
+        <div>
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Lịch sử hoạt động</h4>
+          <div className="space-y-0">
+            {(contract.lichSu || []).map((item, i) => {
+              const iconConfig = {
+                create: { bg: 'bg-blue-100', color: 'text-blue-600', icon: 'M12 4v16m8-8H4' },
+                edit: { bg: 'bg-amber-100', color: 'text-amber-600', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+                approve: { bg: 'bg-emerald-100', color: 'text-emerald-600', icon: 'M5 13l4 4L19 7' },
+                sign: { bg: 'bg-indigo-100', color: 'text-indigo-600', icon: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z' },
+                active: { bg: 'bg-cyan-100', color: 'text-cyan-600', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+                send: { bg: 'bg-purple-100', color: 'text-purple-600', icon: 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8' },
+                reject: { bg: 'bg-red-100', color: 'text-red-600', icon: 'M6 18L18 6M6 6l12 12' },
+                expire: { bg: 'bg-slate-100', color: 'text-slate-600', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                suspend: { bg: 'bg-orange-100', color: 'text-orange-600', icon: 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636' },
+              }
+              const cfg = iconConfig[item.loai] || iconConfig.create
+              const isLast = i === contract.lichSu.length - 1
+              return (
+                <div key={i} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-7 h-7 rounded-full ${cfg.bg} flex items-center justify-center shrink-0`}>
+                      <svg className={`w-3.5 h-3.5 ${cfg.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={cfg.icon} />
+                      </svg>
+                    </div>
+                    {!isLast && <div className="w-0.5 flex-1 bg-slate-200 my-1" />}
+                  </div>
+                  <div className={`pb-3 ${isLast ? '' : ''}`}>
+                    <p className="text-xs text-slate-700">{item.noiDung}</p>
+                    <p className="text-[10px] text-slate-400">{item.nguoi} · {formatDate(item.ngay)}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div>
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thao tác</h4>
+          <div className="space-y-2">
+            {(contract.trangThai === 'cho_duyet' || contract.trangThaiPhapLy === 'can_sua') && (
+              <div className="flex gap-2">
+                <button className="flex-1 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Duyệt hợp đồng
+                </button>
+                <button className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Từ chối
+                </button>
+              </div>
+            )}
+            {contract.trangThai === 'cho_ky' && (
+              <button className="w-full py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Gửi cho chủ nhà ký
+              </button>
+            )}
+            <div className="flex gap-2">
+              <button className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Chỉnh sửa
+              </button>
+              <button className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Xuất PDF
+              </button>
+            </div>
+            {contract.trangThai === 'dang_hieu_luc' && (
+              <button className="w-full py-2.5 rounded-lg border border-amber-300 text-amber-700 text-sm font-medium hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Gia hạn hợp đồng
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -409,6 +531,7 @@ function EmptyState() {
 export default function AdminHopDongKyGuiPage() {
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTrangThai, setFilterTrangThai] = useState('all')
   const [filterPhapLy, setFilterPhapLy] = useState('all')
@@ -418,10 +541,12 @@ export default function AdminHopDongKyGuiPage() {
 
   const fetchContracts = async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await contractService.getKyGuiContracts()
       setContracts((res?.data || []).map(mapContract))
-    } catch {
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải danh sách hợp đồng')
       setContracts([])
     } finally {
       setLoading(false)
@@ -465,7 +590,11 @@ export default function AdminHopDongKyGuiPage() {
       }
       case 'amount_desc': result.sort((a, b) => (b.tienDamBao || 0) - (a.tienDamBao || 0)); break
       case 'amount_asc': result.sort((a, b) => (a.tienDamBao || 0) - (b.tienDamBao || 0)); break
-      default: result.sort((a, b) => new Date(b.ngayKy || 0) - new Date(a.ngayKy || 0))
+      default: result.sort((a, b) => {
+        const dateA = (a.lichSu || [])[0]?.ngay || a.ngayKy || ''
+        const dateB = (b.lichSu || [])[0]?.ngay || b.ngayKy || ''
+        return new Date(dateB) - new Date(dateA)
+      })
     }
     return result
   }, [contracts, searchQuery, filterTrangThai, filterPhapLy, filterChuNha, sortBy])
@@ -473,9 +602,9 @@ export default function AdminHopDongKyGuiPage() {
   const kpiData = useMemo(() => ({
     total: contracts.length,
     choDuyet: contracts.filter(c => c.trangThai === 'cho_duyet').length,
-    dangHieuLuc: contracts.filter(c => c.trangThai === 'dang_hieu_luc' || c.trangThai === 'sap_het_han').length,
+    dangHieuLuc: contracts.filter(c => c.trangThai === 'dang_hieu_luc').length,
     sapHetHan: contracts.filter(c => c.trangThai === 'sap_het_han').length,
-    coDieuKhoan: contracts.filter(c => c.dieuKhoanPhatSinh.length > 0).length,
+    coDieuKhoan: contracts.filter(c => (c.dieuKhoanPhatSinh || []).length > 0).length,
   }), [contracts])
 
   const alertData = useMemo(() => {
@@ -489,8 +618,28 @@ export default function AdminHopDongKyGuiPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+      <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-md">
+          <svg className="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p className="text-red-700 font-medium mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+          <button onClick={fetchContracts} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+            Thử lại
+          </button>
+        </div>
       </div>
     )
   }

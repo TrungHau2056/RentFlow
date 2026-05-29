@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import contractService from '../services/contractService'
+import hopDongKyGuiService from '../services/hopDongKyGuiService'
+import hopDongThueService from '../services/hopDongThueService'
 
 const STATUS_CONFIG = {
   cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -43,6 +45,18 @@ const TRANG_THAI_MAP = {
 const LOAI_HOP_DONG = {
   KY_GUI: 'ky_gui',
   THUE: 'thue',
+}
+
+const CLAUSE_RISK_CONFIG = {
+  cao: { label: 'Rủi ro cao', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-400' },
+  trung_binh: { label: 'Rủi ro TB', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+  thap: { label: 'Rủi ro thấp', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
+}
+
+const CLAUSE_STATUS = {
+  cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  da_duyet: { label: 'Đã duyệt', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  tu_choi: { label: 'Từ chối', color: 'bg-red-50 text-red-700 border-red-200' },
 }
 
 function formatDate(dateStr) {
@@ -127,9 +141,9 @@ function KPICard({ icon, label, value, color, bgColor, sparkData, sparkColor, ac
 }
 
 function RequestRow({ request, isSelected, onSelect }) {
-  const status = STATUS_CONFIG[request.trangThai]
-  const priority = PRIORITY_CONFIG[request.mucDoUuTien]
-  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau]
+  const status = STATUS_CONFIG[request.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: request.trangThai }
+  const priority = PRIORITY_CONFIG[request.mucDoUuTien] || { color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400', label: request.mucDoUuTien }
+  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau] || { color: 'bg-slate-100 text-slate-600', icon: '', label: request.loaiYeuCau }
   const daysLeft = daysUntil(request.deadline)
   const isOverdue = daysLeft !== null && daysLeft < 0
   const isUrgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 1
@@ -162,9 +176,11 @@ function RequestRow({ request, isSelected, onSelect }) {
       </td>
       <td className="py-3 px-4">
         <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium ${loaiYC.color}`}>
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={loaiYC.icon} />
-          </svg>
+          {loaiYC.icon && (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={loaiYC.icon} />
+            </svg>
+          )}
           {loaiYC.label}
         </span>
       </td>
@@ -190,11 +206,60 @@ function RequestRow({ request, isSelected, onSelect }) {
   )
 }
 
-function LegalDetail({ request, onClose, onApprove, onReject }) {
+function ClauseCompare({ clause }) {
+  const risk = CLAUSE_RISK_CONFIG[clause.mucDoRuiRo]
+  const clauseStatus = CLAUSE_STATUS[clause.trangThai]
+
+  return (
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-slate-50 px-4 py-2.5 flex items-center justify-between border-b border-slate-200">
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span className="text-sm font-semibold text-slate-700">{clause.dieuKhoan}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${risk.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${risk.dot}`} />
+            {risk.label}
+          </span>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${clauseStatus.color}`}>
+            {clauseStatus.label}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 divide-x divide-slate-200">
+        <div className="p-3">
+          <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wide mb-1.5">Nội dung cũ</p>
+          <p className="text-sm text-slate-600 leading-relaxed bg-red-50/50 rounded p-2 border border-red-100/50">{clause.noiDungCu}</p>
+        </div>
+        <div className="p-3">
+          <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide mb-1.5">Nội dung mới</p>
+          <p className="text-sm text-slate-700 leading-relaxed bg-emerald-50/50 rounded p-2 border border-emerald-100/50">{clause.noiDungMoi}</p>
+        </div>
+      </div>
+
+      {clause.ghiChu && (
+        <div className="px-4 py-2.5 border-t border-slate-100 bg-amber-50/50">
+          <p className="text-xs text-amber-700 flex items-start gap-1.5">
+            <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {clause.ghiChu}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLoading }) {
   if (!request) return null
-  const status = STATUS_CONFIG[request.trangThai]
-  const priority = PRIORITY_CONFIG[request.mucDoUuTien]
-  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau]
+  const status = STATUS_CONFIG[request.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: request.trangThai }
+  const priority = PRIORITY_CONFIG[request.mucDoUuTien] || { color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400', label: request.mucDoUuTien }
+  const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau] || { color: 'bg-slate-100 text-slate-600', icon: '', label: request.loaiYeuCau }
   const daysLeft = daysUntil(request.deadline)
   const isOverdue = daysLeft !== null && daysLeft < 0
   const canAct = request.trangThai === 'cho_duyet' || request.trangThai === 'dang_xet_duyet'
@@ -287,23 +352,35 @@ function LegalDetail({ request, onClose, onApprove, onReject }) {
             {canAct && (
               <>
                 <button
-                  onClick={() => onApprove(request)}
-                  className="w-full py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5"
+                  onClick={() => onApprove(request.id)}
+                  disabled={actionLoading}
+                  className="w-full py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Phê duyệt
+                  {actionLoading ? 'Đang xử lý...' : 'Phê duyệt'}
                 </button>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => onReject(request)}
-                    className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
+                    onClick={() => onReject(request.id)}
+                    disabled={actionLoading}
+                    className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    Từ chối
+                    {actionLoading ? 'Đang xử lý...' : 'Từ chối'}
+                  </button>
+                  <button
+                    onClick={() => onSubmit(request.id)}
+                    disabled={actionLoading}
+                    className="flex-1 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    {actionLoading ? 'Đang xử lý...' : 'Yêu cầu sửa'}
                   </button>
                 </div>
               </>
@@ -349,6 +426,8 @@ function EmptyState() {
 export default function LegalPage() {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTrangThai, setFilterTrangThai] = useState('all')
   const [filterUuTien, setFilterUuTien] = useState('all')
@@ -356,8 +435,9 @@ export default function LegalPage() {
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
 
-  const fetchContracts = async () => {
+  const fetchContracts = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const [kyGuiRes, thueRes] = await Promise.all([
         contractService.getKyGuiContracts(),
@@ -366,46 +446,67 @@ export default function LegalPage() {
       const kyGuiList = (kyGuiRes?.data || []).map(mapKyGuiContract)
       const thueList = (thueRes?.data || []).map(mapThueContract)
       setRequests([...kyGuiList, ...thueList])
-    } catch {
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải danh sách yêu cầu')
       setRequests([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchContracts()
-  }, [])
+  }, [fetchContracts])
 
-  const handleApprove = async (request) => {
+  const handleApprove = useCallback(async (id) => {
+    setActionLoading(true)
     try {
-      if (request.loaiHopDong === 'ky_gui') {
-        await contractService.approveKyGuiContract(request.id, true)
+      const request = requests.find(r => r.id === id)
+      if (request?.loaiHopDong === 'ky_gui') {
+        await contractService.approveKyGuiContract(id, true)
       } else {
-        await contractService.updateThueContractStatus(request.id, 'DA_PHE_DUYET')
+        await contractService.updateThueContractStatus(id, 'DA_PHE_DUYET')
       }
       setSelectedId(null)
       fetchContracts()
-    } catch {
-      // Silently fail — the UI will re-fetch
+    } catch (err) {
+      alert(err.response?.data?.message || 'Phê duyệt thất bại')
+    } finally {
+      setActionLoading(false)
     }
-  }
+  }, [fetchContracts, requests])
 
-  const handleReject = async (request) => {
-    const lyDo = prompt('Nhập lý do từ chối:')
-    if (lyDo === null) return
+  const handleReject = useCallback(async (id) => {
+    setActionLoading(true)
     try {
-      if (request.loaiHopDong === 'ky_gui') {
-        await contractService.approveKyGuiContract(request.id, false, lyDo)
+      const request = requests.find(r => r.id === id)
+      const lyDo = prompt('Nhập lý do từ chối:')
+      if (lyDo === null) { setActionLoading(false); return }
+      if (request?.loaiHopDong === 'ky_gui') {
+        await contractService.approveKyGuiContract(id, false, lyDo)
       } else {
-        await contractService.updateThueContractStatus(request.id, 'TU_CHOI')
+        await contractService.updateThueContractStatus(id, 'TU_CHOI')
       }
       setSelectedId(null)
       fetchContracts()
-    } catch {
-      // Silently fail
+    } catch (err) {
+      alert(err.response?.data?.message || 'Từ chối thất bại')
+    } finally {
+      setActionLoading(false)
     }
-  }
+  }, [fetchContracts, requests])
+
+  const handleSubmit = useCallback(async (id) => {
+    setActionLoading(true)
+    try {
+      await hopDongKyGuiService.guiPheDuyet(id)
+      fetchContracts()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gửi duyệt thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [fetchContracts])
 
   const filtered = useMemo(() => {
     let result = [...requests]
@@ -435,7 +536,7 @@ export default function LegalPage() {
       default: result.sort((a, b) => new Date(b.ngayGui) - new Date(a.ngayGui))
     }
     return result
-  }, [requests, searchQuery, filterTrangThai, filterUuTien, filterLoai, sortBy])
+  }, [searchQuery, filterTrangThai, filterUuTien, filterLoai, sortBy, requests])
 
   const kpiData = useMemo(() => ({
     choDuyet: requests.filter(r => r.trangThai === 'cho_duyet' || r.trangThai === 'dang_xet_duyet').length,
@@ -455,14 +556,6 @@ export default function LegalPage() {
   }, [requests])
 
   const selectedRequest = selectedId ? requests.find(r => r.id === selectedId) : null
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
-      </div>
-    )
-  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -600,7 +693,23 @@ export default function LegalPage() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-slate-500">Đang tải yêu cầu pháp lý...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <p className="text-red-600 font-medium mb-2">{error}</p>
+            <button onClick={fetchContracts} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+              Thử lại
+            </button>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="flex gap-6">
@@ -638,12 +747,7 @@ export default function LegalPage() {
 
           {selectedRequest && (
             <div className="w-105 shrink-0 hidden xl:block">
-              <LegalDetail
-                request={selectedRequest}
-                onClose={() => setSelectedId(null)}
-                onApprove={handleApprove}
-                onReject={handleReject}
-              />
+              <LegalDetail request={selectedRequest} onClose={() => setSelectedId(null)} onApprove={handleApprove} onReject={handleReject} onSubmit={handleSubmit} actionLoading={actionLoading} />
             </div>
           )}
         </div>

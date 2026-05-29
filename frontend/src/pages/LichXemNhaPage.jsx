@@ -1,274 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-
-// ── Mock data ────────────────────────────────────────────────────────
-const MOCK_SCHEDULES = [
-  {
-    id: 1,
-    ma: 'LX-2025-001',
-    khachHang: 'Nguyễn Văn Minh',
-    sdtKH: '0901 234 567',
-    emailKH: 'nguyenvanminh@email.com',
-    batDongSan: 'Căn hộ 2PN Vinhomes Times City',
-    diaChiBDS: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaBDS: 15000000,
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    ngayXem: '2025-05-28',
-    gioXem: '09:00',
-    hinhThuc: 'truc_tiep',
-    trangThai: 'cho_xac_nhan',
-    ghiChu: 'Khách muốn xem thêm căn cùng tầng',
-    lyDoHuy: null,
-    ketQua: null,
-    nhanXetKH: null,
-    ghiChuMG: null,
-    lichSu: [
-      { ngay: '2025-05-25', noiDung: 'Tạo lịch xem', nguoi: 'Trần Văn Hùng', loai: 'create' },
-    ],
-  },
-  {
-    id: 2,
-    ma: 'LX-2025-002',
-    khachHang: 'Lê Thị Hương',
-    sdtKH: '0988 555 666',
-    emailKH: 'lethihuong@email.com',
-    batDongSan: 'Nhà mặt phố Cầu Giấy',
-    diaChiBDS: '122 Cầu Giấy, Cầu Giấy, Hà Nội',
-    loaiBDS: 'Nhà phố',
-    giaBDS: 35000000,
-    moiGioi: 'Nguyễn Thị Lan',
-    sdtMoiGioi: '0912 888 999',
-    ngayXem: '2025-05-29',
-    gioXem: '14:00',
-    hinhThuc: 'di_cung_moi_gioi',
-    trangThai: 'da_xac_nhan',
-    ghiChu: 'Khách muốn khảo sát kỹ hạ tầng xung quanh',
-    lyDoHuy: null,
-    ketQua: null,
-    nhanXetKH: null,
-    ghiChuMG: null,
-    lichSu: [
-      { ngay: '2025-05-26', noiDung: 'Tạo lịch xem', nguoi: 'Nguyễn Thị Lan', loai: 'create' },
-      { ngay: '2025-05-27', noiDung: 'Xác nhận lịch xem', nguoi: 'Nguyễn Thị Lan', loai: 'confirm' },
-    ],
-  },
-  {
-    id: 3,
-    ma: 'LX-2025-003',
-    khachHang: 'Phạm Đức Anh',
-    sdtKH: '0965 111 222',
-    emailKH: 'phamducanh@email.com',
-    batDongSan: 'Căn hộ 3PN The Manor',
-    diaChiBDS: 'The Manor, Mai Dịch, Cầu Giấy, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaBDS: 28000000,
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    ngayXem: '2025-05-27',
-    gioXem: '10:30',
-    hinhThuc: 'truc_tiep',
-    trangThai: 'da_xem',
-    ghiChu: null,
-    lyDoHuy: null,
-    ketQua: 'quan_tam',
-    nhanXetKH: 'Thích layout phòng khách rộng, cần thời gian suy nghĩ',
-    ghiChuMG: 'Khách tiềm năng cao, nên theo sát trong 3 ngày',
-    lichSu: [
-      { ngay: '2025-05-24', noiDung: 'Tạo lịch xem', nguoi: 'Lê Quốc Anh', loai: 'create' },
-      { ngay: '2025-05-25', noiDung: 'Xác nhận lịch xem', nguoi: 'Lê Quốc Anh', loai: 'confirm' },
-      { ngay: '2025-05-27', noiDung: 'Hoàn thành xem nhà — Quan tâm', nguoi: 'Lê Quốc Anh', loai: 'complete' },
-    ],
-  },
-  {
-    id: 4,
-    ma: 'LX-2025-004',
-    khachHang: 'Vũ Minh Trí',
-    sdtKH: '0965 333 444',
-    emailKH: 'vuminhtri@email.com',
-    batDongSan: 'Nhà mặt phố Đống Đa',
-    diaChiBDS: '88 Láng Hạ, Đống Đa, Hà Nội',
-    loaiBDS: 'Nhà phố',
-    giaBDS: 22000000,
-    moiGioi: 'Phạm Minh Tuấn',
-    sdtMoiGioi: '0903 456 789',
-    ngayXem: '2025-05-26',
-    gioXem: '15:00',
-    hinhThuc: 'video_call',
-    trangThai: 'da_huy',
-    ghiChu: 'Khách bận đột xuất',
-    lyDoHuy: 'Lịch trình công việc thay đổi, xin dời sang tuần sau',
-    ketQua: null,
-    nhanXetKH: null,
-    ghiChuMG: null,
-    lichSu: [
-      { ngay: '2025-05-23', noiDung: 'Tạo lịch xem', nguoi: 'Phạm Minh Tuấn', loai: 'create' },
-      { ngay: '2025-05-24', noiDung: 'Xác nhận lịch xem', nguoi: 'Phạm Minh Tuấn', loai: 'confirm' },
-      { ngay: '2025-05-26', noiDung: 'Hủy lịch xem', nguoi: 'Vũ Minh Trí', loai: 'cancel' },
-    ],
-  },
-  {
-    id: 5,
-    ma: 'LX-2025-005',
-    khachHang: 'Trần Hương Giang',
-    sdtKH: '0988 777 888',
-    emailKH: 'tranhuonggiang@email.com',
-    batDongSan: 'Căn hộ Studio Times City',
-    diaChiBDS: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaBDS: 8000000,
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    ngayXem: '2025-05-30',
-    gioXem: '11:00',
-    hinhThuc: 'truc_tiep',
-    trangThai: 'cho_xac_nhan',
-    ghiChu: 'Khách muốn xem vào buổi sáng',
-    lyDoHuy: null,
-    ketQua: null,
-    nhanXetKH: null,
-    ghiChuMG: null,
-    lichSu: [
-      { ngay: '2025-05-27', noiDung: 'Tạo lịch xem', nguoi: 'Lê Quốc Anh', loai: 'create' },
-    ],
-  },
-  {
-    id: 6,
-    ma: 'LX-2025-006',
-    khachHang: 'Đỗ Quang Hải',
-    sdtKH: '0905 222 333',
-    emailKH: 'doquanghai@email.com',
-    batDongSan: 'Kiot mặt đường Kim Mã',
-    diaChiBDS: '142 Kim Mã, Ba Đình, Hà Nội',
-    loaiBDS: 'Kiot',
-    giaBDS: 12000000,
-    moiGioi: 'Nguyễn Thị Lan',
-    sdtMoiGioi: '0912 888 999',
-    ngayXem: '2025-05-28',
-    gioXem: '16:00',
-    hinhThuc: 'di_cung_moi_gioi',
-    trangThai: 'doi_lich',
-    ghiChu: 'Khách yêu cầu dời sang 30/5',
-    lyDoHuy: 'Trời mưa lớn, khách xin dời lịch',
-    ketQua: null,
-    nhanXetKH: null,
-    ghiChuMG: null,
-    lichSu: [
-      { ngay: '2025-05-25', noiDung: 'Tạo lịch xem', nguoi: 'Nguyễn Thị Lan', loai: 'create' },
-      { ngay: '2025-05-26', noiDung: 'Xác nhận lịch xem', nguoi: 'Nguyễn Thị Lan', loai: 'confirm' },
-      { ngay: '2025-05-28', noiDung: 'Dời lịch — khách xin dời do thời tiết', nguoi: 'Nguyễn Thị Lan', loai: 'reschedule' },
-    ],
-  },
-  {
-    id: 7,
-    ma: 'LX-2025-007',
-    khachHang: 'Mai Phương Thảo',
-    sdtKH: '0966 777 888',
-    emailKH: 'maiphuongthao@email.com',
-    batDongSan: 'Văn phòng hạng B Cầu Giấy',
-    diaChiBDS: 'Tòa Keangnam, Phạm Hùng, Cầu Giấy, Hà Nội',
-    loaiBDS: 'Văn phòng',
-    giaBDS: 35000000,
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    ngayXem: '2025-05-25',
-    gioXem: '09:30',
-    hinhThuc: 'truc_tiep',
-    trangThai: 'da_xem',
-    ghiChu: null,
-    lyDoHuy: null,
-    ketQua: 'khong_quan_tam',
-    nhanXetKH: 'Diện tích nhỏ hơn mong đợi, vị trí không phù hợp',
-    ghiChuMG: 'Khách cần văn phòng từ 80m2 trở lên, nên giới thiệu BDS khác',
-    lichSu: [
-      { ngay: '2025-05-22', noiDung: 'Tạo lịch xem', nguoi: 'Trần Văn Hùng', loai: 'create' },
-      { ngay: '2025-05-23', noiDung: 'Xác nhận lịch xem', nguoi: 'Trần Văn Hùng', loai: 'confirm' },
-      { ngay: '2025-05-25', noiDung: 'Hoàn thành xem nhà — Không quan tâm', nguoi: 'Trần Văn Hùng', loai: 'complete' },
-    ],
-  },
-  {
-    id: 8,
-    ma: 'LX-2025-008',
-    khachHang: 'Công ty TNHH ABC',
-    sdtKH: '024-3555-7890',
-    emailKH: 'info@abctech.vn',
-    batDongSan: 'Shophouse Sun Grand City',
-    diaChiBDS: 'Sun Grand City, Thụy Khuê, Tây Hồ, Hà Nội',
-    loaiBDS: 'Shophouse',
-    giaBDS: 45000000,
-    moiGioi: 'Phạm Minh Tuấn',
-    sdtMoiGioi: '0903 456 789',
-    ngayXem: '2025-05-31',
-    gioXem: '10:00',
-    hinhThuc: 'di_cung_moi_gioi',
-    trangThai: 'da_xac_nhan',
-    ghiChu: 'Đại diện công ty xem trước, sẽ quyết định sau',
-    lyDoHuy: null,
-    ketQua: null,
-    nhanXetKH: null,
-    ghiChuMG: null,
-    lichSu: [
-      { ngay: '2025-05-27', noiDung: 'Tạo lịch xem', nguoi: 'Phạm Minh Tuấn', loai: 'create' },
-      { ngay: '2025-05-28', noiDung: 'Xác nhận lịch xem', nguoi: 'Phạm Minh Tuấn', loai: 'confirm' },
-    ],
-  },
-  {
-    id: 9,
-    ma: 'LX-2025-009',
-    khachHang: 'Hoàng Đức Thắng',
-    sdtKH: '0911 222 333',
-    emailKH: 'hoangducthang@email.com',
-    batDongSan: 'Căn hộ 3PN The Manor',
-    diaChiBDS: 'The Manor, Mai Dịch, Cầu Giấy, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaBDS: 28000000,
-    moiGioi: 'Lê Quốc Anh',
-    sdtMoiGioi: '0987 654 321',
-    ngayXem: '2025-05-24',
-    gioXem: '14:00',
-    hinhThuc: 'truc_tiep',
-    trangThai: 'da_xem',
-    ghiChu: null,
-    lyDoHuy: null,
-    ketQua: 'cho_quyet_dinh',
-    nhanXetKH: 'Căn đẹp nhưng giá hơi cao so với ngân sách, cần thảo luận thêm với gia đình',
-    ghiChuMG: 'Khách hẹn phản hồi sau 2 ngày. Cần gọi lại 26/05.',
-    lichSu: [
-      { ngay: '2025-05-21', noiDung: 'Tạo lịch xem', nguoi: 'Lê Quốc Anh', loai: 'create' },
-      { ngay: '2025-05-22', noiDung: 'Xác nhận lịch xem', nguoi: 'Lê Quốc Anh', loai: 'confirm' },
-      { ngay: '2025-05-24', noiDung: 'Hoàn thành xem nhà — Chờ quyết định', nguoi: 'Lê Quốc Anh', loai: 'complete' },
-    ],
-  },
-  {
-    id: 10,
-    ma: 'LX-2025-010',
-    khachHang: 'Nguyễn Đức Anh',
-    sdtKH: '0911 444 555',
-    emailKH: 'nguyenducanh@email.com',
-    batDongSan: 'Căn hộ 2PN Vinhomes Times City',
-    diaChiBDS: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    loaiBDS: 'Căn hộ',
-    giaBDS: 15000000,
-    moiGioi: 'Trần Văn Hùng',
-    sdtMoiGioi: '0912 345 678',
-    ngayXem: '2025-05-23',
-    gioXem: '11:00',
-    hinhThuc: 'video_call',
-    trangThai: 'da_xem',
-    ghiChu: null,
-    lyDoHuy: null,
-    ketQua: 'quan_tam',
-    nhanXetKH: 'Rất thích căn này, muốn xem trực tiếp lần 2',
-    ghiChuMG: 'Đã tạo lịch xem trực tiếp lần 2, chờ xác nhận',
-    lichSu: [
-      { ngay: '2025-05-20', noiDung: 'Tạo lịch xem (video)', nguoi: 'Trần Văn Hùng', loai: 'create' },
-      { ngay: '2025-05-21', noiDung: 'Xác nhận lịch xem', nguoi: 'Trần Văn Hùng', loai: 'confirm' },
-      { ngay: '2025-05-23', noiDung: 'Hoàn thành xem nhà (video) — Quan tâm', nguoi: 'Trần Văn Hùng', loai: 'complete' },
-    ],
-  },
-]
-
+import lichHenXemNhaService from '../services/lichHenXemNhaService'
 const STATUS_CONFIG = {
   cho_xac_nhan: { label: 'Chờ xác nhận', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
   da_xac_nhan: { label: 'Đã xác nhận', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
@@ -289,7 +21,6 @@ const KET_QUA_CONFIG = {
   cho_quyet_dinh: { label: 'Chờ quyết định', color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-400' },
 }
 
-const MOI_GIOI_OPTIONS = ['Tất cả', 'Trần Văn Hùng', 'Lê Quốc Anh', 'Phạm Minh Tuấn', 'Nguyễn Thị Lan']
 const STATUS_OPTIONS = ['Tất cả', 'Chờ xác nhận', 'Đã xác nhận', 'Đã xem', 'Đã hủy', 'Dời lịch']
 const SORT_OPTIONS = [
   { key: 'newest', label: 'Mới nhất' },
@@ -835,11 +566,31 @@ export default function LichXemNhaPage() {
     const now = new Date()
     return { month: now.getMonth(), year: now.getFullYear() }
   })
+  const [schedules, setSchedules] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const selected = useMemo(() => MOCK_SCHEDULES.find(s => s.id === selectedId), [selectedId])
+  const fetchSchedules = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await lichHenXemNhaService.danhSach()
+      setSchedules(res.data || [])
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi tải dữ liệu')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchSchedules()
+  }, [fetchSchedules])
+
+  const selected = useMemo(() => schedules.find(s => s.id === selectedId), [selectedId, schedules])
 
   const filtered = useMemo(() => {
-    let list = [...MOCK_SCHEDULES]
+    let list = [...schedules]
 
     if (search) {
       const q = search.toLowerCase()
@@ -886,12 +637,12 @@ export default function LichXemNhaPage() {
 
   // KPI values
   const kpi = useMemo(() => ({
-    total: MOCK_SCHEDULES.length,
-    choXacNhan: MOCK_SCHEDULES.filter(s => s.trangThai === 'cho_xac_nhan').length,
-    daXacNhan: MOCK_SCHEDULES.filter(s => s.trangThai === 'da_xac_nhan').length,
-    daXem: MOCK_SCHEDULES.filter(s => s.trangThai === 'da_xem').length,
-    daHuy: MOCK_SCHEDULES.filter(s => s.trangThai === 'da_huy').length,
-  }), [])
+    total: schedules.length,
+    choXacNhan: schedules.filter(s => s.trangThai === 'cho_xac_nhan').length,
+    daXacNhan: schedules.filter(s => s.trangThai === 'da_xac_nhan').length,
+    daXem: schedules.filter(s => s.trangThai === 'da_xem').length,
+    daHuy: schedules.filter(s => s.trangThai === 'da_huy').length,
+  }), [schedules])
 
   // Calendar helpers
   const calendarDays = useMemo(() => {
@@ -916,13 +667,34 @@ export default function LichXemNhaPage() {
   }, [calMonth])
 
   const getSchedulesForDate = (date) => {
-    return MOCK_SCHEDULES.filter(s => {
+    return schedules.filter(s => {
       const sd = new Date(s.ngayXem)
       return sd.getFullYear() === date.getFullYear() && sd.getMonth() === date.getMonth() && sd.getDate() === date.getDate()
     })
   }
 
+  const moiGioiOptions = useMemo(() => {
+    const names = [...new Set(schedules.map(s => s.moiGioi).filter(Boolean))]
+    return ['Tất cả', ...names]
+  }, [schedules])
+
   const monthLabel = new Date(calMonth.year, calMonth.month).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  )
+  if (error) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <p className="text-lg font-semibold text-red-600">{error}</p>
+        <button onClick={fetchSchedules} className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+          Thử lại
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -985,21 +757,21 @@ export default function LichXemNhaPage() {
         <AlertCard
           icon="⏰"
           title="Lịch xem sắp tới"
-          count={MOCK_SCHEDULES.filter(s => (s.trangThai === 'cho_xac_nhan' || s.trangThai === 'da_xac_nhan') && new Date(s.ngayXem) >= new Date()).length}
+          count={schedules.filter(s => (s.trangThai === 'cho_xac_nhan' || s.trangThai === 'da_xac_nhan') && new Date(s.ngayXem) >= new Date()).length}
           detail="Cần xác nhận và chuẩn bị cho lịch xem trong 48h tới"
           variant="amber"
         />
         <AlertCard
           icon="🔄"
           title="Yêu cầu dời lịch"
-          count={MOCK_SCHEDULES.filter(s => s.trangThai === 'doi_lich').length}
+          count={schedules.filter(s => s.trangThai === 'doi_lich').length}
           detail="Khách hàng yêu cầu đổi thời gian xem nhà"
           variant="blue"
         />
         <AlertCard
           icon="📋"
           title="Chưa cập nhật kết quả"
-          count={MOCK_SCHEDULES.filter(s => s.trangThai === 'da_xem' && !s.ketQua).length}
+          count={schedules.filter(s => s.trangThai === 'da_xem' && !s.ketQua).length}
           detail="Lịch xem đã hoàn thành nhưng chưa ghi nhận kết quả"
           variant="red"
         />
@@ -1036,7 +808,7 @@ export default function LichXemNhaPage() {
               onChange={(e) => setFilterMoiGioi(e.target.value)}
               className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
-              {MOI_GIOI_OPTIONS.map(m => <option key={m}>{m}</option>)}
+              {moiGioiOptions.map(m => <option key={m}>{m}</option>)}
             </select>
             <select
               value={sortBy}
