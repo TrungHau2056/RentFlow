@@ -1,41 +1,8 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import contractService from '../services/contractService'
 import hopDongKyGuiService from '../services/hopDongKyGuiService'
-
-function mapRequests(data) {
-  return (data || []).filter(c => c.trangThai !== 'dang_hieu_luc').map(c => ({
-    id: c.id,
-    maYeuCau: c.maYeuCau || `PL-${c.ma || c.id}`,
-    maHopDong: c.ma || c.maHopDong || '',
-    chuNha: c.chuNha || c.tenChuNha || '',
-    sdtChuNha: c.sdtChuNha || c.soDienThoai || '',
-    batDongSan: c.batDongSan || c.tenBatDongSan || '',
-    diaChiBDS: c.diaChiBDS || c.diaChi || '',
-    loaiYeuCau: c.loaiYeuCau || 'duyet_hop_dong',
-    mucDoUuTien: c.mucDoUuTien || 'binh_thuong',
-    ngayGui: c.ngayGui || c.ngayKy || '',
-    trangThai: c.trangThai || '',
-    nguoiGui: c.nguoiGui || c.moiGioi || '',
-    nguoiXuLy: c.nguoiXuLy || '',
-    deadline: c.deadline || c.ngayHetHan || '',
-    dieuKhoanPhatSinh: (c.dieuKhoanPhatSinh || []).map(dk => ({
-      id: dk.id,
-      dieuKhoan: dk.dieuKhoan || dk.noiDung || '',
-      noiDungCu: dk.noiDungCu || '',
-      noiDungMoi: dk.noiDungMoi || '',
-      trangThai: dk.trangThai || 'cho_duyet',
-      mucDoRuiRo: dk.mucDoRuiRo || 'trung_binh',
-      ghiChu: dk.ghiChu || '',
-    })),
-    ghiChuPhapLy: c.ghiChuPhapLy || '',
-    lichSu: (c.lichSu || []).map(ls => ({
-      ngay: ls.ngay || ls.thoiGian || '',
-      noiDung: ls.noiDung || ls.buoc || '',
-      nguoi: ls.nguoi || ls.nguoiThucHien || '',
-      loai: ls.loai || '',
-    })),
-  })) || []
-}
+import hopDongThueService from '../services/hopDongThueService'
 
 const STATUS_CONFIG = {
   cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -58,9 +25,31 @@ const LOAI_YEU_CAU_CONFIG = {
   tu_choi: { label: 'Từ chối', color: 'bg-red-50 text-red-700', icon: 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636' },
 }
 
+const LOAI_FILTER = ['Tất cả', 'Duyệt hợp đồng', 'Duyệt điều khoản', 'Sửa điều khoản']
+const SORT_OPTIONS = [
+  { key: 'newest', label: 'Mới nhất' },
+  { key: 'deadline', label: 'Deadline gần nhất' },
+  { key: 'priority', label: 'Ưu tiên cao nhất' },
+]
+
+const TRANG_THAI_MAP = {
+  CHO_PHE_DUYET: 'cho_duyet',
+  DA_PHE_DUYET: 'da_phe_duyet',
+  TU_CHOI: 'da_tu_choi',
+  DA_KY: 'da_phe_duyet',
+  NHAP: 'cho_duyet',
+  DA_HUY: 'da_tu_choi',
+  HOAN_THANH: 'da_phe_duyet',
+}
+
+const LOAI_HOP_DONG = {
+  KY_GUI: 'ky_gui',
+  THUE: 'thue',
+}
+
 const CLAUSE_RISK_CONFIG = {
-  cao: { label: 'Rủi ro cao', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500' },
-  trung_binh: { label: 'Rủi ro TB', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
+  cao: { label: 'Rủi ro cao', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-400' },
+  trung_binh: { label: 'Rủi ro TB', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
   thap: { label: 'Rủi ro thấp', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
 }
 
@@ -69,13 +58,6 @@ const CLAUSE_STATUS = {
   da_duyet: { label: 'Đã duyệt', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   tu_choi: { label: 'Từ chối', color: 'bg-red-50 text-red-700 border-red-200' },
 }
-
-const LOAI_FILTER = ['Tất cả', 'Duyệt hợp đồng', 'Duyệt điều khoản', 'Sửa điều khoản']
-const SORT_OPTIONS = [
-  { key: 'newest', label: 'Mới nhất' },
-  { key: 'deadline', label: 'Deadline gần nhất' },
-  { key: 'priority', label: 'Ưu tiên cao nhất' },
-]
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -86,6 +68,39 @@ function daysUntil(dateStr) {
   if (!dateStr) return null
   const diff = new Date(dateStr) - new Date()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
+}
+
+function toLegalRequest(item, type) {
+  const isKyGui = type === LOAI_HOP_DONG.KY_GUI
+  const rawStatus = item.trangThai || ''
+  return {
+    id: item.id,
+    loaiHopDong: type,
+    maYeuCau: isKyGui ? `KG-${item.id}` : `HDT-${item.id}`,
+    maHopDong: isKyGui ? `HĐKG-${item.id}` : `HĐT-${item.id}`,
+    chuNha: isKyGui ? (item.tenChuNha || '') : (item.tenKhachHang || ''),
+    sdtChuNha: '',
+    batDongSan: item.diaChiBatDongSan || `BĐS #${item.batDongSanId}`,
+    diaChiBDS: item.diaChiBatDongSan || '',
+    loaiYeuCau: 'duyet_hop_dong',
+    mucDoUuTien: 'binh_thuong',
+    ngayGui: item.ngayKy || item.ngayBatDau || '',
+    trangThai: TRANG_THAI_MAP[rawStatus] || 'cho_duyet',
+    nguoiGui: isKyGui ? (item.tenNhanVien || '') : (item.tenNhanVienMoiGioi || ''),
+    nguoiXuLy: null,
+    deadline: item.ngayKetThuc || '',
+    dieuKhoanPhatSinh: [],
+    ghiChuPhapLy: '',
+    lichSu: [],
+  }
+}
+
+function mapKyGuiContract(item) {
+  return toLegalRequest(item, LOAI_HOP_DONG.KY_GUI)
+}
+
+function mapThueContract(item) {
+  return toLegalRequest(item, LOAI_HOP_DONG.THUE)
 }
 
 function MiniSparkline({ data, color = '#2563eb' }) {
@@ -197,7 +212,6 @@ function ClauseCompare({ clause }) {
 
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden">
-      {/* Clause header */}
       <div className="bg-slate-50 px-4 py-2.5 flex items-center justify-between border-b border-slate-200">
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,7 +230,6 @@ function ClauseCompare({ clause }) {
         </div>
       </div>
 
-      {/* Side-by-side compare */}
       <div className="grid grid-cols-2 divide-x divide-slate-200">
         <div className="p-3">
           <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wide mb-1.5">Nội dung cũ</p>
@@ -228,7 +241,6 @@ function ClauseCompare({ clause }) {
         </div>
       </div>
 
-      {/* Legal note */}
       {clause.ghiChu && (
         <div className="px-4 py-2.5 border-t border-slate-100 bg-amber-50/50">
           <p className="text-xs text-amber-700 flex items-start gap-1.5">
@@ -250,10 +262,10 @@ function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLo
   const loaiYC = LOAI_YEU_CAU_CONFIG[request.loaiYeuCau] || { color: 'bg-slate-100 text-slate-600', icon: '', label: request.loaiYeuCau }
   const daysLeft = daysUntil(request.deadline)
   const isOverdue = daysLeft !== null && daysLeft < 0
+  const canAct = request.trangThai === 'cho_duyet' || request.trangThai === 'dang_xet_duyet'
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden sticky top-6">
-      {/* Header */}
       <div className="bg-linear-to-r from-slate-800 to-slate-900 p-5">
         <div className="flex items-start justify-between">
           <div>
@@ -280,7 +292,6 @@ function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLo
       </div>
 
       <div className="p-5 space-y-5 max-h-[calc(100vh-220px)] overflow-y-auto">
-        {/* Contract & Owner Info */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thông tin hợp đồng</h4>
           <div className="grid grid-cols-2 gap-2">
@@ -291,7 +302,7 @@ function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLo
               </Link>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-slate-400">Chủ nhà</p>
+              <p className="text-xs text-slate-400">{request.loaiHopDong === 'ky_gui' ? 'Chủ nhà' : 'Khách hàng'}</p>
               <p className="text-sm font-semibold text-slate-800">{request.chuNha}</p>
             </div>
           </div>
@@ -302,17 +313,16 @@ function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLo
           </div>
         </div>
 
-        {/* Approval Workflow */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Quy trình phê duyệt</h4>
           <div className="bg-slate-50 rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-500">Người gửi yêu cầu</span>
-              <span className="text-xs font-medium text-slate-700">{request.nguoiGui}</span>
+              <span className="text-xs font-medium text-slate-700">{request.nguoiGui || '—'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Người xử lý</span>
-              <span className="text-xs font-medium text-slate-700">{request.nguoiXuLy || '—'}</span>
+              <span className="text-xs text-slate-500">Loại hợp đồng</span>
+              <span className="text-xs font-medium text-slate-700">{request.loaiHopDong === 'ky_gui' ? 'Ký gửi' : 'Thuê'}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-500">Ngày gửi</span>
@@ -329,97 +339,17 @@ function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLo
           </div>
         </div>
 
-        {/* Clauses - Side by side compare */}
-        {request.dieuKhoanPhatSinh.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Điều khoản phát sinh — So sánh</h4>
-            <div className="space-y-3">
-              {request.dieuKhoanPhatSinh.map(clause => (
-                <ClauseCompare key={clause.id} clause={clause} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Legal Notes */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Ghi chú pháp lý</h4>
-          {request.ghiChuPhapLy ? (
-            <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-              <p className="text-sm text-amber-800 leading-relaxed">{request.ghiChuPhapLy}</p>
-            </div>
-          ) : (
-            <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-sm text-slate-400 italic">Chưa có ghi chú pháp lý</p>
-            </div>
-          )}
-          {/* Add note input */}
-          <div className="mt-2 flex gap-2">
-            <input
-              type="text"
-              placeholder="Thêm ghi chú pháp lý..."
-              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-            />
-            <button className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
-              Thêm
-            </button>
+          <div className="bg-slate-50 rounded-lg p-3">
+            <p className="text-sm text-slate-400 italic">Chưa có ghi chú pháp lý</p>
           </div>
         </div>
 
-        {/* Risk Markers */}
-        {request.dieuKhoanPhatSinh.some(c => c.mucDoRuiRo === 'cao') && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div>
-                <p className="text-sm font-semibold text-red-800">Đánh dấu rủi ro cao</p>
-                <p className="text-xs text-red-600 mt-0.5">Hợp đồng này có điều khoản rủi ro cao, cần xem xét kỹ lưỡng trước khi phê duyệt.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Audit History */}
-        <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Lịch sử xử lý</h4>
-          <div className="space-y-0">
-            {request.lichSu.map((item, i) => {
-              const iconConfig = {
-                send: { bg: 'bg-blue-100', color: 'text-blue-600', icon: 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8' },
-                review: { bg: 'bg-amber-100', color: 'text-amber-600', icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
-                approve: { bg: 'bg-emerald-100', color: 'text-emerald-600', icon: 'M5 13l4 4L19 7' },
-                reject: { bg: 'bg-red-100', color: 'text-red-600', icon: 'M6 18L18 6M6 6l12 12' },
-                request: { bg: 'bg-orange-100', color: 'text-orange-600', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
-              }
-              const cfg = iconConfig[item.loai] || iconConfig.send
-              const isLast = i === request.lichSu.length - 1
-              return (
-                <div key={i} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-7 h-7 rounded-full ${cfg.bg} flex items-center justify-center shrink-0`}>
-                      <svg className={`w-3.5 h-3.5 ${cfg.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={cfg.icon} />
-                      </svg>
-                    </div>
-                    {!isLast && <div className="w-0.5 flex-1 bg-slate-200 my-1" />}
-                  </div>
-                  <div className="pb-3">
-                    <p className="text-xs text-slate-700">{item.noiDung}</p>
-                    <p className="text-[10px] text-slate-400">{item.nguoi} · {formatDate(item.ngay)}</p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Actions */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thao tác</h4>
           <div className="space-y-2">
-            {(request.trangThai === 'cho_duyet' || request.trangThai === 'dang_xet_duyet' || request.trangThai === 'can_bo_sung') && (
+            {canAct && (
               <>
                 <button
                   onClick={() => onApprove(request.id)}
@@ -455,20 +385,6 @@ function LegalDetail({ request, onClose, onApprove, onReject, onSubmit, actionLo
                 </div>
               </>
             )}
-            <div className="flex gap-2">
-              <button className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-                Chuyển cấp
-              </button>
-              <button className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Xuất PDF
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -508,69 +424,89 @@ function EmptyState() {
 }
 
 export default function LegalPage() {
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTrangThai, setFilterTrangThai] = useState('all')
   const [filterUuTien, setFilterUuTien] = useState('all')
   const [filterLoai, setFilterLoai] = useState('Tất cả')
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
-  const [requests, setRequests] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [actionLoading, setActionLoading] = useState(false)
 
-  const fetchRequests = useCallback(async () => {
+  const fetchContracts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
-      setError(null)
-      const response = await hopDongKyGuiService.danhSach()
-      setRequests(mapRequests(response.data?.data))
+      const [kyGuiRes, thueRes] = await Promise.all([
+        contractService.getKyGuiContracts(),
+        contractService.getThueContracts(),
+      ])
+      const kyGuiList = (kyGuiRes?.data || []).map(mapKyGuiContract)
+      const thueList = (thueRes?.data || []).map(mapThueContract)
+      setRequests([...kyGuiList, ...thueList])
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể tải danh sách yêu cầu')
+      setRequests([])
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchRequests()
-  }, [fetchRequests])
+    fetchContracts()
+  }, [fetchContracts])
 
   const handleApprove = useCallback(async (id) => {
+    setActionLoading(true)
     try {
-      setActionLoading(true)
-      await hopDongKyGuiService.pheDuyet(id, { pheDuyet: true })
-      fetchRequests()
+      const request = requests.find(r => r.id === id)
+      if (request?.loaiHopDong === 'ky_gui') {
+        await contractService.approveKyGuiContract(id, true)
+      } else {
+        await contractService.updateThueContractStatus(id, 'DA_PHE_DUYET')
+      }
+      setSelectedId(null)
+      fetchContracts()
     } catch (err) {
       alert(err.response?.data?.message || 'Phê duyệt thất bại')
     } finally {
       setActionLoading(false)
     }
-  }, [fetchRequests])
+  }, [fetchContracts, requests])
 
   const handleReject = useCallback(async (id) => {
+    setActionLoading(true)
     try {
-      setActionLoading(true)
-      await hopDongKyGuiService.pheDuyet(id, { pheDuyet: false })
-      fetchRequests()
+      const request = requests.find(r => r.id === id)
+      const lyDo = prompt('Nhập lý do từ chối:')
+      if (lyDo === null) { setActionLoading(false); return }
+      if (request?.loaiHopDong === 'ky_gui') {
+        await contractService.approveKyGuiContract(id, false, lyDo)
+      } else {
+        await contractService.updateThueContractStatus(id, 'TU_CHOI')
+      }
+      setSelectedId(null)
+      fetchContracts()
     } catch (err) {
       alert(err.response?.data?.message || 'Từ chối thất bại')
     } finally {
       setActionLoading(false)
     }
-  }, [fetchRequests])
+  }, [fetchContracts, requests])
 
   const handleSubmit = useCallback(async (id) => {
+    setActionLoading(true)
     try {
-      setActionLoading(true)
       await hopDongKyGuiService.guiPheDuyet(id)
-      fetchRequests()
+      fetchContracts()
     } catch (err) {
       alert(err.response?.data?.message || 'Gửi duyệt thất bại')
     } finally {
       setActionLoading(false)
     }
-  }, [fetchRequests])
+  }, [fetchContracts])
 
   const filtered = useMemo(() => {
     let result = [...requests]
@@ -623,29 +559,13 @@ export default function LegalPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Page Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Duyệt pháp lý hợp đồng</h1>
-          <p className="text-slate-500 text-sm mt-1">Xem xét điều khoản phát sinh và phê duyệt hợp đồng</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm hover:bg-slate-50 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            Bộ lọc nhanh
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors shadow-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Tạo yêu cầu
-          </button>
+          <p className="text-slate-500 text-sm mt-1">Xem xét và phê duyệt hợp đồng từ bộ phận kinh doanh</p>
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <KPICard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -686,7 +606,6 @@ export default function LegalPage() {
         />
       </div>
 
-      {/* Priority Alerts */}
       {(alertData.quaHan.length > 0 || alertData.ruiRoCao.length > 0 || alertData.khanCap.length > 0) && (
         <div className="grid grid-cols-3 gap-4 mb-6">
           {alertData.quaHan.length > 0 && (
@@ -719,10 +638,8 @@ export default function LegalPage() {
         </div>
       )}
 
-      {/* Toolbar */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Search */}
           <div className="relative min-w-60 flex-1">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -736,7 +653,6 @@ export default function LegalPage() {
             />
           </div>
 
-          {/* Filter: Trạng thái */}
           <select
             value={filterTrangThai}
             onChange={(e) => setFilterTrangThai(e.target.value)}
@@ -748,7 +664,6 @@ export default function LegalPage() {
             ))}
           </select>
 
-          {/* Filter: Mức độ ưu tiên */}
           <select
             value={filterUuTien}
             onChange={(e) => setFilterUuTien(e.target.value)}
@@ -760,7 +675,6 @@ export default function LegalPage() {
             ))}
           </select>
 
-          {/* Filter: Loại yêu cầu */}
           <select
             value={filterLoai}
             onChange={(e) => setFilterLoai(e.target.value)}
@@ -769,7 +683,6 @@ export default function LegalPage() {
             {LOAI_FILTER.map(o => <option key={o}>{o}</option>)}
           </select>
 
-          {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -780,7 +693,6 @@ export default function LegalPage() {
         </div>
       </div>
 
-      {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
@@ -792,7 +704,7 @@ export default function LegalPage() {
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <p className="text-red-600 font-medium mb-2">{error}</p>
-            <button onClick={fetchRequests} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+            <button onClick={fetchContracts} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
               Thử lại
             </button>
           </div>
@@ -801,7 +713,6 @@ export default function LegalPage() {
         <EmptyState />
       ) : (
         <div className="flex gap-6">
-          {/* Table */}
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
@@ -819,7 +730,7 @@ export default function LegalPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filtered.map(r => (
                       <RequestRow
-                        key={r.id}
+                        key={`${r.loaiHopDong}-${r.id}`}
                         request={r}
                         isSelected={selectedId === r.id}
                         onSelect={setSelectedId}
@@ -834,7 +745,6 @@ export default function LegalPage() {
             </div>
           </div>
 
-          {/* Detail Panel */}
           {selectedRequest && (
             <div className="w-105 shrink-0 hidden xl:block">
               <LegalDetail request={selectedRequest} onClose={() => setSelectedId(null)} onApprove={handleApprove} onReject={handleReject} onSubmit={handleSubmit} actionLoading={actionLoading} />

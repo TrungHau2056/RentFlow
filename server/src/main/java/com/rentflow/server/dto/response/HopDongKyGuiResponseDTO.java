@@ -43,6 +43,9 @@ public class HopDongKyGuiResponseDTO {
     @Schema(description = "Ngày kết thúc", example = "2026-12-31")
     private LocalDate ngayKetThuc;
 
+    @Schema(description = "Giá thuê (VNĐ/tháng)", example = "15000000")
+    private BigDecimal giaThue;
+
     @Schema(description = "Tiền đảm bảo (VNĐ)", example = "1000000")
     private BigDecimal tienDamBao;
 

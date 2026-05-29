@@ -101,6 +101,40 @@ FROM tai_khoan tk WHERE tk.username = 'khachhang@gmail.com'
     AND NOT EXISTS (SELECT 1 FROM khach_hang WHERE email = 'khachhang@gmail.com');
 
 -- =========================
+-- TAI_KHOAN + KHACH_HANG (bổ sung)
+-- =========================
+
+INSERT INTO tai_khoan (username, password_hash, trang_thai, vai_tro_id)
+SELECT 'nguyenvanA@gmail.com', '123456', 'ACTIVE', vt.id
+FROM vai_tro vt WHERE vt.ten_vai_tro = 'KHACH_HANG'
+    AND NOT EXISTS (SELECT 1 FROM tai_khoan WHERE username = 'nguyenvanA@gmail.com');
+
+INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai, email, nhu_cau_thue)
+SELECT tk.id, 'Nguyen Van A', '0900000021', 'nguyenvanA@gmail.com', 'Can tim can ho chung cu'
+FROM tai_khoan tk WHERE tk.username = 'nguyenvanA@gmail.com'
+    AND NOT EXISTS (SELECT 1 FROM khach_hang WHERE email = 'nguyenvanA@gmail.com');
+
+INSERT INTO tai_khoan (username, password_hash, trang_thai, vai_tro_id)
+SELECT 'nguyenvanB@gmail.com', '123456', 'ACTIVE', vt.id
+FROM vai_tro vt WHERE vt.ten_vai_tro = 'KHACH_HANG'
+    AND NOT EXISTS (SELECT 1 FROM tai_khoan WHERE username = 'nguyenvanB@gmail.com');
+
+INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai, email, nhu_cau_thue)
+SELECT tk.id, 'Nguyen Van B', '0900000022', 'nguyenvanB@gmail.com', 'Can thue nha rieng'
+FROM tai_khoan tk WHERE tk.username = 'nguyenvanB@gmail.com'
+    AND NOT EXISTS (SELECT 1 FROM khach_hang WHERE email = 'nguyenvanB@gmail.com');
+
+INSERT INTO tai_khoan (username, password_hash, trang_thai, vai_tro_id)
+SELECT 'nguyenvanC@gmail.com', '123456', 'ACTIVE', vt.id
+FROM vai_tro vt WHERE vt.ten_vai_tro = 'KHACH_HANG'
+    AND NOT EXISTS (SELECT 1 FROM tai_khoan WHERE username = 'nguyenvanC@gmail.com');
+
+INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai, email, nhu_cau_thue)
+SELECT tk.id, 'Nguyen Van C', '0900000023', 'nguyenvanC@gmail.com', 'Can thue biet thu'
+FROM tai_khoan tk WHERE tk.username = 'nguyenvanC@gmail.com'
+    AND NOT EXISTS (SELECT 1 FROM khach_hang WHERE email = 'nguyenvanC@gmail.com');
+
+-- =========================
 -- TAI_KHOAN + QUAN_TRI_VIEN
 -- =========================
 
@@ -221,27 +255,51 @@ FROM chu_nha cn WHERE cn.email = 'chunha@gmail.com'
 -- =========================
 
 INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
-SELECT cn.id, bds.id, nv.id, '2026-01-15', '2026-01-15', '2026-07-15', 5000000, 'DA_CO_KHACH_THUE'
+SELECT cn.id, bds.id, nv.id, '2026-01-15', '2026-01-15', '2026-07-15', 5000000, 'CHO_PHE_DUYET'
 FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
 WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Hoàn Kiếm, Hà Nội' AND bds.gia_thue = 45000000 AND nv.email = 'moigioi@gmail.com'
   AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
 
 INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
-SELECT cn.id, bds.id, nv.id, '2026-03-01', '2026-03-01', '2026-09-01', 3000000, 'DANG_HOAT_DONG'
+SELECT cn.id, bds.id, nv.id, '2026-03-01', '2026-03-01', '2026-09-01', 3000000, 'CHO_PHE_DUYET'
 FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
 WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Cầu Giấy, Hà Nội' AND bds.gia_thue = 22000000 AND nv.email = 'broker2@gmail.com'
   AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
 
 INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
-SELECT cn.id, bds.id, nv.id, '2026-05-20', '2026-05-20', '2026-11-20', 4000000, 'DANG_HOAT_DONG'
+SELECT cn.id, bds.id, nv.id, '2026-05-20', '2026-05-20', '2026-11-20', 4000000, 'CHO_PHE_DUYET'
 FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
 WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Ba Đình, Hà Nội' AND bds.gia_thue = 55000000 AND nv.email = 'broker3@gmail.com'
   AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
 
 INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
-SELECT cn.id, bds.id, nv.id, '2026-06-01', '2026-06-01', '2026-12-01', 6000000, 'DANG_HOAT_DONG'
+SELECT cn.id, bds.id, nv.id, '2026-06-01', '2026-06-01', '2026-12-01', 6000000, 'CHO_PHE_DUYET'
 FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
 WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Thanh Xuân, Hà Nội' AND bds.gia_thue = 35000000 AND nv.email = 'moigioi@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
+SELECT cn.id, bds.id, nv.id, '2026-04-10', '2026-04-10', '2026-10-10', 2800000, 'CHO_PHE_DUYET'
+FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
+WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Tây Hồ, Hà Nội' AND bds.gia_thue = 28000000 AND nv.email = 'moigioi@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
+SELECT cn.id, bds.id, nv.id, '2026-05-05', '2026-05-05', '2026-11-05', 1200000, 'CHO_PHE_DUYET'
+FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
+WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Cầu Giấy, Hà Nội' AND bds.gia_thue = 12000000 AND nv.email = 'broker2@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
+SELECT cn.id, bds.id, nv.id, '2026-05-25', '2026-05-25', '2026-11-25', 1800000, 'CHO_PHE_DUYET'
+FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
+WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Nam Từ Liêm, Hà Nội' AND bds.gia_thue = 18000000 AND nv.email = 'broker3@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_ky_gui (chu_nha_id, bat_dong_san_id, nhan_vien_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_dam_bao, trang_thai)
+SELECT cn.id, bds.id, nv.id, '2026-06-10', '2026-06-10', '2026-12-10', 4000000, 'CHO_PHE_DUYET'
+FROM chu_nha cn, bat_dong_san bds, nhan_vien nv
+WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Hà Đông, Hà Nội' AND bds.gia_thue = 40000000 AND nv.email = 'moigioi@gmail.com'
   AND NOT EXISTS (SELECT 1 FROM hop_dong_ky_gui WHERE bat_dong_san_id = bds.id);
 
 -- =========================
@@ -249,15 +307,39 @@ WHERE cn.email = 'chunha@gmail.com' AND bds.dia_chi = 'Thanh Xuân, Hà Nội' A
 -- =========================
 
 INSERT INTO hop_dong_thue (khach_hang_id, bat_dong_san_id, nhan_vien_moi_gioi_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_thue, tien_coc, trang_thai)
-SELECT kh.id, bds.id, nv.id, '2026-02-01', '2026-02-01', '2027-02-01', 25000000, 50000000, 'HIEU_LUC'
+SELECT kh.id, bds.id, nv.id, '2026-02-01', '2026-02-01', '2027-02-01', 25000000, 50000000, 'CHO_PHE_DUYET'
 FROM khach_hang kh, bat_dong_san bds, nhan_vien nv
 WHERE kh.email = 'khachhang@gmail.com' AND bds.dia_chi = 'Hoàn Kiếm, Hà Nội' AND bds.gia_thue = 45000000 AND nv.email = 'moigioi@gmail.com'
   AND NOT EXISTS (SELECT 1 FROM hop_dong_thue WHERE bat_dong_san_id = bds.id);
 
 INSERT INTO hop_dong_thue (khach_hang_id, bat_dong_san_id, nhan_vien_moi_gioi_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_thue, tien_coc, trang_thai)
-SELECT kh.id, bds.id, nv.id, '2026-04-01', '2026-04-01', '2027-04-01', 35000000, 70000000, 'HIEU_LUC'
+SELECT kh.id, bds.id, nv.id, '2026-04-01', '2026-04-01', '2027-04-01', 35000000, 70000000, 'CHO_PHE_DUYET'
 FROM khach_hang kh, bat_dong_san bds, nhan_vien nv
 WHERE kh.email = 'khachhang@gmail.com' AND bds.dia_chi = 'Cầu Giấy, Hà Nội' AND bds.gia_thue = 22000000 AND nv.email = 'broker2@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_thue WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_thue (khach_hang_id, bat_dong_san_id, nhan_vien_moi_gioi_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_thue, tien_coc, trang_thai)
+SELECT kh.id, bds.id, nv.id, '2026-04-20', '2026-05-01', '2027-05-01', 28000000, 56000000, 'CHO_PHE_DUYET'
+FROM khach_hang kh, bat_dong_san bds, nhan_vien nv
+WHERE kh.email = 'khachhang@gmail.com' AND bds.dia_chi = 'Tây Hồ, Hà Nội' AND bds.gia_thue = 28000000 AND nv.email = 'moigioi@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_thue WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_thue (khach_hang_id, bat_dong_san_id, nhan_vien_moi_gioi_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_thue, tien_coc, trang_thai)
+SELECT kh.id, bds.id, nv.id, '2026-05-10', '2026-06-01', '2027-06-01', 35000000, 70000000, 'CHO_PHE_DUYET'
+FROM khach_hang kh, bat_dong_san bds, nhan_vien nv
+WHERE kh.email = 'nguyenvanA@gmail.com' AND bds.dia_chi = 'Ba Đình, Hà Nội' AND bds.gia_thue = 55000000 AND nv.email = 'broker3@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_thue WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_thue (khach_hang_id, bat_dong_san_id, nhan_vien_moi_gioi_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_thue, tien_coc, trang_thai)
+SELECT kh.id, bds.id, nv.id, '2026-06-01', '2026-06-15', '2027-06-15', 12000000, 24000000, 'CHO_PHE_DUYET'
+FROM khach_hang kh, bat_dong_san bds, nhan_vien nv
+WHERE kh.email = 'nguyenvanB@gmail.com' AND bds.dia_chi = 'Cầu Giấy, Hà Nội' AND bds.gia_thue = 12000000 AND nv.email = 'broker2@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hop_dong_thue WHERE bat_dong_san_id = bds.id);
+
+INSERT INTO hop_dong_thue (khach_hang_id, bat_dong_san_id, nhan_vien_moi_gioi_id, ngay_ky, ngay_bat_dau, ngay_ket_thuc, tien_thue, tien_coc, trang_thai)
+SELECT kh.id, bds.id, nv.id, '2026-06-10', '2026-07-01', '2027-07-01', 18000000, 36000000, 'CHO_PHE_DUYET'
+FROM khach_hang kh, bat_dong_san bds, nhan_vien nv
+WHERE kh.email = 'nguyenvanC@gmail.com' AND bds.dia_chi = 'Nam Từ Liêm, Hà Nội' AND bds.gia_thue = 18000000 AND nv.email = 'moigioi@gmail.com'
   AND NOT EXISTS (SELECT 1 FROM hop_dong_thue WHERE bat_dong_san_id = bds.id);
 
 -- =========================
@@ -288,6 +370,30 @@ FROM nhan_vien nv, hop_dong_ky_gui hdkg
 WHERE nv.email = 'ketoan@gmail.com' AND hdkg.tien_dam_bao = 6000000
   AND NOT EXISTS (SELECT 1 FROM giao_dich_tai_chinh WHERE hop_dong_ky_gui_id = hdkg.id AND loai_giao_dich = 'TIEN_DAM_BAO');
 
+INSERT INTO giao_dich_tai_chinh (nhan_vien_ke_toan_id, hop_dong_ky_gui_id, loai_giao_dich, so_tien, ngay_giao_dich, trang_thai)
+SELECT nv.id, hdkg.id, 'TIEN_DAM_BAO', hdkg.tien_dam_bao, '2026-04-10T10:00:00', 'HOAN_THANH'
+FROM nhan_vien nv, hop_dong_ky_gui hdkg
+WHERE nv.email = 'ketoan@gmail.com' AND hdkg.tien_dam_bao = 2800000
+  AND NOT EXISTS (SELECT 1 FROM giao_dich_tai_chinh WHERE hop_dong_ky_gui_id = hdkg.id AND loai_giao_dich = 'TIEN_DAM_BAO');
+
+INSERT INTO giao_dich_tai_chinh (nhan_vien_ke_toan_id, hop_dong_ky_gui_id, loai_giao_dich, so_tien, ngay_giao_dich, trang_thai)
+SELECT nv.id, hdkg.id, 'TIEN_DAM_BAO', hdkg.tien_dam_bao, '2026-05-05T10:00:00', 'HOAN_THANH'
+FROM nhan_vien nv, hop_dong_ky_gui hdkg
+WHERE nv.email = 'ketoan@gmail.com' AND hdkg.tien_dam_bao = 1200000
+  AND NOT EXISTS (SELECT 1 FROM giao_dich_tai_chinh WHERE hop_dong_ky_gui_id = hdkg.id AND loai_giao_dich = 'TIEN_DAM_BAO');
+
+INSERT INTO giao_dich_tai_chinh (nhan_vien_ke_toan_id, hop_dong_ky_gui_id, loai_giao_dich, so_tien, ngay_giao_dich, trang_thai)
+SELECT nv.id, hdkg.id, 'TIEN_DAM_BAO', hdkg.tien_dam_bao, '2026-05-25T10:00:00', 'HOAN_THANH'
+FROM nhan_vien nv, hop_dong_ky_gui hdkg
+WHERE nv.email = 'ketoan@gmail.com' AND hdkg.tien_dam_bao = 1800000
+  AND NOT EXISTS (SELECT 1 FROM giao_dich_tai_chinh WHERE hop_dong_ky_gui_id = hdkg.id AND loai_giao_dich = 'TIEN_DAM_BAO');
+
+INSERT INTO giao_dich_tai_chinh (nhan_vien_ke_toan_id, hop_dong_ky_gui_id, loai_giao_dich, so_tien, ngay_giao_dich, trang_thai)
+SELECT nv.id, hdkg.id, 'TIEN_DAM_BAO', hdkg.tien_dam_bao, '2026-06-10T10:00:00', 'CHO_XU_LY'
+FROM nhan_vien nv, hop_dong_ky_gui hdkg
+WHERE nv.email = 'ketoan@gmail.com' AND hdkg.tien_dam_bao = 4000000
+  AND NOT EXISTS (SELECT 1 FROM giao_dich_tai_chinh WHERE hop_dong_ky_gui_id = hdkg.id AND loai_giao_dich = 'TIEN_DAM_BAO');
+
 -- =========================
 -- HOA HỒNG
 -- =========================
@@ -302,4 +408,28 @@ INSERT INTO hoa_hong (hop_dong_thue_id, nhan_vien_moi_gioi_id, so_tien, ngay_tin
 SELECT hdt.id, nv.id, 5250000, '2026-04-15', 'CHUA_THANH_TOAN'
 FROM hop_dong_thue hdt, nhan_vien nv
 WHERE hdt.tien_thue = 35000000 AND nv.email = 'broker2@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hoa_hong WHERE hop_dong_thue_id = hdt.id);
+
+INSERT INTO hoa_hong (hop_dong_thue_id, nhan_vien_moi_gioi_id, so_tien, ngay_tinh, trang_thai_thanh_toan)
+SELECT hdt.id, nv.id, 4200000, '2026-05-01', 'DA_THANH_TOAN'
+FROM hop_dong_thue hdt, nhan_vien nv
+WHERE hdt.tien_thue = 28000000 AND nv.email = 'moigioi@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hoa_hong WHERE hop_dong_thue_id = hdt.id);
+
+INSERT INTO hoa_hong (hop_dong_thue_id, nhan_vien_moi_gioi_id, so_tien, ngay_tinh, trang_thai_thanh_toan)
+SELECT hdt.id, nv.id, 5250000, '2026-06-01', 'CHUA_THANH_TOAN'
+FROM hop_dong_thue hdt, nhan_vien nv
+WHERE hdt.tien_thue = 35000000 AND nv.email = 'broker3@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hoa_hong WHERE hop_dong_thue_id = hdt.id);
+
+INSERT INTO hoa_hong (hop_dong_thue_id, nhan_vien_moi_gioi_id, so_tien, ngay_tinh, trang_thai_thanh_toan)
+SELECT hdt.id, nv.id, 1800000, '2026-06-15', 'DA_THANH_TOAN'
+FROM hop_dong_thue hdt, nhan_vien nv
+WHERE hdt.tien_thue = 12000000 AND nv.email = 'broker2@gmail.com'
+  AND NOT EXISTS (SELECT 1 FROM hoa_hong WHERE hop_dong_thue_id = hdt.id);
+
+INSERT INTO hoa_hong (hop_dong_thue_id, nhan_vien_moi_gioi_id, so_tien, ngay_tinh, trang_thai_thanh_toan)
+SELECT hdt.id, nv.id, 2700000, '2026-07-01', 'CHUA_THANH_TOAN'
+FROM hop_dong_thue hdt, nhan_vien nv
+WHERE hdt.tien_thue = 18000000 AND nv.email = 'moigioi@gmail.com'
   AND NOT EXISTS (SELECT 1 FROM hoa_hong WHERE hop_dong_thue_id = hdt.id);

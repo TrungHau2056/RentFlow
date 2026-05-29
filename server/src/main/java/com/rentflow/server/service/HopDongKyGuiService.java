@@ -20,6 +20,7 @@ import com.rentflow.server.util.enums.TrangThaiHopDong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -151,6 +152,7 @@ public class HopDongKyGuiService {
                 .ngayKy(hd.getNgayKy())
                 .ngayBatDau(hd.getNgayBatDau())
                 .ngayKetThuc(hd.getNgayKetThuc())
+                .giaThue(hd.getBatDongSan().getGiaThue() != null ? BigDecimal.valueOf(hd.getBatDongSan().getGiaThue()) : null)
                 .tienDamBao(hd.getTienDamBao())
                 .trangThai(hd.getTrangThai())
                 .build();
