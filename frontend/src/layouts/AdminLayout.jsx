@@ -1,5 +1,12 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useState } from 'react'
+import {
+  ROLE_ALLOWED_PATHS,
+  ROLE_GROUPS,
+  ROLE_HOME_PATHS,
+  ROLE_LABELS,
+  normalizeInternalRole,
+} from '../config/roles'
 
 const MENU_ITEMS = [
   { path: '/admin', label: 'Dashboard', icon: 'dashboard' },
@@ -117,12 +124,31 @@ function readStoredUser() {
   }
 }
 
+function isAllowedPath(pathname, roleGroup) {
+  if (roleGroup === ROLE_GROUPS.ADMIN) return true
+  const allowedPaths = ROLE_ALLOWED_PATHS[roleGroup] || []
+  return allowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+}
+
+function isActivePath(pathname, itemPath) {
+  if (itemPath === '/admin') return pathname === itemPath
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`)
+}
+
 export default function AdminLayout() {
   const location = useLocation()
   const [userInfo] = useState(readStoredUser)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const isLoggedIn = !!userInfo
-  const isAdmin = userInfo?.role === 'ADMIN'
+  const roleGroup = normalizeInternalRole(userInfo?.role)
+  const roleLabel = ROLE_LABELS[roleGroup] || 'Nội bộ'
+  const homePath = ROLE_HOME_PATHS[roleGroup] || '/'
+  const visibleSections = MENU_SECTIONS.map((section) => ({
+    ...section,
+    items: roleGroup === ROLE_GROUPS.ADMIN
+      ? section.items
+      : section.items.filter((item) => isAllowedPath(item.path, roleGroup)),
+  })).filter((section) => section.items.length > 0)
 
   if (!isLoggedIn) {
     return (
@@ -143,7 +169,7 @@ export default function AdminLayout() {
     )
   }
 
-  if (!isAdmin) {
+  if (!roleGroup) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center max-w-md p-6">
@@ -157,6 +183,29 @@ export default function AdminLayout() {
           <a href="/" className="inline-block bg-white hover:bg-slate-100 text-slate-700 font-semibold py-3 px-8 rounded-lg transition-colors border border-slate-300">
             Về trang chủ
           </a>
+        </div>
+      </div>
+    )
+  }
+
+  if (location.pathname === '/admin' && homePath !== '/admin') {
+    return <Navigate to={homePath} replace />
+  }
+
+  if (!isAllowedPath(location.pathname, roleGroup)) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center max-w-md p-6">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Không có quyền truy cập</h2>
+          <p className="text-slate-500 text-sm mb-6">Tài khoản {roleLabel.toLowerCase()} không được cấp quyền vào màn này.</p>
+          <Link to={homePath} className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors">
+            Về khu vực làm việc
+          </Link>
         </div>
       </div>
     )
@@ -196,12 +245,12 @@ export default function AdminLayout() {
 
         {/* Navigation with sections */}
         <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
-          {MENU_SECTIONS.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.label}>
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest px-3 mb-2">{section.label}</p>
               <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = location.pathname === item.path
+                  const isActive = isActivePath(location.pathname, item.path)
                   return (
                     <Link
                       key={item.path}
@@ -233,7 +282,7 @@ export default function AdminLayout() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white truncate">{userInfo?.hoTen || 'Admin'}</p>
-              <p className="text-xs text-slate-400 truncate">{userInfo?.role || 'ADMIN'}</p>
+              <p className="text-xs text-slate-400 truncate">{roleLabel}</p>
             </div>
           </div>
           <button
@@ -305,7 +354,7 @@ export default function AdminLayout() {
               </div>
               <div className="hidden lg:block">
                 <p className="text-sm text-slate-800 font-medium leading-tight">{userInfo?.hoTen || 'Admin'}</p>
-                <p className="text-xs text-slate-400 leading-tight">Quản trị viên</p>
+                <p className="text-xs text-slate-400 leading-tight">{roleLabel}</p>
               </div>
             </div>
           </div>

@@ -21,11 +21,11 @@ const MOCK_CONTRACTS = [
     id: 'HD-2026-001',
     code: 'HD-2026-001',
     propertyId: 1,
-    propertyName: 'Căn hộ 2PN Vinhomes Golden River',
+    propertyName: 'Căn hộ 2PN Vinhomes Metropolis',
     propertyImage: null,
     price: '18.000.000',
     priceUnit: '/tháng',
-    address: 'Quận 1, TP.HCM',
+    address: 'Hoàn Kiếm, Hà Nội',
     area: '75m²',
     bedrooms: '2 PN',
     startDate: '2026-01-15',
@@ -66,11 +66,11 @@ const MOCK_CONTRACTS = [
     id: 'HD-2026-002',
     code: 'HD-2026-002',
     propertyId: 2,
-    propertyName: 'Căn hộ 3PN Thảo Điền',
+    propertyName: 'Căn hộ 3PN Trung Hòa',
     propertyImage: null,
     price: '25.000.000',
     priceUnit: '/tháng',
-    address: 'Quận 2, TP.HCM',
+    address: 'Thanh Xuân, Hà Nội',
     area: '90m²',
     bedrooms: '3 PN',
     startDate: '2026-03-01',
@@ -110,11 +110,11 @@ const MOCK_CONTRACTS = [
     id: 'HD-2025-089',
     code: 'HD-2025-089',
     propertyId: 3,
-    propertyName: 'Chung cư 3PN Landmark 81',
+    propertyName: 'Chung cư 3PN Keangnam Hanoi',
     propertyImage: null,
     price: '35.000.000',
     priceUnit: '/tháng',
-    address: 'Bình Thạnh, TP.HCM',
+    address: 'Tây Hồ, Hà Nội',
     area: '140m²',
     bedrooms: '3 PN',
     startDate: '2025-06-01',
@@ -152,11 +152,11 @@ const MOCK_CONTRACTS = [
     id: 'HD-2026-003',
     code: 'HD-2026-003',
     propertyId: 4,
-    propertyName: 'Nhà phố 3 tầng Quận 7',
+    propertyName: 'Nhà phố 3 tầng Cầu Giấy',
     propertyImage: null,
     price: '30.000.000',
     priceUnit: '/tháng',
-    address: 'Quận 7, TP.HCM',
+    address: 'Cầu Giấy, Hà Nội',
     area: '120m²',
     bedrooms: '4 PN',
     startDate: '2026-06-15',
@@ -313,7 +313,6 @@ function StatusBadge({ status }) {
 }
 
 function ContractCard({ contract, onClick, isSelected }) {
-  const statusConfig = STATUS_CONFIG[contract.status]
   const daysUntilEnd = contract.status === 'expiring' ? timeRemaining(contract.endDate) : null
 
   return (
@@ -371,7 +370,7 @@ function ContractCard({ contract, onClick, isSelected }) {
           </div>
 
           <p className="mt-2 text-base font-bold text-blue-600">
-            {contract.price}<span className="text-xs font-normal text-slate-400"> {contract.priceUnit}</span>
+            {formatCurrency(contract.price)}<span className="text-xs font-normal text-slate-400"> {contract.priceUnit}</span>
           </p>
         </div>
 
@@ -434,7 +433,7 @@ function ContractDetail({ contract, onClose }) {
               <span>·</span>
               <span>{contract.bedrooms}</span>
               <span>·</span>
-              <span className="font-bold text-blue-600">{contract.price} {contract.priceUnit}</span>
+              <span className="font-bold text-blue-600">{formatCurrency(contract.price)} {contract.priceUnit}</span>
             </div>
           </div>
         </div>
@@ -669,7 +668,7 @@ function EmptyState() {
 
 export default function TenantContractsPage() {
   const [activeTab, setActiveTab] = useState('all')
-  const [contracts, setContracts] = useState(MOCK_CONTRACTS)
+  const [contracts] = useState(MOCK_CONTRACTS)
   const [selectedContract, setSelectedContract] = useState(null)
 
   const kpis = useMemo(() => ({

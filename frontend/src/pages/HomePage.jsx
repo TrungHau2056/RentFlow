@@ -138,6 +138,17 @@ const BENEFITS = [
 ]
 
 export default function HomePage() {
+  const [userInfo] = useState(() => {
+    const stored = localStorage.getItem('userInfo')
+    if (!stored) return null
+
+    try {
+      return JSON.parse(stored)
+    } catch {
+      localStorage.removeItem('userInfo')
+      return null
+    }
+  })
   const [searchParams, setSearchParams] = useState({
     district: '',
     priceRange: '',
@@ -172,9 +183,11 @@ export default function HomePage() {
               <Link to="/bat-dong-san" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                 Nhà cho thuê
               </Link>
-              <Link to="/bat-dong-san/dang-ky" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
-                Ký gửi nhà
-              </Link>
+              {userInfo?.role === 'CHU_NHA' && (
+                <Link to="/dashboard/bat-dong-san/dang-ky" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+                  Ký gửi nhà
+                </Link>
+              )}
               <a href="#contact" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                 Liên hệ
               </a>
@@ -500,11 +513,13 @@ export default function HomePage() {
                     Nhà cho thuê
                   </Link>
                 </li>
-                <li>
-                  <Link to="/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">
-                    Ký gửi nhà
-                  </Link>
-                </li>
+                {userInfo?.role === 'CHU_NHA' && (
+                  <li>
+                    <Link to="/dashboard/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">
+                      Ký gửi nhà
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <a href="#contact" className="text-slate-400 text-sm hover:text-white transition-colors">
                     Liên hệ

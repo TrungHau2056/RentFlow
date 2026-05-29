@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 
 const MENU_ITEMS = [
@@ -45,15 +45,9 @@ export default function TenantLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [userInfo] = useState(readStoredUser)
-  const [activeMenu, setActiveMenu] = useState('tong-quan')
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  // Sync active menu with current path
-  useEffect(() => {
-    const currentItem = MENU_ITEMS.find(item => location.pathname === item.path)
-    if (currentItem) setActiveMenu(currentItem.id)
-  }, [location.pathname])
+  const activeMenu = MENU_ITEMS.find(item => location.pathname === item.path)?.id || 'tong-quan'
 
   const logout = () => {
     localStorage.removeItem('accessToken')

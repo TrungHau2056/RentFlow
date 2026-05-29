@@ -289,7 +289,7 @@ const TAB_OPTIONS = [
 ]
 
 function formatTimeAgo(dateStr) {
-  const now = new Date('2025-05-30T12:00:00')
+  const now = new Date()
   const date = new Date(dateStr)
   const diffMs = now - date
   const diffMins = Math.floor(diffMs / 60000)
@@ -327,7 +327,6 @@ function KPICard({ icon, label, value, color, bgColor, accent }) {
 }
 
 function PriorityAlert({ notification, onRead, onSelect }) {
-  const loai = LOAI_CONFIG[notification.loai]
   const isUrgent = notification.uuTien === 'khan_cap'
 
   return (
@@ -728,7 +727,7 @@ export default function ThongBaoPage() {
     chuaDoc: notifications.filter(n => !n.daDoc).length,
     quanTrong: notifications.filter(n => n.uuTien !== 'binh_thuong').length,
     homNay: notifications.filter(n => {
-      const today = new Date('2025-05-30')
+      const today = new Date()
       const d = new Date(n.thoiGian)
       return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
     }).length,

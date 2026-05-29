@@ -32,11 +32,11 @@ const BOOKINGS = [
   {
     id: 'SCH-001234',
     propertyId: 1,
-    propertyName: 'Căn hộ 2PN Vinhomes Golden River',
+    propertyName: 'Căn hộ 2PN Vinhomes Metropolis',
     propertyImage: null,
     price: '18.000.000',
     priceUnit: '/tháng',
-    address: 'Quận 1, TP.HCM',
+    address: 'Hoàn Kiếm, Hà Nội',
     area: '75m²',
     bedrooms: '2 PN',
     date: '2026-05-27',
@@ -50,11 +50,11 @@ const BOOKINGS = [
   {
     id: 'SCH-001235',
     propertyId: 2,
-    propertyName: 'Nhà phố 3 tầng Quận 7',
+    propertyName: 'Nhà phố 3 tầng Cầu Giấy',
     propertyImage: null,
     price: '25.000.000',
     priceUnit: '/tháng',
-    address: 'Quận 7, TP.HCM',
+    address: 'Cầu Giấy, Hà Nội',
     area: '120m²',
     bedrooms: '4 PN',
     date: '2026-05-28',
@@ -68,11 +68,11 @@ const BOOKINGS = [
   {
     id: 'SCH-001236',
     propertyId: 3,
-    propertyName: 'Căn hộ Studio Thảo Điền',
+    propertyName: 'Căn hộ Studio Trung Hòa',
     propertyImage: null,
     price: '12.000.000',
     priceUnit: '/tháng',
-    address: 'Quận 2, TP.HCM',
+    address: 'Thanh Xuân, Hà Nội',
     area: '45m²',
     bedrooms: '1 PN',
     date: '2026-05-30',
@@ -86,11 +86,11 @@ const BOOKINGS = [
   {
     id: 'SCH-001237',
     propertyId: 4,
-    propertyName: 'Chung cư 3PN Landmark 81',
+    propertyName: 'Chung cư 3PN Keangnam Hanoi',
     propertyImage: null,
     price: '35.000.000',
     priceUnit: '/tháng',
-    address: 'Bình Thạnh, TP.HCM',
+    address: 'Tây Hồ, Hà Nội',
     area: '140m²',
     bedrooms: '3 PN',
     date: '2026-05-22',
@@ -104,11 +104,11 @@ const BOOKINGS = [
   {
     id: 'SCH-001238',
     propertyId: 5,
-    propertyName: 'Căn hộ 2PN Sun Wah Tower',
+    propertyName: 'Căn hộ 2PN Lotte Center Hanoi',
     propertyImage: null,
     price: '22.000.000',
     priceUnit: '/tháng',
-    address: 'Quận 1, TP.HCM',
+    address: 'Hoàn Kiếm, Hà Nội',
     area: '85m²',
     bedrooms: '2 PN',
     date: '2026-05-20',
@@ -122,11 +122,11 @@ const BOOKINGS = [
   {
     id: 'SCH-001239',
     propertyId: 6,
-    propertyName: 'Nhà vườn Bình Chánh',
+    propertyName: 'Nhà vườn Long Biên',
     propertyImage: null,
     price: '15.000.000',
     priceUnit: '/tháng',
-    address: 'Bình Chánh, TP.HCM',
+    address: 'Long Biên, Hà Nội',
     area: '200m²',
     bedrooms: '4 PN',
     date: '2026-05-21',
@@ -622,7 +622,6 @@ function SuccessModal({ type, booking, onClose }) {
   if (!booking) return null
 
   const isCancel = type === 'cancel'
-  const isReschedule = type === 'reschedule'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

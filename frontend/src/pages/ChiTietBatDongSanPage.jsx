@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
 
@@ -86,6 +86,124 @@ const SIMILAR_PROPERTIES = [
   },
 ]
 
+const ALL_PROPERTIES = [
+  PROPERTY_DATA,
+  {
+    id: 2,
+    title: 'Căn hộ cao cấp view hồ Tây',
+    price: '28.000.000 đ/tháng',
+    priceRaw: 28000000,
+    location: 'Tây Hồ, Hà Nội',
+    fullAddress: '88 Xuân La, Phường Xuân La, Quận Tây Hồ, Hà Nội',
+    area: '150 m²',
+    areaRaw: 150,
+    bedrooms: 3,
+    bathrooms: 2,
+    floors: 1,
+    direction: 'Đông Bắc',
+    type: 'Căn hộ',
+    legalStatus: 'Sổ đỏ chính chủ',
+    status: 'Noi_Bat',
+    statusLabel: 'Nổi bật',
+    description: `Căn hộ cao cấp tọa lạc tại khu vực đắc địa view trực diện Hồ Tây, không gian sống thanh bình giữa lòng thủ đô.
+
+Thiết kế hiện đại với ban công kính toàn cảnh, tận hưởng ánh sáng tự nhiên và gió hồ mát mẻ quanh năm. Nội thất nhập khẩu châu Âu, bếp mở sang trọng.
+
+Vị trí lý tưởng: Gần đại học Quốc gia, khu đô thị Ciputra, các nhà hàng và quán cafe ven hồ.`,
+    features: [
+      { icon: '🏢', text: 'View hồ toàn cảnh, ban công kính' },
+      { icon: '🏊', text: 'Hồ bơi sân thượng riêng' },
+      { icon: '🏋️', text: 'Gym và spa trong tòa nhà' },
+      { icon: '🚗', text: 'Chỗ để xe ngầm 2 chỗ' },
+      { icon: '🔒', text: 'An ninh 24/7, thẻ từ' },
+      { icon: '🛗', text: 'Thang máy tốc độ cao' },
+    ],
+    furniture: 'Nội thất nhập khẩu châu Âu đầy đủ',
+    nearby: [
+      'Đại học Quốc gia Hà Nội 500m',
+      'Khu đô thị Ciputra 1km',
+      'Bệnh viện E 2km',
+      'Chợ Hồ Tây 800m',
+    ],
+  },
+  {
+    id: 3,
+    title: 'Nhà phố thương mại Cầu Giấy',
+    price: '22.000.000 đ/tháng',
+    priceRaw: 22000000,
+    location: 'Cầu Giấy, Hà Nội',
+    fullAddress: '45 Duy Tân, Phường Dịch Vọng Hậu, Quận Cầu Giấy, Hà Nội',
+    area: '120 m²',
+    areaRaw: 120,
+    bedrooms: 3,
+    bathrooms: 2,
+    floors: 4,
+    direction: 'Tây Nam',
+    type: 'Nhà phố',
+    legalStatus: 'Sổ đỏ chính chủ',
+    status: 'Gia_Tot',
+    statusLabel: 'Giá tốt',
+    description: `Nhà phố thương mại phù hợp vừa ở vừa kinh doanh, tọa lạc trên trục đường chính sầm uất quận Cầu Giấy.
+
+Thiết kế 4 tầng thông minh: tầng trệt không gian kinh doanh, tầng 2-3 không gian sống, tầng 4 sân thượng. Mặt tiền rộng 6m, thuận lợi cho mọi loại hình kinh doanh.
+
+Khu vực trung tâm: Gần Keangnam, Big C, các trường học và bệnh viện lớn.`,
+    features: [
+      { icon: '🏪', text: 'Mặt tiền 6m, kinh doanh tốt' },
+      { icon: '🏢', text: '4 tầng thiết kế thông minh' },
+      { icon: '🚗', text: 'Chỗ để xe rộng rãi' },
+      { icon: '📹', text: 'Camera an ninh toàn nhà' },
+      { icon: '🔌', text: 'Hệ thống điện 3 pha' },
+      { icon: '🧯', text: 'Phòng cháy chữa cháy chuẩn' },
+    ],
+    furniture: 'Nội thất cơ bản, tầng trệt trống kinh doanh',
+    nearby: [
+      'Tòa nhà Keangnam 300m',
+      'Big C Cầu Giấy 500m',
+      'Bệnh viện 198 1km',
+      'ĐH Quốc gia 1.5km',
+    ],
+  },
+  {
+    id: 4,
+    title: 'Penthouse sang trọng Ba Đình',
+    price: '55.000.000 đ/tháng',
+    priceRaw: 55000000,
+    location: 'Ba Đình, Hà Nội',
+    fullAddress: '1A Hoàng Hoa Thám, Phường Liễu Giai, Quận Ba Đình, Hà Nội',
+    area: '200 m²',
+    areaRaw: 200,
+    bedrooms: 3,
+    bathrooms: 3,
+    floors: 1,
+    direction: 'Nam',
+    type: 'Penthouse',
+    legalStatus: 'Sổ đỏ chính chủ',
+    status: 'Moi',
+    statusLabel: 'Mới',
+    description: `Penthouse đẳng cấp 5 sao tại khu vực trung tâm hành chính Ba Đình, không gian sống xa hoa và riêng tư.
+
+Tầng thượng với sân vườn riêng, hồ bơi mini và khu vực BBQ ngoài trời. Nội thất thiết kế riêng bởi kiến trúc sư danh tiếng, mỗi chi tiết đều thể hiện sự tinh tế.
+
+Vị trí độc tôn: Nằm giữa khu ngoại giao đoàn, gần Lăng Bác, các đại sứ quán và công viên xanh mát.`,
+    features: [
+      { icon: '🏡', text: 'Sân vườn và hồ bơi riêng' },
+      { icon: '🍳', text: 'Bếp mở thiết kế Ý' },
+      { icon: '🎬', text: 'Phòng chiếu phim tại gia' },
+      { icon: '🍷', text: 'Khu vực BBQ sân thượng' },
+      { icon: '🛗', text: 'Thang máy riêng trực tiếp' },
+      { icon: '🌟', text: 'Dịch vụ quản gia 24/7' },
+    ],
+    furniture: 'Nội thất thiết kế riêng, cao cấp nhập khẩu',
+    nearby: [
+      'Lăng Chủ tịch Hồ Chí Minh 1km',
+      'Công viên Bách Thảo 500m',
+      'Lotte Center 800m',
+      'Bệnh viện Hữu Nghị 1.5km',
+    ],
+  },
+]
+
 const STATUS_STYLES = {
   Moi: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   Noi_Bat: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -101,30 +219,33 @@ const MEMBERSHIP_FEATURES = [
   'Truy cập hồ sơ pháp lý đầy đủ',
 ]
 
+function readStoredUser() {
+  const stored = localStorage.getItem('userInfo')
+  if (!stored) return null
+
+  try {
+    return JSON.parse(stored)
+  } catch {
+    localStorage.removeItem('userInfo')
+    return null
+  }
+}
+
 export default function ChiTietBatDongSanPage() {
   const { id } = useParams()
   const [mainImage, setMainImage] = useState(PROPERTY_IMAGES[0])
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-  const [userInfo, setUserInfo] = useState(null)
+  const [userInfo, setUserInfo] = useState(readStoredUser)
   const isLoggedIn = !!userInfo
   const [savedPropertyIds, setSavedPropertyIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('savedProperties') || '[]')
     } catch { return [] }
   })
+  const property = ALL_PROPERTIES.find(p => p.id === Number(id)) || PROPERTY_DATA
   const isSaved = savedPropertyIds.includes(Number(id))
   const isTenant = userInfo?.role === 'KHACH_THUE'
-
-  useEffect(() => {
-    const stored = localStorage.getItem('userInfo')
-    if (stored) {
-      try {
-        setUserInfo(JSON.parse(stored))
-      } catch {
-        localStorage.removeItem('userInfo')
-      }
-    }
-  }, [])
+  const canRegisterConsignment = userInfo?.role === 'CHU_NHA'
 
   const toggleSave = () => {
     if (!isLoggedIn) {
@@ -143,6 +264,17 @@ export default function ChiTietBatDongSanPage() {
     e.preventDefault()
     if (!isLoggedIn) {
       setIsAuthModalOpen(true)
+    }
+  }
+
+  const handleLoginSuccess = () => {
+    const stored = localStorage.getItem('userInfo')
+    if (stored) {
+      try {
+        setUserInfo(JSON.parse(stored))
+      } catch {
+        localStorage.removeItem('userInfo')
+      }
     }
   }
 
@@ -172,8 +304,8 @@ export default function ChiTietBatDongSanPage() {
               <Link to="/bat-dong-san" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                 Nhà cho thuê
               </Link>
-              {userInfo?.role !== 'KHACH_THUE' && (
-                <Link to="/bat-dong-san/dang-ky" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+              {canRegisterConsignment && (
+                <Link to="/dashboard/bat-dong-san/dang-ky" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                   Ký gửi nhà
                 </Link>
               )}
@@ -232,13 +364,30 @@ export default function ChiTietBatDongSanPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-slate-800 font-medium truncate">{PROPERTY_DATA.title}</span>
+            <span className="text-slate-800 font-medium truncate">{property.title}</span>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Login Banner for Guests */}
+        {!isLoggedIn && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-primary-container shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="text-blue-800 font-medium text-sm">Đăng nhập để xem đầy đủ thông tin bất động sản</span>
+            </div>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="bg-primary-container hover:bg-primary text-white font-medium text-sm px-5 py-2 rounded-lg transition-colors shrink-0"
+            >
+              Đăng nhập
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -248,7 +397,7 @@ export default function ChiTietBatDongSanPage() {
               <div className="relative h-96 overflow-hidden">
                 <img
                   src={mainImage.src}
-                  alt={PROPERTY_DATA.title}
+                  alt={property.title}
                   className={`w-full h-full object-cover transition-all duration-500 ${mainImage.locked && !isLoggedIn ? 'blur-sm' : ''}`}
                 />
                 {mainImage.locked && !isLoggedIn && (
@@ -265,8 +414,8 @@ export default function ChiTietBatDongSanPage() {
                   </div>
                 )}
                 <div className="absolute top-4 left-4 flex gap-2">
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${STATUS_STYLES[PROPERTY_DATA.status]}`}>
-                    {PROPERTY_DATA.statusLabel}
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status]}`}>
+                    {property.statusLabel}
                   </span>
                 </div>
               </div>
@@ -294,7 +443,7 @@ export default function ChiTietBatDongSanPage() {
                           </svg>
                         </div>
                       )}
-                      {idx === mainImage && (
+                      {mainImage === img && (
                         <div className="absolute inset-0 border-2 border-primary-container"></div>
                       )}
                     </button>
@@ -307,16 +456,16 @@ export default function ChiTietBatDongSanPage() {
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-slate-800 mb-2">{PROPERTY_DATA.title}</h1>
+                  <h1 className="text-2xl font-bold text-slate-800 mb-2">{property.title}</h1>
                   <div className="flex items-center gap-2 text-slate-500 text-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     </svg>
-                    <span>{PROPERTY_DATA.location}</span>
+                    <span>{isLoggedIn ? property.fullAddress : property.location}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-primary-container">{PROPERTY_DATA.price}</div>
+                  <div className="text-2xl font-bold text-primary-container">{property.price}</div>
                 </div>
               </div>
 
@@ -329,7 +478,7 @@ export default function ChiTietBatDongSanPage() {
                     </svg>
                   </div>
                   <div className="text-xs text-slate-500 uppercase">Diện tích</div>
-                  <div className="text-lg font-semibold text-slate-800">{PROPERTY_DATA.area}</div>
+                  <div className="text-lg font-semibold text-slate-800">{property.area}</div>
                 </div>
                 <div className="text-center">
                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2">
@@ -338,7 +487,7 @@ export default function ChiTietBatDongSanPage() {
                     </svg>
                   </div>
                   <div className="text-xs text-slate-500 uppercase">Phòng ngủ</div>
-                  <div className="text-lg font-semibold text-slate-800">{PROPERTY_DATA.bedrooms}</div>
+                  <div className="text-lg font-semibold text-slate-800">{property.bedrooms}</div>
                 </div>
                 <div className="text-center">
                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2">
@@ -347,7 +496,7 @@ export default function ChiTietBatDongSanPage() {
                     </svg>
                   </div>
                   <div className="text-xs text-slate-500 uppercase">Phòng tắm</div>
-                  <div className="text-lg font-semibold text-slate-800">{PROPERTY_DATA.bathrooms}</div>
+                  <div className="text-lg font-semibold text-slate-800">{property.bathrooms}</div>
                 </div>
                 <div className="text-center">
                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2">
@@ -356,7 +505,7 @@ export default function ChiTietBatDongSanPage() {
                     </svg>
                   </div>
                   <div className="text-xs text-slate-500 uppercase">Hướng</div>
-                  <div className="text-lg font-semibold text-slate-800">{PROPERTY_DATA.direction}</div>
+                  <div className="text-lg font-semibold text-slate-800">{property.direction}</div>
                 </div>
               </div>
             </div>
@@ -365,14 +514,14 @@ export default function ChiTietBatDongSanPage() {
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
               <h2 className="text-lg font-bold text-slate-800 mb-4">Mô tả bất động sản</h2>
               <div className="prose prose-slate max-w-none">
-                <p className="text-slate-600 leading-relaxed whitespace-pre-line">{PROPERTY_DATA.description}</p>
+                <p className="text-slate-600 leading-relaxed whitespace-pre-line">{property.description}</p>
               </div>
 
               {/* Features */}
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-slate-700 uppercase mb-3">Tiện ích nổi bật</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {PROPERTY_DATA.features.map((feature, idx) => (
+                  {property.features.map((feature, idx) => (
                     <div key={idx} className="flex items-center gap-2 bg-slate-50 rounded-lg p-3">
                       <span className="text-xl">{feature.icon}</span>
                       <span className="text-sm text-slate-600">{feature.text}</span>
@@ -387,12 +536,12 @@ export default function ChiTietBatDongSanPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 blur-sm select-none">
                     <div>
                       <h3 className="text-sm font-semibold text-slate-700 uppercase mb-3">Nội thất</h3>
-                      <p className="text-slate-600">{PROPERTY_DATA.furniture}</p>
+                      <p className="text-slate-600">{property.furniture}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-slate-700 uppercase mb-3">Khu vực xung quanh</h3>
                       <ul className="space-y-2">
-                        {PROPERTY_DATA.nearby.map((item, idx) => (
+                        {property.nearby.map((item, idx) => (
                           <li key={idx} className="text-slate-600 text-sm flex items-start gap-2">
                             <svg className="w-4 h-4 text-primary-container mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -419,12 +568,12 @@ export default function ChiTietBatDongSanPage() {
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 uppercase mb-3">Nội thất</h3>
-                    <p className="text-slate-600">{PROPERTY_DATA.furniture}</p>
+                    <p className="text-slate-600">{property.furniture}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 uppercase mb-3">Khu vực xung quanh</h3>
                     <ul className="space-y-2">
-                      {PROPERTY_DATA.nearby.map((item, idx) => (
+                      {property.nearby.map((item, idx) => (
                         <li key={idx} className="text-slate-600 text-sm flex items-start gap-2">
                           <svg className="w-4 h-4 text-primary-container mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -479,7 +628,7 @@ export default function ChiTietBatDongSanPage() {
             <div className="bg-white rounded-2xl border border-slate-200 p-6 sticky top-24">
               {/* Price Card */}
               <div className="text-center mb-6 pb-6 border-b border-slate-200">
-                <div className="text-3xl font-bold text-primary-container mb-2">{PROPERTY_DATA.price}</div>
+                <div className="text-3xl font-bold text-primary-container mb-2">{property.price}</div>
                 <div className="text-sm text-slate-500">Giá cho thuê</div>
               </div>
 
@@ -487,20 +636,20 @@ export default function ChiTietBatDongSanPage() {
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between py-3 border-b border-slate-100">
                   <span className="text-sm text-slate-500">Loại nhà</span>
-                  <span className="text-sm font-medium text-slate-800">{PROPERTY_DATA.type}</span>
+                  <span className="text-sm font-medium text-slate-800">{property.type}</span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-slate-100">
                   <span className="text-sm text-slate-500">Diện tích</span>
-                  <span className="text-sm font-medium text-slate-800">{PROPERTY_DATA.area}</span>
+                  <span className="text-sm font-medium text-slate-800">{property.area}</span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-slate-100">
                   <span className="text-sm text-slate-500">Phòng ngủ</span>
-                  <span className="text-sm font-medium text-slate-800">{PROPERTY_DATA.bedrooms} phòng</span>
+                  <span className="text-sm font-medium text-slate-800">{property.bedrooms} phòng</span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-slate-100">
                   <span className="text-sm text-slate-500">Trạng thái</span>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[PROPERTY_DATA.status]}`}>
-                    {PROPERTY_DATA.statusLabel}
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status]}`}>
+                    {property.statusLabel}
                   </span>
                 </div>
               </div>
@@ -539,7 +688,7 @@ export default function ChiTietBatDongSanPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Đặt lịch xem nhà
+                    Đăng nhập để đặt lịch
                   </button>
                 </div>
               ) : (
@@ -606,8 +755,8 @@ export default function ChiTietBatDongSanPage() {
                 {/* Links công cộng */}
                 <li><Link to="/" className="text-slate-400 text-sm hover:text-white transition-colors">Trang chủ</Link></li>
                 <li><Link to="/bat-dong-san" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà cho thuê</Link></li>
-                {userInfo?.role !== 'KHACH_THUE' && (
-                  <li><Link to="/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">Ký gửi nhà</Link></li>
+                {canRegisterConsignment && (
+                  <li><Link to="/dashboard/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">Ký gửi nhà</Link></li>
                 )}
                 <li><a href="#contact" className="text-slate-400 text-sm hover:text-white transition-colors">Liên hệ</a></li>
 
@@ -637,16 +786,7 @@ export default function ChiTietBatDongSanPage() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={() => {
-          const stored = localStorage.getItem('userInfo')
-          if (stored) {
-            try {
-              setUserInfo(JSON.parse(stored))
-            } catch {
-              localStorage.removeItem('userInfo')
-            }
-          }
-        }}
+        onLoginSuccess={handleLoginSuccess}
       />
     </div>
   )

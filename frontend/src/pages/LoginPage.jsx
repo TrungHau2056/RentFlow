@@ -1,46 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
-
-// TÀI KHOẢN DEMO THEO ROLE
-// ADMIN: admin@rentflow.vn / 123456
-// CHỦ NHÀ: chunha@rentflow.vn / 123456
-// KHÁCH THUÊ: khachthue@rentflow.vn / 123456
-const MOCK_USERS = [
-  {
-    identifier: 'admin@rentflow.vn',
-    password: '123456',
-    user: {
-      id: 1,
-      hoTen: 'Nguyễn Văn Admin',
-      email: 'admin@rentflow.vn',
-      role: 'ADMIN',
-      avatar: null,
-    },
-  },
-  {
-    identifier: 'chunha@rentflow.vn',
-    password: '123456',
-    user: {
-      id: 2,
-      hoTen: 'Trần Thị Chủ',
-      email: 'chuNha@rentflow.vn',
-      role: 'CHU_NHA',
-      avatar: null,
-    },
-  },
-  {
-    identifier: 'khachthue@rentflow.vn',
-    password: '123456',
-    user: {
-      id: 3,
-      hoTen: 'Lê Văn Thuê',
-      email: 'khachThue@rentflow.vn',
-      role: 'KHACH_THUE',
-      avatar: null,
-    },
-  },
-]
+import { isInternalAdminRole } from '../config/roles'
+import { MOCK_USERS } from '../config/mockUsers'
 
 const ALERT_CONTENT = {
   missing: {
@@ -108,24 +70,28 @@ export default function LoginPage() {
     }
 
     // Check mock users
-    const mockUser = MOCK_USERS.find(u => u.identifier === normalizedIdentifier)
-    if (mockUser) {
-      if (password !== mockUser.password) {
+    const matchedUser = MOCK_USERS.find(u => u.email === normalizedIdentifier)
+    if (matchedUser) {
+      if (password !== matchedUser.password) {
         setAlertType('incorrect')
         return
       }
 
-      setLoading(true)
       storeSession({
-        accessToken: `mock-access-token-${mockUser.user.id}`,
-        refreshToken: `mock-refresh-token-${mockUser.user.id}`,
-        user: mockUser.user,
+        accessToken: `mock-access-token-${matchedUser.id}`,
+        refreshToken: `mock-refresh-token-${matchedUser.id}`,
+        user: {
+          id: matchedUser.id,
+          hoTen: matchedUser.hoTen,
+          email: matchedUser.email,
+          role: matchedUser.role,
+          avatar: matchedUser.avatar,
+        },
       })
-      setTimeout(() => {
-        if (mockUser.user.role === 'ADMIN') navigate('/admin')
-        else if (mockUser.user.role === 'CHU_NHA') navigate('/dashboard')
-        else navigate('/tenant')
-      }, 300)
+      setLoading(false)
+      if (isInternalAdminRole(matchedUser.role)) navigate('/admin')
+      else if (matchedUser.role === 'CHU_NHA') navigate('/dashboard')
+      else navigate('/tenant')
       return
     }
 
@@ -139,7 +105,9 @@ export default function LoginPage() {
       const data = await response.json()
       if (response.ok) {
         storeSession(data.data)
-        if (data.data.user?.role === 'KHACH_THUE') navigate('/tenant')
+        if (isInternalAdminRole(data.data.user?.role)) navigate('/admin')
+        else if (data.data.user?.role === 'CHU_NHA') navigate('/dashboard')
+        else if (data.data.user?.role === 'KHACH_THUE') navigate('/tenant')
         else navigate('/')
       } else {
         setAlertType(data.message?.toLowerCase().includes('khóa') ? 'locked' : 'incorrect')

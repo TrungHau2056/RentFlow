@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 const PROPERTY = {
   id: 1,
@@ -78,6 +78,8 @@ const VIEWING_METHODS = [
 ]
 
 export default function ScheduleViewingPage() {
+  const [searchParams] = useSearchParams()
+  const propertyId = searchParams.get('propertyId')
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedTime, setSelectedTime] = useState(null)
   const [viewingMethod, setViewingMethod] = useState('trực_tiếp')
@@ -167,7 +169,7 @@ export default function ScheduleViewingPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 uppercase mb-1">Hình thức</p>
-                  <p className="text-sm font-semibold text-slate-800 capitalize">{bookingConfirmed.method.replace('_', ' ')}</p>
+                  <p className="text-sm font-semibold text-slate-800">{VIEWING_METHODS.find(m => m.id === bookingConfirmed.method)?.label || bookingConfirmed.method}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 uppercase mb-1">Mã lịch hẹn</p>
@@ -259,9 +261,8 @@ export default function ScheduleViewingPage() {
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
               <h3 className="font-semibold text-slate-800 mb-4">Chọn ngày xem</h3>
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {days.map((date, index) => {
+                {days.map((date) => {
                   const isSelected = selectedDate === date.toISOString()
-                  const isToday = index === 0
                   return (
                     <button
                       key={date.toISOString()}

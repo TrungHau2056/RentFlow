@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 const STEPS = [
@@ -18,12 +18,26 @@ const PROPERTY_TYPES = [
   { id: 'nha_pho', label: 'Nhà phố', icon: 'townhouse' },
 ]
 
-const DISTRICTS = [
-  'Quận 1', 'Quận 2', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7',
-  'Quận 8', 'Quận 9', 'Quận 10', 'Quận 11', 'Quận 12', 'Bình Thạnh',
-  'Gò Vấp', 'Phú Nhuận', 'Tân Bình', 'Tân Phú', 'Bình Tân', 'Thủ Đức',
-  'Bình Chánh', 'Hóc Môn', 'Củ Chi', 'Nhà Bè', 'Cần Giờ'
-]
+const DISTRICTS_BY_CITY = {
+  HN: [
+    'Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Hai Bà Trưng', 'Tây Hồ',
+    'Cầu Giấy', 'Thanh Xuân', 'Hà Đông', 'Long Biên', 'Nam Từ Liêm',
+    'Bắc Từ Liêm', 'Hoàng Mai', 'Gia Lâm', 'Đan Phượng', 'Hoài Đức',
+    'Mê Linh', 'Phúc Thọ', 'Quốc Oai', 'Sóc Sơn', 'Thanh Trì',
+    'Thạch Thất', 'Thường Tín', 'Sơn Tây', 'Ba Vì', 'Chương Mỹ',
+    'Đông Anh', 'Phú Xuyên', 'Thanh Oai', 'Ứng Hòa', 'Mỹ Đức',
+  ],
+  'TP.HCM': [
+    'Quận 1', 'Quận 2', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7',
+    'Quận 8', 'Quận 9', 'Quận 10', 'Quận 11', 'Quận 12', 'Bình Thạnh',
+    'Gò Vấp', 'Phú Nhuận', 'Tân Bình', 'Tân Phú', 'Bình Tân', 'Thủ Đức',
+    'Bình Chánh', 'Hóc Môn', 'Củ Chi', 'Nhà Bè', 'Cần Giờ',
+  ],
+  DN: [
+    'Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn',
+    'Liên Chiểu', 'Cẩm Lệ', 'Hòa Vang', 'Hoàng Sa',
+  ],
+}
 
 const DIRECTIONS = [
   'Đông', 'Đông Nam', 'Nam', 'Tây Nam', 'Tây', 'Tây Bắc', 'Bắc', 'Đông Bắc'
@@ -288,7 +302,7 @@ function ImageUploadZone({ images, onUpload, onRemove }) {
   )
 }
 
-function SuccessScreen({ formData, onBack }) {
+function SuccessScreen({ formData, onBack, requestCode }) {
   const timeline = [
     { stage: 'Tiếp nhận', status: 'pending', desc: 'Nhân viên sẽ liên hệ trong 24h' },
     { stage: 'Khảo sát', status: 'pending', desc: 'Khảo sát thực tế BĐS' },
@@ -306,7 +320,7 @@ function SuccessScreen({ formData, onBack }) {
           Yêu cầu ký gửi đã được gửi thành công!
         </h2>
         <p className="mt-2 text-slate-500">
-          Mã yêu cầu: <span className="font-mono font-bold text-slate-700">REQ-{Date.now().toString().slice(-6)}</span>
+          Mã yêu cầu: <span className="font-mono font-bold text-slate-700">{requestCode}</span>
         </p>
       </div>
 
@@ -326,7 +340,7 @@ function SuccessScreen({ formData, onBack }) {
           <div className="flex justify-between border-b border-slate-100 pb-2">
             <span className="text-slate-500">Địa chỉ</span>
             <span className="font-medium text-slate-900">
-              {formData.diaChi}, {formData.quanHuyen}, TP.HCM
+              {formData.diaChi}, {formData.quanHuyen}, {formData.thanhPho === 'HN' ? 'Hà Nội' : formData.thanhPho === 'TP.HCM' ? 'TP.HCM' : 'Đà Nẵng'}
             </span>
           </div>
           <div className="flex justify-between">
@@ -380,11 +394,24 @@ function SuccessScreen({ formData, onBack }) {
   )
 }
 
+function readStoredUser() {
+  const stored = localStorage.getItem('userInfo')
+  if (!stored) return null
+
+  try {
+    return JSON.parse(stored)
+  } catch {
+    localStorage.removeItem('userInfo')
+    return null
+  }
+}
+
 export default function DangKyKyGuiPage() {
   const navigate = useNavigate()
-  const [userInfo, setUserInfo] = useState(null)
+  const [userInfo] = useState(readStoredUser)
   const [currentStep, setCurrentStep] = useState(1)
   const [submitted, setSubmitted] = useState(false)
+  const [requestCode, setRequestCode] = useState('')
   const [formData, setFormData] = useState({
     loaiNha: '',
     tenBds: '',
@@ -393,7 +420,7 @@ export default function DangKyKyGuiPage() {
     soPhongNgu: '',
     soWC: '',
     huongNha: '',
-    thanhPho: 'TP.HCM',
+    thanhPho: 'HN',
     quanHuyen: '',
     phuongXa: '',
     diaChi: '',
@@ -405,15 +432,28 @@ export default function DangKyKyGuiPage() {
     chapNhanDieuKhoan: false,
   })
 
-  useEffect(() => {
-    const stored = localStorage.getItem('userInfo')
-    if (stored) {
-      try { setUserInfo(JSON.parse(stored)) }
-      catch { localStorage.removeItem('userInfo') }
-    }
-  }, [])
+  if (!userInfo) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <div className="max-w-sm rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/40">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-on-surface">Vui lòng đăng nhập</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">
+            Chức năng đăng ký ký gửi nhà chỉ dành cho tài khoản chủ nhà.
+          </p>
+          <Link to="/login" className="mt-6 inline-flex rounded-xl bg-primary-container px-6 py-3 text-sm font-semibold text-white hover:bg-primary">
+            Đăng nhập
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
-  if (userInfo?.role === 'KHACH_THUE') {
+  if (userInfo.role !== 'CHU_NHA') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <div className="max-w-sm rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/40">
@@ -424,7 +464,7 @@ export default function DangKyKyGuiPage() {
           </div>
           <h1 className="text-xl font-bold text-on-surface">Không có quyền truy cập</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Chức năng ký gửi nhà chỉ dành cho chủ nhà. Tài khoản khách thuê không thể thực hiện thao tác này.
+            Chức năng đăng ký ký gửi nhà chỉ dành cho chủ nhà. Tài khoản hiện tại không thể thực hiện thao tác này.
           </p>
           <Link to="/" className="mt-6 inline-flex rounded-xl bg-primary-container px-6 py-3 text-sm font-semibold text-white hover:bg-primary">
             Về trang chủ
@@ -447,7 +487,27 @@ export default function DangKyKyGuiPage() {
     }))
   }
 
+  const [stepErrors, setStepErrors] = useState({})
+
+  const validateStep = (step) => {
+    const errors = {}
+    if (step === 1) {
+      if (!formData.loaiNha) errors.loaiNha = 'Vui lòng chọn loại bất động sản'
+      if (!formData.tenBds.trim()) errors.tenBds = 'Vui lòng nhập tên bất động sản'
+      if (!formData.dienTich) errors.dienTich = 'Vui lòng nhập diện tích'
+      if (!formData.giaThue) errors.giaThue = 'Vui lòng nhập giá thuê'
+    }
+    if (step === 2) {
+      if (!formData.quanHuyen) errors.quanHuyen = 'Vui lòng chọn quận/huyện'
+      if (!formData.diaChi.trim()) errors.diaChi = 'Vui lòng nhập địa chỉ chi tiết'
+    }
+    return errors
+  }
+
   const nextStep = () => {
+    const errors = validateStep(currentStep)
+    setStepErrors(errors)
+    if (Object.keys(errors).length > 0) return
     if (currentStep < 5) setCurrentStep(currentStep + 1)
   }
 
@@ -457,6 +517,7 @@ export default function DangKyKyGuiPage() {
 
   const handleSubmit = () => {
     if (!formData.chapNhanDieuKhoan) return
+    setRequestCode(`REQ-${Date.now().toString().slice(-6)}`)
     setSubmitted(true)
   }
 
@@ -587,11 +648,11 @@ export default function DangKyKyGuiPage() {
                 </label>
                 <select
                   value={formData.thanhPho}
-                  onChange={(e) => updateField('thanhPho', e.target.value)}
+                  onChange={(e) => { updateField('thanhPho', e.target.value); updateField('quanHuyen', '') }}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
-                  <option value="TP.HCM">TP. Hồ Chí Minh</option>
                   <option value="HN">Hà Nội</option>
+                  <option value="TP.HCM">TP. Hồ Chí Minh</option>
                   <option value="DN">Đà Nẵng</option>
                 </select>
               </div>
@@ -606,7 +667,7 @@ export default function DangKyKyGuiPage() {
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">Chọn quận/huyện</option>
-                  {DISTRICTS.map(d => (
+                  {(DISTRICTS_BY_CITY[formData.thanhPho] || []).map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
@@ -703,9 +764,9 @@ export default function DangKyKyGuiPage() {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => toggleArrayField('tienIch', item.id)}
+                    onClick={() => toggleArrayField('khuVucXungQuanh', item.id)}
                     className={`flex items-center gap-2 rounded-xl border p-3 text-sm transition ${
-                      formData.tienIch.includes(item.id)
+                      formData.khuVucXungQuanh.includes(item.id)
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                         : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                     }`}
@@ -802,7 +863,7 @@ export default function DangKyKyGuiPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Tiện ích xung quanh</span>
-                  <span className="font-medium text-slate-900">{formData.tienIch.length} mục</span>
+                  <span className="font-medium text-slate-900">{formData.khuVucXungQuanh.length} mục</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Hình ảnh</span>
@@ -845,7 +906,7 @@ export default function DangKyKyGuiPage() {
             <FormIcon icon="chevronLeft" className="h-4 w-4" />
             Về dashboard
           </Link>
-          <SuccessScreen formData={formData} onBack={() => navigate('/dashboard')} />
+          <SuccessScreen formData={formData} requestCode={requestCode} onBack={() => navigate('/dashboard')} />
         </div>
       </div>
     )

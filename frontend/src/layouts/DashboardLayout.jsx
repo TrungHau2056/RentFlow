@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Outlet } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const MENU_ITEMS = [
   { path: '/dashboard', label: 'Tổng quan', icon: 'dashboard' },
@@ -56,35 +56,23 @@ const ICONS = {
   ),
 }
 
+function readStoredUser() {
+  const stored = localStorage.getItem('userInfo')
+  if (!stored) return null
+
+  try {
+    return JSON.parse(stored)
+  } catch {
+    localStorage.removeItem('userInfo')
+    return null
+  }
+}
+
 export default function DashboardLayout() {
   const location = useLocation()
-  const [userInfo, setUserInfo] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [userInfo] = useState(readStoredUser)
   const isLoggedIn = !!userInfo
   const isChuNha = userInfo?.role === 'CHU_NHA'
-
-  useEffect(() => {
-    const stored = localStorage.getItem('userInfo')
-    if (stored) {
-      try {
-        setUserInfo(JSON.parse(stored))
-      } catch {
-        localStorage.removeItem('userInfo')
-      }
-    }
-    setIsLoading(false)
-  }, [])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-surface-container-low flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-primary-container border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-on-surface-variant">Đang tải...</p>
-        </div>
-      </div>
-    )
-  }
 
   if (!isLoggedIn) {
     return (

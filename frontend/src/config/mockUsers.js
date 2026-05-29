@@ -1,0 +1,42 @@
+export const MOCK_USERS = [
+  {
+    email: 'admin@rentflow.vn',
+    password: '123456',
+    id: 1,
+    hoTen: 'Nguyễn Văn Admin',
+    role: 'ADMIN',
+    avatar: null,
+  },
+  {
+    email: 'ketoan@rentflow.vn',
+    password: '123456',
+    id: 4,
+    hoTen: 'Phạm Thị Kế Toán',
+    role: 'KE_TOAN',
+    avatar: null,
+  },
+  {
+    email: 'phapluat@rentflow.vn',
+    password: '123456',
+    id: 5,
+    hoTen: 'Đặng Minh Pháp Luật',
+    role: 'TU_VAN_PHAP_LUAT',
+    avatar: null,
+  },
+  {
+    email: 'chunha@rentflow.vn',
+    password: '123456',
+    id: 2,
+    hoTen: 'Trần Thị Chủ',
+    role: 'CHU_NHA',
+    avatar: null,
+  },
+  {
+    email: 'khachthue@rentflow.vn',
+    password: '123456',
+    id: 3,
+    hoTen: 'Lê Văn Thuê',
+    role: 'KHACH_THUE',
+    avatar: null,
+  },
+]
