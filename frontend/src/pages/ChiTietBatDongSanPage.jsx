@@ -115,7 +115,7 @@ export default function ChiTietBatDongSanPage() {
   }, [id])
 
   const isSaved = savedPropertyIds.includes(Number(id))
-  const isTenant = userInfo?.role === 'KHACH_THUE'
+  const isTenant = userInfo?.role === 'KHACH_HANG'
   const canRegisterConsignment = userInfo?.role === 'CHU_NHA'
 
   const navigate = useNavigate()

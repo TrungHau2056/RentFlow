@@ -7,7 +7,7 @@ import api from '../services/api'
 
 const ROLES = [
   { value: 'CHU_NHA', label: 'Chủ nhà', desc: 'Ký gửi bất động sản cho thuê' },
-  { value: 'KHACH_THUE', label: 'Khách thuê', desc: 'Tìm kiếm bất động sản thuê' },
+  { value: 'KHACH_HANG', label: 'Khách hàng', desc: 'Tìm kiếm bất động sản thuê' },
 ]
 
 export default function RegisterPage() {
@@ -52,7 +52,7 @@ export default function RegisterPage() {
 
       if (isInternalAdminRole(role)) navigate('/admin')
       else if (role === 'CHU_NHA') navigate('/dashboard')
-      else navigate('/')
+      else navigate('/tenant')
     } catch (err) {
       const data = err.response?.data
       setError(data?.message || 'Đăng ký thất bại')

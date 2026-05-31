@@ -55,7 +55,7 @@ function HomeRoute() {
 
   if (isInternalAdminRole(user.role)) return <Navigate to="/admin" replace />
   if (user.role === 'CHU_NHA') return <Navigate to="/dashboard" replace />
-  if (user.role === 'KHACH_THUE' || user.role === 'KHACH_HANG') return <Navigate to="/tenant" replace />
+  if (user.role === 'KHACH_HANG') return <Navigate to="/tenant" replace />
   return <Navigate to="/home" replace />
 }
 

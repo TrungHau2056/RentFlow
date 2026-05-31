@@ -250,7 +250,7 @@ export default function BatDongSanPage() {
               </a>
 
               {/* Links riêng cho khách thuê */}
-              {userInfo?.role === 'KHACH_THUE' && (
+              {userInfo?.role === 'KHACH_HANG' && (
                 <Link to="/tenant/nha-da-luu" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                   Nhà đã lưu
                 </Link>
@@ -271,7 +271,7 @@ export default function BatDongSanPage() {
                     <div className="text-left">
                       <p className="text-sm text-slate-800 leading-tight">{userInfo.hoTen}</p>
                       <p className="text-xs text-slate-500 leading-tight">
-                        {userInfo.role === 'CHU_NHA' ? 'Chủ nhà' : userInfo.role === 'KHACH_THUE' ? 'Khách thuê' : userInfo.role === 'KHACH_HANG' ? 'Khách hàng' : ''}
+                        {userInfo.role === 'CHU_NHA' ? 'Chủ nhà' : 'Khách hàng'}
                       </p>
                     </div>
                     <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -788,7 +788,7 @@ export default function BatDongSanPage() {
                 <li><a href="#contact" className="text-slate-400 text-sm hover:text-white transition-colors">Liên hệ</a></li>
 
                 {/* Links riêng cho khách thuê */}
-                {userInfo?.role === 'KHACH_THUE' && (
+                {userInfo?.role === 'KHACH_HANG' && (
                   <>
                     <li><Link to="/tenant/nha-da-luu" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà đã lưu</Link></li>
                   </>

@@ -80,7 +80,7 @@ export default function LoginPage() {
         else localStorage.removeItem('rememberedIdentifier')
         if (isInternalAdminRole(userInfo?.role)) navigate('/admin')
         else if (userInfo?.role === 'CHU_NHA') navigate('/dashboard')
-        else if (userInfo?.role === 'KHACH_THUE' || userInfo?.role === 'KHACH_HANG') navigate('/tenant')
+        else if (userInfo?.role === 'KHACH_HANG') navigate('/tenant')
         else navigate('/')
         setLoading(false)
       }, 300)
@@ -104,7 +104,7 @@ export default function LoginPage() {
       const role = userInfo?.role
       if (isInternalAdminRole(role)) navigate('/admin')
       else if (role === 'CHU_NHA') navigate('/dashboard')
-      else if (role === 'KHACH_THUE' || role === 'KHACH_HANG') navigate('/tenant')
+      else if (role === 'KHACH_HANG') navigate('/tenant')
       else navigate('/')
     } catch (error) {
       const data = error.response?.data

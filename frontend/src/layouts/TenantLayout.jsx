@@ -75,7 +75,7 @@ export default function TenantLayout() {
     )
   }
 
-  if (userInfo.role !== 'KHACH_THUE' && userInfo.role !== 'KHACH_HANG') {
+  if (userInfo.role !== 'KHACH_HANG') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <div className="max-w-sm rounded-3xl border border-slate-200 bg-white p-8 text-center">

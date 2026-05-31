@@ -20,7 +20,7 @@ export const MOCK_USERS = [
     password: '123456',
     id: 5,
     hoTen: 'Đặng Minh Pháp Luật',
-    role: 'TU_VAN_PHAP_LUAT',
+    role: 'BO_PHAN_PHAP_LUAT',
     avatar: null,
   },
   {
@@ -48,11 +48,11 @@ export const MOCK_USERS = [
     avatar: null,
   },
   {
-    email: 'khachthue@rentflow.vn',
+    email: 'khachhang@rentflow.vn',
     password: '123456',
     id: 3,
-    hoTen: 'Lê Văn Thuê',
-    role: 'KHACH_THUE',
+    hoTen: 'Lê Văn Hàng',
+    role: 'KHACH_HANG',
     avatar: null,
   },
 ]

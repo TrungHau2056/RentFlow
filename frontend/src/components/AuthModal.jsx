@@ -71,7 +71,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     onLoginSuccess()
     if (isInternalAdminRole(user?.role)) navigate('/admin')
     else if (user?.role === 'CHU_NHA') navigate('/dashboard')
-    else if (user?.role === 'KHACH_THUE' || user?.role === 'KHACH_HANG') navigate('/tenant')
+    else if (user?.role === 'KHACH_HANG') navigate('/tenant')
     else navigate('/')
   }
 
@@ -357,7 +357,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: 'CHU_NHA', label: 'Chủ nhà' },
-                  { value: 'KHACH_THUE', label: 'Khách thuê' },
+                  { value: 'KHACH_HANG', label: 'Khách hàng' },
                 ].map((role) => (
                   <button
                     key={role.value}
