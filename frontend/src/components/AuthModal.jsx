@@ -70,7 +70,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const routeAuthenticatedUser = (user) => {
     onLoginSuccess()
     if (isInternalAdminRole(user?.role)) navigate('/admin')
-    else if (user?.role === 'CHU_NHA') navigate('/dashboard')
+    else if (user?.role === 'CHU_NHA') navigate('/dashboard/bat-dong-san')
     else if (user?.role === 'KHACH_HANG') navigate('/tenant')
     else navigate('/')
   }

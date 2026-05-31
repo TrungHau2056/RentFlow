@@ -51,7 +51,7 @@ export default function RegisterPage() {
       }
 
       if (isInternalAdminRole(role)) navigate('/admin')
-      else if (role === 'CHU_NHA') navigate('/dashboard')
+      else if (role === 'CHU_NHA') navigate('/dashboard/bat-dong-san')
       else navigate('/tenant')
     } catch (err) {
       const data = err.response?.data

@@ -2,6 +2,7 @@ package com.rentflow.server.controller;
 
 import com.rentflow.server.dto.response.ApiSuccessResponse;
 import com.rentflow.server.dto.response.KhachHangResponseDTO;
+import com.rentflow.server.dto.response.NhanVienResponseDTO;
 import com.rentflow.server.entity.KhachHang;
 import com.rentflow.server.entity.NhanVien;
 import com.rentflow.server.exception.AppException;
@@ -27,6 +28,27 @@ import java.util.Map;
 public class NhanVienMoiGioiController {
     private final NhanVienRepository nhanVienRepository;
     private final KhachHangRepository khachHangRepository;
+
+    @GetMapping
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Danh sách môi giới", description = "Lấy danh sách nhân viên môi giới (MOI_GIOI)")
+    public ApiSuccessResponse<List<NhanVienResponseDTO>> getAllBrokers() {
+        List<NhanVien> brokers = nhanVienRepository.findByChucVu("MOI_GIOI");
+        List<NhanVienResponseDTO> dtos = brokers.stream()
+                .map(nv -> NhanVienResponseDTO.builder()
+                        .id(nv.getId())
+                        .hoTen(nv.getHoTen())
+                        .email(nv.getEmail())
+                        .soDienThoai(nv.getSoDienThoai())
+                        .chucVu(nv.getChucVu())
+                        .build())
+                .toList();
+        return ApiSuccessResponse.<List<NhanVienResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy danh sách môi giới thành công")
+                .data(dtos)
+                .build();
+    }
 
     @PostMapping("/{id}/khach-hang")
     @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
@@ -62,6 +84,7 @@ public class NhanVienMoiGioiController {
                 .nhuCauThue(kh.getNhuCauThue())
                 .tieuChiTimNha(kh.getTieuChiTimNha())
                 .nhuCauThueChiTiet(kh.getNhuCauThueChiTiet())
+                .nhanVienMoiGioiId(kh.getNhanVienMoiGioi() != null ? kh.getNhanVienMoiGioi().getId() : null)
                 .build()).toList();
         return ApiSuccessResponse.<List<KhachHangResponseDTO>>builder()
                 .status(HttpStatus.OK.value())

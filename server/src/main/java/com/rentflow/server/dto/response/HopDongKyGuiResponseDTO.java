@@ -28,6 +28,9 @@ public class HopDongKyGuiResponseDTO {
     @Schema(description = "Địa chỉ bất động sản", example = "123 Nguyễn Huệ")
     private String diaChiBatDongSan;
 
+    @Schema(description = "Loại bất động sản", example = "Căn hộ")
+    private String loaiBatDongSan;
+
     @Schema(description = "ID nhân viên phụ trách", example = "1")
     private Long nhanVienId;
 

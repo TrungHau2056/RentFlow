@@ -1,47 +1,34 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import batDongSanService from '../services/batDongSanService'
 
 const STATUS_CONFIG = {
-  cho_tiep_nhan: { label: 'Chờ tiếp nhận', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
-  cho_khao_sat: { label: 'Chờ khảo sát', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
-  cho_ky_hop_dong: { label: 'Chờ ký HĐ', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
-  da_xac_nhan: { label: 'Đã xác nhận', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-400' },
-  dang_hien_thi: { label: 'Đang hiển thị', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
-  dang_cho_thue: { label: 'Đang cho thuê', color: 'bg-cyan-50 text-cyan-700 border-cyan-200', dot: 'bg-cyan-400' },
-  da_ket_thuc: { label: 'Đã kết thúc', color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400' },
+  CHO_DUYET: { label: 'Chờ duyệt', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+  DA_KHAO_SAT: { label: 'Đã khảo sát', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+  DANG_SOAN_HOP_DONG: { label: 'Đang soạn HĐ', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-400' },
+  SAN_SANG_CHO_THUE: { label: 'Sẵn sàng cho thuê', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
+  DANG_CHO_THUE: { label: 'Đang cho thuê', color: 'bg-cyan-50 text-cyan-700 border-cyan-200', dot: 'bg-cyan-400' },
+  DA_THUE: { label: 'Đã thuê', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-400' },
+  NGUNG_CHO_THUE: { label: 'Ngừng cho thuê', color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400' },
+  DA_TRA: { label: 'Đã trả', color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400' },
+  TU_CHOI: { label: 'Từ chối', color: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400' },
 }
-
-const THUE_STATUS = {
-  chua_cho_thue: { label: 'Chưa cho thuê', color: 'text-slate-400' },
-  dang_cho_thue: { label: 'Đang cho thuê', color: 'text-emerald-600' },
-}
-
-const WORKFLOW_STEPS = [
-  { key: 'tiep_nhan', label: 'Tiếp nhận' },
-  { key: 'khao_sat', label: 'Khảo sát' },
-  { key: 'ky_hop_dong', label: 'Ký HĐ' },
-  { key: 'hien_thi', label: 'Hiển thị' },
-  { key: 'khach_quan_tam', label: 'Có khách' },
-  { key: 'da_cho_thue', label: 'Cho thuê' },
-]
 
 const LOAI_NHA_OPTIONS = ['Tất cả', 'Biệt thự', 'Căn hộ', 'Nhà phố', 'Văn phòng', 'Kiot', 'Shophouse']
-const KHUVUC_OPTIONS = ['Tất cả', 'Cầu Giấy', 'Ba Đình', 'Hoàn Kiếm', 'Tây Hồ', 'Đống Đa', 'Hai Bà Trưng']
 const SORT_OPTIONS = [
   { key: 'newest', label: 'Mới nhất' },
   { key: 'price_desc', label: 'Giá cao nhất' },
   { key: 'price_asc', label: 'Giá thấp nhất' },
-  { key: 'views', label: 'Lượt xem nhiều nhất' },
-  { key: 'interest', label: 'Quan tâm nhiều nhất' },
 ]
 
 function formatVND(value) {
   return new Intl.NumberFormat('vi-VN').format(value)
 }
 
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+function formatDateTime(dateStr) {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 function MiniSparkline({ data, color = '#2563eb' }) {
@@ -81,126 +68,65 @@ function KPICard({ icon, label, value, color, bgColor, sparkData, sparkColor }) 
   )
 }
 
-function WorkflowTimeline({ currentStep }) {
-  return (
-    <div className="flex items-center">
-      {WORKFLOW_STEPS.map((step, i) => {
-        const stepNum = i + 1
-        const isActive = stepNum <= currentStep
-        const isCurrent = stepNum === currentStep
-        const isLast = i === WORKFLOW_STEPS.length - 1
-        return (
-          <div key={step.key} className="flex items-center flex-1">
-            <div className="flex flex-col items-center">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold ${
-                isActive
-                  ? isCurrent ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-blue-600 text-white'
-                  : 'bg-slate-100 text-slate-400'
-              }`}>
-                {isActive && !isCurrent ? (
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : stepNum}
-              </div>
-              <span className={`text-[9px] mt-1 text-center leading-tight whitespace-nowrap ${isCurrent ? 'text-amber-700 font-semibold' : isActive ? 'text-blue-600 font-medium' : 'text-slate-400'}`}>
-                {step.label}
-              </span>
-            </div>
-            {!isLast && (
-              <div className={`flex-1 h-0.5 mx-0.5 rounded-full ${stepNum < currentStep ? 'bg-blue-500' : 'bg-slate-200'}`} />
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 function PropertyRow({ property, isSelected, onSelect }) {
-  const status = STATUS_CONFIG[property.trangThai]
-  const thueStatus = THUE_STATUS[property.trangThaiThue]
+  const navigate = useNavigate()
+  const status = STATUS_CONFIG[property.trangThai] || STATUS_CONFIG.CHO_DUYET
+  const handleClick = () => {
+    if (property.trangThai === 'CHO_DUYET') {
+      navigate(`/admin/lich-khao-sat/tao/${property.id}`)
+    } else {
+      onSelect(property.id)
+    }
+  }
   return (
     <tr
-      onClick={() => onSelect(property.id)}
+      onClick={handleClick}
       className={`cursor-pointer transition-colors ${isSelected ? 'bg-blue-50/60' : 'hover:bg-slate-50'}`}
     >
       <td className="py-3 px-4">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-            {property.hinhAnh.length > 0 ? (
-              <img src={property.hinhAnh[0]} alt={property.ten} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-            )}
+          <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-800 truncate">{property.ten}</p>
-            <p className="text-xs text-slate-400 truncate">{property.diaChi}</p>
+            <p className="text-sm font-semibold text-slate-800 truncate">{property.diaChi}</p>
+            <p className="text-xs text-slate-400">#{String(property.id).padStart(4, '0')}</p>
           </div>
         </div>
       </td>
       <td className="py-3 px-4">
-        <span className="text-xs font-medium px-2 py-1 rounded-md bg-slate-100 text-slate-600">{property.loaiNha}</span>
+        <span className="text-xs font-medium px-2 py-1 rounded-md bg-slate-100 text-slate-600">{property.loaiNha || '—'}</span>
       </td>
       <td className="py-3 px-4">
-        <p className="text-sm font-semibold text-slate-800">{formatVND(property.giaThue)}đ</p>
+        <p className="text-sm font-semibold text-slate-800">{property.giaThue ? formatVND(property.giaThue) + 'đ' : '—'}</p>
         <p className="text-xs text-slate-400">/tháng</p>
       </td>
-      <td className="py-3 px-4 text-sm text-slate-600">{property.dienTich}m²</td>
-      <td className="py-3 px-4">
-        <p className="text-sm text-slate-700">{property.chuNha}</p>
-        <p className="text-xs text-slate-400">{property.sdtChuNha}</p>
-      </td>
-      <td className="py-3 px-4">
-        <p className="text-sm text-slate-700">{property.moiGioi}</p>
-      </td>
+      <td className="py-3 px-4 text-sm text-slate-600">{property.dienTich ? `${property.dienTich}m²` : '—'}</td>
+      <td className="py-3 px-4 text-sm text-slate-700">{property.tenChuNha || '—'}</td>
       <td className="py-3 px-4">
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${status.color}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
           {status.label}
         </span>
-        <p className={`text-xs mt-1 ${thueStatus.color}`}>{thueStatus.label}</p>
       </td>
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1" title="Lượt xem">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            {property.luotXem}
-          </span>
-          <span className="flex items-center gap-1" title="Khách quan tâm">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-            {property.khachQuanTam}
-          </span>
-        </div>
-      </td>
+      <td className="py-3 px-4 text-xs text-slate-400">{formatDateTime(property.ngayTao)}</td>
     </tr>
   )
 }
 
 function PropertyDetail({ property, onClose }) {
   if (!property) return null
-  const status = STATUS_CONFIG[property.trangThai]
-  const thueStatus = THUE_STATUS[property.trangThaiThue]
-  const tyLeThue = property.trangThaiThue === 'da_cho_thue' ? '100%' : property.khachQuanTam > 0 ? `${Math.min(Math.round(property.khachQuanTam / property.luotXem * 100), 100)}%` : '0%'
+  const status = STATUS_CONFIG[property.trangThai] || STATUS_CONFIG.CHO_DUYET
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden sticky top-6">
-      {/* Header */}
       <div className="bg-linear-to-r from-blue-600 to-indigo-700 p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-blue-200 text-xs mb-1">{property.loaiNha} · {property.khuVuc}</p>
-            <h3 className="text-white font-bold text-lg">{property.ten}</h3>
+            <p className="text-blue-200 text-xs mb-1">{property.loaiNha || 'Bất động sản'} · #{String(property.id).padStart(4, '0')}</p>
+            <h3 className="text-white font-bold text-lg truncate">{property.diaChi}</h3>
           </div>
           <button onClick={onClose} className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors shrink-0">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,53 +134,36 @@ function PropertyDetail({ property, onClose }) {
             </svg>
           </button>
         </div>
-        <div className="flex items-center gap-2 mt-3">
+        <div className="mt-3">
           <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ${status.color}`}>
             ● {status.label}
-          </span>
-          <span className={`text-xs font-medium ${thueStatus.color} bg-white/10 px-2 py-1 rounded-md`}>
-            {thueStatus.label}
           </span>
         </div>
       </div>
 
       <div className="p-5 space-y-5 max-h-[calc(100vh-220px)] overflow-y-auto">
-        {/* Gallery */}
-        {property.hinhAnh.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Hình ảnh</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {property.hinhAnh.map((img, i) => (
-                <img key={i} src={img} alt={`${property.ten} ${i + 1}`} className="w-full h-28 object-cover rounded-lg" />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Basic Info */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thông tin cơ bản</h4>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-slate-400">Giá thuê</p>
-              <p className="text-sm font-bold text-slate-800">{formatVND(property.giaThue)}đ/tháng</p>
+              <p className="text-sm font-bold text-slate-800">{property.giaThue ? formatVND(property.giaThue) + 'đ/tháng' : '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-slate-400">Diện tích</p>
-              <p className="text-sm font-bold text-slate-800">{property.dienTich}m²</p>
+              <p className="text-sm font-bold text-slate-800">{property.dienTich ? `${property.dienTich}m²` : '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-slate-400">Số phòng</p>
-              <p className="text-sm font-bold text-slate-800">{property.soPhong} phòng</p>
+              <p className="text-xs text-slate-400">Loại nhà</p>
+              <p className="text-sm font-bold text-slate-800">{property.loaiNha || '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-slate-400">Số tầng</p>
-              <p className="text-sm font-bold text-slate-800">{property.soTang} tầng</p>
+              <p className="text-xs text-slate-400">Ngày tạo</p>
+              <p className="text-sm font-bold text-slate-800">{formatDateTime(property.ngayTao)}</p>
             </div>
           </div>
         </div>
 
-        {/* Address */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Địa chỉ</h4>
           <div className="bg-slate-50 rounded-lg p-3">
@@ -268,118 +177,28 @@ function PropertyDetail({ property, onClose }) {
           </div>
         </div>
 
-        {/* Description */}
-        <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Mô tả</h4>
-          <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-3">{property.moTa}</p>
-        </div>
-
-        {/* Owner & Broker */}
-        <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thông tin liên quan</h4>
-          <div className="space-y-2">
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-              <p className="text-xs font-semibold text-blue-700 mb-1">Chủ nhà</p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">{property.chuNha}</p>
-                  <p className="text-xs text-slate-500">{property.sdtChuNha}</p>
-                </div>
-                <a href={`tel:${property.sdtChuNha.replace(/\s/g, '')}`} className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-            <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
-              <p className="text-xs font-semibold text-purple-700 mb-1">Môi giới phụ trách</p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">{property.moiGioi}</p>
-                  <p className="text-xs text-slate-500">{property.sdtMoiGioi}</p>
-                </div>
-                <a href={`tel:${property.sdtMoiGioi.replace(/\s/g, '')}`} className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center hover:bg-purple-200 transition-colors">
-                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contract */}
-        {property.hopDong && (
-          <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-            <p className="text-xs font-semibold text-emerald-700 mb-1">Hợp đồng liên quan</p>
-            <Link to={`/admin/hop-dong-ky-gui/${property.hopDong}`} className="text-sm text-emerald-800 font-medium hover:text-emerald-700 flex items-center gap-1">
-              {property.hopDong}
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <p className="text-xs text-slate-500 mt-1">Ngày đăng ký: {formatDate(property.ngayDangKy)}</p>
+        {property.moTa && (
+          <div>
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Mô tả</h4>
+            <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-3">{property.moTa}</p>
           </div>
         )}
 
-        {/* Workflow */}
         <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Tiến trình xử lý</h4>
-          <WorkflowTimeline currentStep={property.workflowStep} />
-        </div>
-
-        {/* Analytics */}
-        <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thống kê</h4>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-slate-50 rounded-lg p-3 text-center">
-              <p className="text-lg font-bold text-blue-600">{property.luotXem}</p>
-              <p className="text-[10px] text-slate-500">Lượt xem</p>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3 text-center">
-              <p className="text-lg font-bold text-amber-600">{property.khachQuanTam}</p>
-              <p className="text-[10px] text-slate-500">Quan tâm</p>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3 text-center">
-              <p className="text-lg font-bold text-emerald-600">{tyLeThue}</p>
-              <p className="text-[10px] text-slate-500">Tỷ lệ thuê</p>
-            </div>
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thông tin liên quan</h4>
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+            <p className="text-xs font-semibold text-blue-700 mb-1">Chủ nhà</p>
+            <p className="text-sm font-medium text-slate-800">{property.tenChuNha || '—'}</p>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thao tác</h4>
-          <div className="grid grid-cols-2 gap-2">
-            <button className="py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6a2 2 0 11-4 0 2 2 0 014 0zM4 6a2 2 0 114 0 2 2 0 01-4 0z" />
-              </svg>
-              Phân công MG
-            </button>
-            <button className="py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Lịch khảo sát
-            </button>
-            {property.hopDong && (
-              <Link to={`/admin/hop-dong-ky-gui/${property.hopDong}`} className="py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Xem HĐ
-              </Link>
-            )}
-            <button className="py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Cập nhật
-            </button>
-          </div>
+        <div className="flex gap-2 pt-2">
+          <Link
+            to={`/admin/bat-dong-san/${property.id}`}
+            className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium text-center hover:bg-blue-700 transition-colors"
+          >
+            Xem chi tiết
+          </Link>
         </div>
       </div>
     </div>
@@ -397,12 +216,6 @@ function EmptyState() {
         </div>
         <h3 className="text-xl font-bold text-slate-800 mb-2">Chưa có bất động sản nào</h3>
         <p className="text-slate-500 text-sm mb-8">Khi chủ nhà đăng ký ký gửi, bất động sản sẽ hiển thị tại đây.</p>
-        <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Thêm bất động sản
-        </button>
       </div>
     </div>
   )
@@ -411,7 +224,6 @@ function EmptyState() {
 export default function AdminBatDongSanPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterLoai, setFilterLoai] = useState('Tất cả')
-  const [filterKhuVuc, setFilterKhuVuc] = useState('Tất cả')
   const [filterTrangThai, setFilterTrangThai] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
@@ -441,32 +253,33 @@ export default function AdminBatDongSanPage() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(p =>
-        p.ten.toLowerCase().includes(q) ||
-        p.diaChi.toLowerCase().includes(q) ||
-        p.chuNha.toLowerCase().includes(q) ||
-        p.moiGioi.toLowerCase().includes(q)
+        (p.diaChi && p.diaChi.toLowerCase().includes(q)) ||
+        (p.tenChuNha && p.tenChuNha.toLowerCase().includes(q)) ||
+        (p.loaiNha && p.loaiNha.toLowerCase().includes(q)) ||
+        String(p.id).includes(q)
       )
     }
     if (filterLoai !== 'Tất cả') result = result.filter(p => p.loaiNha === filterLoai)
-    if (filterKhuVuc !== 'Tất cả') result = result.filter(p => p.khuVuc === filterKhuVuc)
     if (filterTrangThai !== 'all') result = result.filter(p => p.trangThai === filterTrangThai)
 
     switch (sortBy) {
-      case 'price_desc': result.sort((a, b) => b.giaThue - a.giaThue); break
-      case 'price_asc': result.sort((a, b) => a.giaThue - b.giaThue); break
-      case 'views': result.sort((a, b) => b.luotXem - a.luotXem); break
-      case 'interest': result.sort((a, b) => b.khachQuanTam - a.khachQuanTam); break
-      default: result.sort((a, b) => new Date(b.ngayDangKy) - new Date(a.ngayDangKy))
+      case 'price_desc': result.sort((a, b) => (b.giaThue || 0) - (a.giaThue || 0)); break
+      case 'price_asc': result.sort((a, b) => (a.giaThue || 0) - (b.giaThue || 0)); break
+      default:
+        result.sort((a, b) => {
+          const dateA = a.ngayTao ? new Date(a.ngayTao) : new Date(0)
+          const dateB = b.ngayTao ? new Date(b.ngayTao) : new Date(0)
+          return dateB - dateA
+        })
     }
     return result
-  }, [searchQuery, filterLoai, filterKhuVuc, filterTrangThai, sortBy])
+  }, [properties, searchQuery, filterLoai, filterTrangThai, sortBy])
 
   const kpiData = useMemo(() => ({
     total: properties.length,
-    dangHienThi: properties.filter(p => p.trangThai === 'dang_hien_thi').length,
-    dangChoThue: properties.filter(p => p.trangThaiThue === 'da_cho_thue').length,
-    choKhaoSat: properties.filter(p => p.trangThai === 'cho_khao_sat').length,
-    choKyHD: properties.filter(p => p.trangThai === 'cho_ky_hop_dong').length,
+    choDuyet: properties.filter(p => p.trangThai === 'CHO_DUYET').length,
+    sanSangChoThue: properties.filter(p => p.trangThai === 'SAN_SANG_CHO_THUE' || p.trangThai === 'DANG_CHO_THUE').length,
+    dangChoThue: properties.filter(p => p.trangThai === 'DANG_CHO_THUE').length,
   }), [properties])
 
   const selectedProperty = selectedId ? properties.find(p => p.id === selectedId) : null
@@ -501,22 +314,14 @@ export default function AdminBatDongSanPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Page Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Quản lý bất động sản</h1>
           <p className="text-slate-500 text-sm mt-1">Theo dõi và quản lý toàn bộ bất động sản ký gửi</p>
         </div>
-        <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors shadow-sm">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Thêm bất động sản
-        </button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-4 gap-4 mb-6">
         <KPICard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
           label="Tổng bất động sản"
@@ -527,9 +332,18 @@ export default function AdminBatDongSanPage() {
           sparkColor="#2563eb"
         />
         <KPICard
+          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          label="Chờ duyệt"
+          value={kpiData.choDuyet}
+          color="text-amber-600"
+          bgColor="bg-amber-50"
+          sparkData={[1, 2, 1, 3, 2, 4, 3]}
+          sparkColor="#d97706"
+        />
+        <KPICard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
-          label="Đang hiển thị"
-          value={kpiData.dangHienThi}
+          label="Sẵn sàng cho thuê"
+          value={kpiData.sanSangChoThue}
           color="text-emerald-600"
           bgColor="bg-emerald-50"
           sparkData={[5, 7, 6, 8, 7, 9, 8]}
@@ -544,44 +358,23 @@ export default function AdminBatDongSanPage() {
           sparkData={[3, 4, 4, 5, 4, 6, 5]}
           sparkColor="#0891b2"
         />
-        <KPICard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-          label="Chờ khảo sát"
-          value={kpiData.choKhaoSat}
-          color="text-amber-600"
-          bgColor="bg-amber-50"
-          sparkData={[1, 2, 1, 3, 2, 4, 3]}
-          sparkColor="#d97706"
-        />
-        <KPICard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-          label="Chờ ký HĐ"
-          value={kpiData.choKyHD}
-          color="text-purple-600"
-          bgColor="bg-purple-50"
-          sparkData={[0, 1, 1, 2, 1, 2, 1]}
-          sparkColor="#7c3aed"
-        />
       </div>
 
-      {/* Toolbar */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Search */}
           <div className="relative min-w-[240px] flex-1">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
-              placeholder="Tìm kiếm BĐS, chủ nhà, môi giới..."
+              placeholder="Tìm kiếm BĐS, chủ nhà..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none text-sm"
             />
           </div>
 
-          {/* Filter: Loại nhà */}
           <select
             value={filterLoai}
             onChange={(e) => setFilterLoai(e.target.value)}
@@ -590,16 +383,6 @@ export default function AdminBatDongSanPage() {
             {LOAI_NHA_OPTIONS.map(o => <option key={o}>{o}</option>)}
           </select>
 
-          {/* Filter: Khu vực */}
-          <select
-            value={filterKhuVuc}
-            onChange={(e) => setFilterKhuVuc(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-700 focus:border-blue-500 focus:outline-none"
-          >
-            {KHUVUC_OPTIONS.map(o => <option key={o}>{o}</option>)}
-          </select>
-
-          {/* Filter: Trạng thái */}
           <select
             value={filterTrangThai}
             onChange={(e) => setFilterTrangThai(e.target.value)}
@@ -611,7 +394,6 @@ export default function AdminBatDongSanPage() {
             ))}
           </select>
 
-          {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -622,12 +404,10 @@ export default function AdminBatDongSanPage() {
         </div>
       </div>
 
-      {/* Content */}
       {filtered.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="flex gap-6">
-          {/* Table */}
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
@@ -639,9 +419,8 @@ export default function AdminBatDongSanPage() {
                       <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Giá thuê</th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Diện tích</th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Chủ nhà</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Môi giới</th>
                       <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Trạng thái</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Thống kê</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Ngày tạo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -662,7 +441,6 @@ export default function AdminBatDongSanPage() {
             </div>
           </div>
 
-          {/* Detail Panel */}
           {selectedProperty && (
             <div className="w-[420px] shrink-0 hidden xl:block">
               <PropertyDetail property={selectedProperty} onClose={() => setSelectedId(null)} />

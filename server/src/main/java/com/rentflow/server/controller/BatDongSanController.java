@@ -93,8 +93,8 @@ public class BatDongSanController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
-    @Operation(summary = "Xoá bất động sản", description = "Xoá bất động sản (chỉ QUAN_TRI_VIEN)")
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'CHU_NHA')")
+    @Operation(summary = "Xoá bất động sản", description = "Xoá bất động sản")
     public ApiSuccessResponse<Void> delete(@PathVariable Long id) {
         batDongSanService.delete(id);
         return ApiSuccessResponse.<Void>builder()
@@ -104,7 +104,7 @@ public class BatDongSanController {
     }
 
     @PatchMapping("/{id}/trang-thai")
-    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'CHU_NHA')")
     @Operation(summary = "Cập nhật trạng thái", description = "Cập nhật trạng thái bất động sản")
     public ApiSuccessResponse<BatDongSanResponseDTO> updateTrangThai(@PathVariable Long id,
                                                                       @RequestBody Map<String, String> body) {

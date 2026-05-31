@@ -36,6 +36,28 @@ public class LichHenKhaoSatController {
                 .build();
     }
 
+    @GetMapping("/bat-dong-san/{batDongSanId}")
+    @PreAuthorize("hasAnyRole('CHU_NHA', 'NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Lịch khảo sát theo bất động sản", description = "Lấy danh sách lịch khảo sát của một bất động sản")
+    public ApiSuccessResponse<List<LichHenKhaoSatResponseDTO>> getByBatDongSan(@PathVariable Long batDongSanId) {
+        return ApiSuccessResponse.<List<LichHenKhaoSatResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get survey appointments for property successfully")
+                .data(lichHenKhaoSatService.getByBatDongSan(batDongSanId))
+                .build();
+    }
+
+    @GetMapping("/chu-nha/me")
+    @PreAuthorize("hasRole('CHU_NHA')")
+    @Operation(summary = "Lịch khảo sát theo chủ nhà hiện tại", description = "Lấy danh sách lịch khảo sát của chủ nhà đang đăng nhập")
+    public ApiSuccessResponse<List<LichHenKhaoSatResponseDTO>> getByCurrentChuNha() {
+        return ApiSuccessResponse.<List<LichHenKhaoSatResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get survey appointments for current owner successfully")
+                .data(lichHenKhaoSatService.getByCurrentChuNha())
+                .build();
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'CHU_NHA')")
     @Operation(summary = "Chi tiết lịch khảo sát", description = "Lấy thông tin lịch hẹn khảo sát theo ID")

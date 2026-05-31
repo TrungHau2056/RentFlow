@@ -25,6 +25,13 @@ public class ChuNhaService {
         return chuNhaRepository.findAll().stream().map(this::toResponseDTO).toList();
     }
 
+    public ChuNhaResponseDTO getCurrentChuNha() {
+        TaiKhoan currentUser = securityUtils.getCurrentUser();
+        ChuNha chuNha = chuNhaRepository.findByTaiKhoanId(currentUser.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
+        return toResponseDTO(chuNha);
+    }
+
     public ChuNhaResponseDTO getById(Long id) {
         ChuNha chuNha = chuNhaRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
