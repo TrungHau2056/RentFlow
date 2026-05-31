@@ -656,7 +656,7 @@ function EmptyState() {
         Khám phá các bất động sản phù hợp và ký hợp đồng thuê ngay hôm nay.
       </p>
       <Link
-        to="/bat-dong-san"
+        to="/tenant/tim-nha"
         className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:bg-amber-600"
       >
         <ContractIcon icon="home" className="h-5 w-5" />

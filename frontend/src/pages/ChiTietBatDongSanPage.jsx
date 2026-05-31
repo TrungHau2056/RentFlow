@@ -177,7 +177,7 @@ export default function ChiTietBatDongSanPage() {
             </svg>
           </div>
           <p className="text-slate-500 font-medium">Không tìm thấy bất động sản</p>
-          <Link to="/bat-dong-san" className="text-primary-container hover:underline mt-2 inline-block text-sm">Quay lại danh sách</Link>
+          <Link to={isTenant ? "/tenant/tim-nha" : "/bat-dong-san"} className="text-primary-container hover:underline mt-2 inline-block text-sm">Quay lại danh sách</Link>
         </div>
       </div>
     )
@@ -206,7 +206,7 @@ export default function ChiTietBatDongSanPage() {
               <Link to="/" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                 Trang chủ
               </Link>
-              <Link to="/bat-dong-san" className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
+              <Link to={isTenant ? "/tenant/tim-nha" : "/bat-dong-san"} className="text-slate-600 font-medium text-sm hover:text-primary transition-colors">
                 Nhà cho thuê
               </Link>
               {canRegisterConsignment && (
@@ -265,7 +265,7 @@ export default function ChiTietBatDongSanPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <Link to="/bat-dong-san" className="hover:text-primary transition-colors">Nhà cho thuê</Link>
+            <Link to={isTenant ? "/tenant/tim-nha" : "/bat-dong-san"} className="hover:text-primary transition-colors">Nhà cho thuê</Link>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -665,7 +665,7 @@ export default function ChiTietBatDongSanPage() {
               <ul className="space-y-2">
                 {/* Links công cộng */}
                 <li><Link to="/" className="text-slate-400 text-sm hover:text-white transition-colors">Trang chủ</Link></li>
-                <li><Link to="/bat-dong-san" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà cho thuê</Link></li>
+                <li><Link to={isTenant ? "/tenant/tim-nha" : "/bat-dong-san"} className="text-slate-400 text-sm hover:text-white transition-colors">Nhà cho thuê</Link></li>
                 {canRegisterConsignment && (
                   <li><Link to="/dashboard/bat-dong-san/dang-ky" className="text-slate-400 text-sm hover:text-white transition-colors">Ký gửi nhà</Link></li>
                 )}
@@ -674,6 +674,7 @@ export default function ChiTietBatDongSanPage() {
                 {/* Links riêng cho khách thuê */}
                 {isTenant && (
                   <>
+                    <li><Link to="/tenant/tim-nha" className="text-slate-400 text-sm hover:text-white transition-colors">Tìm nhà mới</Link></li>
                     <li><Link to="/tenant/nha-da-luu" className="text-slate-400 text-sm hover:text-white transition-colors">Nhà đã lưu</Link></li>
                   </>
                 )}

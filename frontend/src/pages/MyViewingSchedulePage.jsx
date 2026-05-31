@@ -538,7 +538,7 @@ function EmptyState() {
       <h3 className="text-xl font-bold text-slate-900">Bạn chưa có lịch xem nhà nào</h3>
       <p className="mt-2 max-w-sm text-center text-sm text-slate-500">Khám phá các bất động sản phù hợp và đặt lịch xem nhà ngay hôm nay.</p>
       <Link
-        to="/bat-dong-san"
+        to="/tenant/tim-nha"
         className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:bg-amber-600"
       >
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

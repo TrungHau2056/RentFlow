@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { isInternalAdminRole } from '../config/roles'
 import { extractUserFromJwt } from '../utils/jwt'
 import api from '../services/api'
+import { MOCK_USERS } from '../config/mockUsers'
 
 const MEMBER_BENEFITS = [
   'Xem địa chỉ chi tiết',
@@ -87,21 +88,52 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       return
     }
 
+    const normalizedEmail = email.trim().toLowerCase()
+
+    // Fallback: kiểm tra mock users nếu API lỗi
+    const mockUser = MOCK_USERS.find(
+      u => u.email.toLowerCase() === normalizedEmail && u.password === password
+    )
+    if (mockUser) {
+      setLoading(true)
+      // Giả lập delay như API thật
+      setTimeout(() => {
+        const userInfo = {
+          id: mockUser.id,
+          hoTen: mockUser.hoTen,
+          email: mockUser.email,
+          role: mockUser.role,
+          avatar: mockUser.avatar,
+        }
+        localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        localStorage.setItem('accessToken', 'mock-token')
+        localStorage.setItem('refreshToken', 'mock-refresh')
+        routeAuthenticatedUser(userInfo)
+        setLoading(false)
+      }, 300)
+      return
+    }
+
     setLoading(true)
     try {
-      const response = await api.post('/api/auth/login', { email, password })
+      const response = await api.post('/api/auth/login', { email: normalizedEmail, password })
       const { accessToken, refreshToken } = response.data.data
 
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
 
-      const userInfo = extractUserFromJwt(accessToken, email)
+      const userInfo = extractUserFromJwt(accessToken, normalizedEmail)
       if (userInfo) localStorage.setItem('userInfo', JSON.stringify(userInfo))
 
       routeAuthenticatedUser(userInfo)
     } catch (err) {
       const data = err.response?.data
-      setError(data?.message || 'Đăng nhập thất bại')
+      // Nếu lỗi network hoặc server không phản hồi, fallback về message hướng dẫn
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        setError('Không thể kết nối server. Vui lòng dùng tài khoản demo hoặc thử lại sau.')
+      } else {
+        setError(data?.message || 'Đăng nhập thất bại')
+      }
     } finally {
       setLoading(false)
     }
@@ -302,6 +334,18 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
               >
                 {loading ? 'Đang đăng nhập...' : 'Đăng nhập an toàn'}
               </button>
+              <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3">
+                <p className="text-xs font-semibold text-slate-600 mb-2">Tài khoản demo (mật khẩu: 123456):</p>
+                <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                  <span className="text-slate-500">admin@rentflow.vn <span className="text-slate-400">(Admin)</span></span>
+                  <span className="text-slate-500">ketoan@rentflow.vn <span className="text-slate-400">(Kế toán)</span></span>
+                  <span className="text-slate-500">phapluat@rentflow.vn <span className="text-slate-400">(Pháp luật)</span></span>
+                  <span className="text-slate-500">daily@rentflow.vn <span className="text-slate-400">(Đại lý)</span></span>
+                  <span className="text-slate-500">moigioi@rentflow.vn <span className="text-slate-400">(Môi giới)</span></span>
+                  <span className="text-slate-500">chunha@rentflow.vn <span className="text-slate-400">(Chủ nhà)</span></span>
+                  <span className="text-slate-500">khachthue@rentflow.vn <span className="text-slate-400">(Khách thuê)</span></span>
+                </div>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="mt-5 space-y-3">

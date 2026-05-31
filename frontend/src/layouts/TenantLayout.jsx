@@ -4,7 +4,7 @@ import Header from '../components/Header'
 
 const MENU_ITEMS = [
   { id: 'tong-quan', label: 'Tổng quan', icon: 'dashboard', path: '/tenant' },
-  { id: 'tim-nha', label: 'Tìm nhà mới', icon: 'search', path: '/bat-dong-san' },
+  { id: 'tim-nha', label: 'Tìm nhà mới', icon: 'search', path: '/tenant/tim-nha' },
   { id: 'nha-da-luu', label: 'Nhà đã lưu', icon: 'heart', path: '/tenant/nha-da-luu' },
   { id: 'lich-xem', label: 'Lịch xem nhà', icon: 'calendar', path: '/tenant/lich-xem' },
   { id: 'thong-bao', label: 'Thông báo', icon: 'bell', badge: '3', path: '/tenant/thong-bao' },

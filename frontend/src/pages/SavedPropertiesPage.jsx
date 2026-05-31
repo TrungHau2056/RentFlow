@@ -1,152 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-
-const SAVED_PROPERTIES = [
-  {
-    id: 1,
-    title: 'Căn hộ cao cấp view hồ Tây',
-    price: '28.000.000 đ/tháng',
-    priceRaw: 28000000,
-    location: 'Tây Hồ, Hà Nội',
-    area: '150 m²',
-    areaRaw: 150,
-    bedrooms: 3,
-    bathrooms: 2,
-    type: 'Căn hộ',
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
-    status: 'Con_Trong',
-    statusLabel: 'Còn trống',
-    savedDate: '2025-01-20',
-    furniture: 'Đầy đủ',
-    features: ['Hồ bơi', 'Gym', 'Bảo vệ 24/7', 'Thang máy'],
-  },
-  {
-    id: 2,
-    title: 'Biệt thự cổ điển Pháp Phố Cổ',
-    price: '45.000.000 đ/tháng',
-    priceRaw: 45000000,
-    location: 'Hoàn Kiếm, Hà Nội',
-    area: '320 m²',
-    areaRaw: 320,
-    bedrooms: 4,
-    bathrooms: 5,
-    type: 'Biệt thự',
-    image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
-    status: 'Dat_Lich',
-    statusLabel: 'Đã có người đặt lịch',
-    savedDate: '2025-01-18',
-    furniture: 'Đầy đủ',
-    features: ['Sân vườn', 'Garage', 'Thang máy', 'An ninh 24/7'],
-  },
-  {
-    id: 3,
-    title: 'Nhà phố thương mại Cầu Giấy',
-    price: '22.000.000 đ/tháng',
-    priceRaw: 22000000,
-    location: 'Cầu Giấy, Hà Nội',
-    area: '120 m²',
-    areaRaw: 120,
-    bedrooms: 3,
-    bathrooms: 2,
-    type: 'Nhà phố',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
-    status: 'Sap_Cho_Thue',
-    statusLabel: 'Sắp cho thuê',
-    savedDate: '2025-01-15',
-    furniture: 'Cơ bản',
-    features: ['Mặt phố', 'Kinh doanh tốt', 'Giao thông thuận tiện'],
-  },
-  {
-    id: 4,
-    title: 'Penthouse sang trọng Ba Đình',
-    price: '55.000.000 đ/tháng',
-    priceRaw: 55000000,
-    location: 'Ba Đình, Hà Nội',
-    area: '200 m²',
-    areaRaw: 200,
-    bedrooms: 3,
-    bathrooms: 3,
-    type: 'Căn hộ',
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
-    status: 'Con_Trong',
-    statusLabel: 'Còn trống',
-    savedDate: '2025-01-12',
-    furniture: 'Cao cấp',
-    features: ['Sân thượng', 'View đẹp', 'Thang máy', 'Bể bơi'],
-  },
-  {
-    id: 5,
-    title: 'Studio hiện đại gần ĐH Quốc Gia',
-    price: '12.000.000 đ/tháng',
-    priceRaw: 12000000,
-    location: 'Cầu Giấy, Hà Nội',
-    area: '45 m²',
-    areaRaw: 45,
-    bedrooms: 1,
-    bathrooms: 1,
-    type: 'Studio',
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
-    status: 'Con_Trong',
-    statusLabel: 'Còn trống',
-    savedDate: '2025-01-10',
-    furniture: 'Đầy đủ',
-    features: ['Giờ giấc tự do', 'Không chung chủ', 'Full nội thất'],
-  },
-  {
-    id: 6,
-    title: 'Nhà nguyên căn Nam Từ Liêm',
-    price: '18.000.000 đ/tháng',
-    priceRaw: 18000000,
-    location: 'Nam Từ Liêm, Hà Nội',
-    area: '85 m²',
-    areaRaw: 85,
-    bedrooms: 3,
-    bathrooms: 2,
-    type: 'Nhà nguyên căn',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
-    status: 'Con_Trong',
-    statusLabel: 'Còn trống',
-    savedDate: '2025-01-08',
-    furniture: 'Không có',
-    features: ['Hẻm xe hơi', 'Khu dân cư an ninh', 'Yên tĩnh'],
-  },
-]
+import viewingService from '../services/viewingService'
 
 const STATUS_STYLES = {
-  Con_Trong: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  Dat_Lich: 'bg-amber-100 text-amber-700 border-amber-200',
-  Sap_Cho_Thue: 'bg-blue-100 text-blue-700 border-blue-200',
+  SAN_SANG_CHO_THUE: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  DA_CHO_THUE: 'bg-amber-100 text-amber-700 border-amber-200',
+  NGUNG_CHO_THUE: 'bg-slate-100 text-slate-600 border-slate-200',
 }
 
-const RECOMMENDATIONS = [
-  {
-    id: 7,
-    title: 'Căn hộ Vinhomes Gardenia',
-    price: '32.000.000 đ/tháng',
-    location: 'Nam Từ Liêm, Hà Nội',
-    area: '110 m²',
-    bedrooms: 3,
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
-  },
-  {
-    id: 8,
-    title: 'Biệt thự sân vườn Hà Đông',
-    price: '40.000.000 đ/tháng',
-    location: 'Hà Đông, Hà Nội',
-    area: '250 m²',
-    bedrooms: 5,
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
-  },
-  {
-    id: 9,
-    title: 'Căn hộ cao cấp Vinhomes',
-    price: '35.000.000 đ/tháng',
-    location: 'Thanh Xuân, Hà Nội',
-    area: '110 m²',
-    bedrooms: 3,
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop',
-  },
-]
+const STATUS_LABELS = {
+  SAN_SANG_CHO_THUE: 'Sẵn sàng cho thuê',
+  DA_CHO_THUE: 'Đã cho thuê',
+  NGUNG_CHO_THUE: 'Ngừng cho thuê',
+}
+
+function formatPrice(vnd) {
+  if (!vnd) return ''
+  return vnd.toLocaleString('vi-VN') + ' đ/tháng'
+}
+
+function formatShortPrice(vnd) {
+  if (!vnd) return ''
+  if (vnd >= 1_000_000) return `${(vnd / 1_000_000).toFixed(vnd % 1_000_000 === 0 ? 0 : 1)} triệu/tháng`
+  return vnd.toLocaleString('vi-VN') + ' đ/tháng'
+}
+
+function getSavedIds() {
+  try {
+    return JSON.parse(localStorage.getItem('savedProperties') || '[]')
+  } catch {
+    return []
+  }
+}
+
+function saveSavedIds(ids) {
+  localStorage.setItem('savedProperties', JSON.stringify(ids))
+}
 
 export default function SavedPropertiesPage() {
   const navigate = useNavigate()
@@ -157,7 +46,25 @@ export default function SavedPropertiesPage() {
   const [sortBy, setSortBy] = useState('moi-luu')
   const [compareMode, setCompareMode] = useState(false)
   const [selectedForCompare, setSelectedForCompare] = useState([])
-  const [savedProperties, setSavedProperties] = useState(SAVED_PROPERTIES)
+  const [savedProperties, setSavedProperties] = useState([])
+  const [allProperties, setAllProperties] = useState([])
+  const [recommendations, setRecommendations] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    viewingService.getPublicProperties()
+      .then(res => {
+        const all = res.data || []
+        setAllProperties(all)
+        const ids = getSavedIds()
+        setSavedProperties(all.filter(p => ids.includes(p.id)))
+        const unsaved = all.filter(p => !ids.includes(p.id))
+        setRecommendations(unsaved.slice(0, 3))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
@@ -179,11 +86,30 @@ export default function SavedPropertiesPage() {
   }
 
   const removeSaved = (id) => {
+    const ids = getSavedIds().filter(i => i !== id)
+    saveSavedIds(ids)
     setSavedProperties(prev => prev.filter(p => p.id !== id))
     setSelectedForCompare(prev => prev.filter(i => i !== id))
+    const unsaved = allProperties.filter(p => !ids.includes(p.id))
+    setRecommendations(unsaved.slice(0, 3))
   }
 
-  const filteredProperties = savedProperties.filter(property => {
+  const mappedProperties = savedProperties.map(p => ({
+    ...p,
+    title: `${p.loaiNha} tại ${p.diaChi}`,
+    price: formatPrice(p.giaThue),
+    priceRaw: p.giaThue,
+    location: p.diaChi,
+    area: `${p.dienTich} m²`,
+    areaRaw: p.dienTich,
+    bedrooms: p.soPhongNgu,
+    bathrooms: p.soPhongVeSinh,
+    type: p.loaiNha,
+    status: p.trangThai,
+    statusLabel: STATUS_LABELS[p.trangThai] || p.trangThai,
+  }))
+
+  const filteredProperties = mappedProperties.filter(property => {
     const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       property.location.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = selectedTypes.length === 0 || selectedTypes.includes(property.type)
@@ -204,11 +130,11 @@ export default function SavedPropertiesPage() {
         return b.areaRaw - a.areaRaw
       case 'moi-luu':
       default:
-        return new Date(b.savedDate) - new Date(a.savedDate)
+        return b.id - a.id
     }
   })
 
-  const selectedCompareData = savedProperties.filter(p => selectedForCompare.includes(p.id))
+  const selectedCompareData = mappedProperties.filter(p => selectedForCompare.includes(p.id))
 
   const openProperty = (propertyId) => navigate(`/bat-dong-san/${propertyId}`)
 
@@ -217,6 +143,17 @@ export default function SavedPropertiesPage() {
       event.preventDefault()
       openProperty(propertyId)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-primary-container border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
   }
 
   // Empty state
@@ -235,7 +172,7 @@ export default function SavedPropertiesPage() {
               Lưu lại những bất động sản bạn quan tâm để dễ dàng theo dõi và so sánh sau này.
             </p>
             <Link
-              to="/bat-dong-san"
+              to="/tenant/tim-nha"
               className="inline-flex items-center gap-2 bg-primary-container hover:bg-primary text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-primary-container/30 hover:shadow-xl"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -326,7 +263,7 @@ export default function SavedPropertiesPage() {
           {/* Filters */}
           <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-200">
             <span className="text-sm text-slate-500 py-2">Lọc nhanh:</span>
-            {['Căn hộ', 'Biệt thự', 'Nhà phố', 'Studio'].map((type) => (
+            {['Căn hộ', 'Biệt thự', 'Nhà riêng', 'Studio'].map((type) => (
               <button
                 key={type}
                 onClick={() => toggleType(type)}
@@ -383,19 +320,16 @@ export default function SavedPropertiesPage() {
                 Đóng
               </button>
             </div>
-            <div className="min-w-[600px]">
+            <div className="min-w-150">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200">
                     <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Tiêu chí</th>
                     {selectedCompareData.map((property) => (
                       <th key={property.id} className="text-left py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <img src={property.image} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                          <div>
-                            <div className="text-sm font-medium text-slate-800 line-clamp-1">{property.title}</div>
-                            <div className="text-xs text-primary-container font-semibold">{property.price}</div>
-                          </div>
+                        <div>
+                          <div className="text-sm font-medium text-slate-800 line-clamp-1">{property.title}</div>
+                          <div className="text-xs text-primary-container font-semibold">{property.price}</div>
                         </div>
                       </th>
                     ))}
@@ -424,27 +358,6 @@ export default function SavedPropertiesPage() {
                     <td className="py-3 px-4 text-slate-500">Vị trí</td>
                     {selectedCompareData.map((p) => (
                       <td key={p.id} className="py-3 px-4 font-medium">{p.location}</td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-slate-100">
-                    <td className="py-3 px-4 text-slate-500">Nội thất</td>
-                    {selectedCompareData.map((p) => (
-                      <td key={p.id} className="py-3 px-4 font-medium">{p.furniture}</td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="py-3 px-4 text-slate-500">Tiện ích</td>
-                    {selectedCompareData.map((p) => (
-                      <td key={p.id} className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1">
-                          {p.features.slice(0, 2).map((f, i) => (
-                            <span key={i} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">{f}</span>
-                          ))}
-                          {p.features.length > 2 && (
-                            <span className="text-xs text-slate-400">+{p.features.length - 2}</span>
-                          )}
-                        </div>
-                      </td>
                     ))}
                   </tr>
                 </tbody>
@@ -478,15 +391,13 @@ export default function SavedPropertiesPage() {
                   compareMode && selectedForCompare.includes(property.id) ? 'ring-2 ring-primary-container' : ''
                 }`}
               >
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
+                {/* Image placeholder */}
+                <div className="relative h-48 overflow-hidden bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                  <svg className="h-12 w-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
                   <div className="absolute top-3 left-3 flex gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status]}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[property.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                       {property.statusLabel}
                     </span>
                   </div>
@@ -531,7 +442,7 @@ export default function SavedPropertiesPage() {
                     {property.title}
                   </h3>
                   <p className="text-primary-container font-bold text-lg mb-3">
-                    {property.price}
+                    {formatShortPrice(property.priceRaw)}
                   </p>
 
                   <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-3">
@@ -584,48 +495,48 @@ export default function SavedPropertiesPage() {
         )}
 
         {/* Recommendations */}
-        <div className="mt-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">Có thể bạn sẽ thích</h2>
-              <p className="text-slate-500 text-sm mt-1">Gợi ý dựa trên những bất động sản bạn đã lưu</p>
-            </div>
-            <Link
-              to="/bat-dong-san"
-              className="text-primary-container font-medium text-sm hover:text-primary transition-colors flex items-center gap-1"
-            >
-              Xem tất cả
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {RECOMMENDATIONS.map((property) => (
+        {recommendations.length > 0 && (
+          <div className="mt-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">Có thể bạn sẽ thích</h2>
+                <p className="text-slate-500 text-sm mt-1">Gợi ý dựa trên những bất động sản bạn đã lưu</p>
+              </div>
               <Link
-                key={property.id}
-                to={`/bat-dong-san/${property.id}`}
-                className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group"
+                to="/tenant/tim-nha"
+                className="text-primary-container font-medium text-sm hover:text-primary transition-colors flex items-center gap-1"
               >
-                <div className="h-40 overflow-hidden">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-3">
-                  <h3 className="font-medium text-slate-800 text-sm mb-1 line-clamp-1">{property.title}</h3>
-                  <div className="text-primary-container font-bold text-sm mb-2">{property.price}</div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{property.area}</span>
-                    <span>{property.bedrooms} ngủ</span>
-                  </div>
-                </div>
+                Xem tất cả
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </Link>
-            ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {recommendations.map((property) => (
+                <Link
+                  key={property.id}
+                  to={`/bat-dong-san/${property.id}`}
+                  className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group"
+                >
+                  <div className="h-40 bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <svg className="h-10 w-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-medium text-slate-800 text-sm mb-1 line-clamp-1">{property.loaiNha} tại {property.diaChi}</h3>
+                    <div className="text-primary-container font-bold text-sm mb-2">{formatShortPrice(property.giaThue)}</div>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>{property.dienTich} m²</span>
+                      <span>{property.soPhongNgu} ngủ</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

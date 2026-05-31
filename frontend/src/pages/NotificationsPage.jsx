@@ -693,7 +693,7 @@ export default function NotificationsPage() {
                 ))}
               </div>
               <Link
-                to="/bat-dong-san"
+                to="/tenant/tim-nha"
                 className="mt-4 block w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-center text-sm font-semibold text-white transition hover:from-amber-600 hover:to-amber-700"
               >
                 Xem tất cả nhà

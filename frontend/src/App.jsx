@@ -25,6 +25,7 @@ import MyViewingSchedulePage from './pages/MyViewingSchedulePage'
 import NotificationsPage from './pages/NotificationsPage'
 import TenantContractsPage from './pages/TenantContractsPage'
 import TenantProfilePage from './pages/TenantProfilePage'
+import TenantFindPropertyPage from './pages/TenantFindPropertyPage'
 import HopDongKyGuiPage from './pages/HopDongKyGuiPage'
 import TienDamBaoPage from './pages/TienDamBaoPage'
 import LichKhaoSatPage from './pages/LichKhaoSatPage'
@@ -74,6 +75,7 @@ function App() {
       <Route path="/tenant" element={<TenantLayout />}>
         <Route index element={<TenantDashboardPage />} />
         <Route path="nha-da-luu" element={<SavedPropertiesPage />} />
+        <Route path="tim-nha" element={<TenantFindPropertyPage />} />
         <Route path="lich-xem" element={<MyViewingSchedulePage />} />
         <Route path="dat-lich-xem" element={<ScheduleViewingPage />} />
         <Route path="thong-bao" element={<NotificationsPage />} />

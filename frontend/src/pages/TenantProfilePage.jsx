@@ -867,7 +867,7 @@ export default function TenantProfilePage() {
               Hệ thống sẽ đề xuất bất động sản phù hợp dựa trên hồ sơ và sở thích của bạn.
             </p>
             <Link
-              to="/bat-dong-san"
+              to="/tenant/tim-nha"
               className="mt-4 block w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 py-2.5 text-center text-sm font-semibold text-white transition hover:from-blue-700 hover:to-purple-700"
             >
               Khám phá ngay

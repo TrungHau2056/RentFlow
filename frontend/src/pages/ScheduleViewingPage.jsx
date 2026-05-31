@@ -230,7 +230,7 @@ export default function ScheduleViewingPage() {
                 Xem lịch hẹn của tôi
               </Link>
               <Link
-                to="/bat-dong-san"
+                to="/tenant/tim-nha"
                 className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all"
               >
                 Khám phá nhà khác

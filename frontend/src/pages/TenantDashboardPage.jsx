@@ -1,68 +1,7 @@
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useOutletContext } from 'react-router-dom'
-
-const KPI_DATA = [
-  { label: 'Nhà đã lưu', value: '12', change: '+3 trong tuần', tone: 'blue', icon: 'heart' },
-  { label: 'Lịch xem sắp tới', value: '02', change: 'Lịch gần nhất: 28/05', tone: 'orange', icon: 'calendar' },
-  { label: 'Thông báo mới', value: '05', change: '3 nhà phù hợp', tone: 'emerald', icon: 'bell' },
-  { label: 'Hợp đồng hiệu lực', value: '01', change: 'Đến 15/01/2027', tone: 'violet', icon: 'document' },
-]
-
-const SAVED_PROPERTIES = [
-  {
-    id: 1,
-    title: 'Căn hộ Lumière Riverside',
-    district: 'Tây Hồ, Hà Nội',
-    price: '23.000.000 đ/tháng',
-    area: '92 m²',
-    status: 'Sẵn sàng xem',
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=700&h=450&fit=crop',
-  },
-  {
-    id: 2,
-    title: 'Nhà phố cao cấp Cầu Giấy',
-    district: 'Cầu Giấy, Hà Nội',
-    price: '31.000.000 đ/tháng',
-    area: '125 m²',
-    status: 'Mới cập nhật',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&h=450&fit=crop',
-  },
-]
-
-const APPOINTMENTS = [
-  { date: '28', month: 'TH05', time: '09:30 - 10:30', title: 'Căn hộ Lumière Riverside', location: 'Tây Hồ, Hà Nội', status: 'Đã xác nhận', tone: 'emerald' },
-  { date: '30', month: 'TH05', time: '14:00 - 15:00', title: 'Villa Starlake', location: 'Bắc Từ Liêm, Hà Nội', status: 'Chờ xác nhận', tone: 'orange' },
-  { date: '20', month: 'TH05', time: '10:00 - 11:00', title: 'Căn hộ Metropolis', location: 'Ba Đình, Hà Nội', status: 'Đã hoàn thành', tone: 'slate' },
-]
-
-const NOTIFICATIONS = [
-  { title: 'Có 3 căn nhà mới phù hợp', message: 'Khu vực Tây Hồ, ngân sách dưới 25 triệu.', time: '5 phút trước', tone: 'blue' },
-  { title: 'Nhắc lịch xem nhà ngày mai', message: 'Lumière Riverside lúc 09:30.', time: '2 giờ trước', tone: 'orange' },
-  { title: 'Hợp đồng đã được cập nhật', message: 'Phụ lục thanh toán tháng 06 đã sẵn sàng.', time: 'Hôm qua', tone: 'emerald' },
-]
-
-const RECOMMENDATIONS = [
-  {
-    id: 3,
-    title: 'Studio view hồ hiện đại',
-    district: 'Tây Hồ',
-    price: '16 triệu/tháng',
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&h=350&fit=crop',
-  },
-  {
-    id: 4,
-    title: 'Penthouse trung tâm',
-    district: 'Ba Đình',
-    price: '38 triệu/tháng',
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&h=350&fit=crop',
-  },
-  {
-    id: 5,
-    title: 'Căn hộ tối giản',
-    district: 'Nam Từ Liêm',
-    price: '19 triệu/tháng',
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500&h=350&fit=crop',
-  },
-]
+import viewingService from '../services/viewingService'
+import hopDongThueService from '../services/hopDongThueService'
 
 const TONES = {
   blue: 'bg-blue-50 text-primary-container',
@@ -76,6 +15,20 @@ const NOTIFICATION_DOTS = {
   blue: 'bg-primary-container',
   orange: 'bg-orange-500',
   emerald: 'bg-emerald-500',
+}
+
+const STATUS_TONES = {
+  DA_XAC_NHAN: 'emerald',
+  CHO_XAC_NHAN: 'orange',
+  DA_HOAN_THANH: 'slate',
+  DA_HUY: 'slate',
+}
+
+const STATUS_LABELS = {
+  DA_XAC_NHAN: 'Đã xác nhận',
+  CHO_XAC_NHAN: 'Chờ xác nhận',
+  DA_HOAN_THANH: 'Đã hoàn thành',
+  DA_HUY: 'Đã hủy',
 }
 
 function Icon({ type }) {
@@ -92,10 +45,56 @@ function Icon({ type }) {
   )
 }
 
+function formatPrice(vnd) {
+  return (vnd || 0).toLocaleString('vi-VN') + ' đ/tháng'
+}
+
+function formatShortPrice(vnd) {
+  if (!vnd) return ''
+  if (vnd >= 1_000_000) return `${(vnd / 1_000_000).toFixed(vnd % 1_000_000 === 0 ? 0 : 1)} triệu/tháng`
+  return vnd.toLocaleString('vi-VN') + ' đ/tháng'
+}
+
 export default function TenantDashboardPage() {
   const navigate = useNavigate()
   const { userInfo } = useOutletContext()
-  const displayName = userInfo?.hoTen || 'Nguyễn Văn A'
+  const displayName = userInfo?.hoTen || 'Người dùng'
+
+  const [appointments, setAppointments] = useState([])
+  const [properties, setProperties] = useState([])
+  const [contracts, setContracts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.allSettled([
+      viewingService.getMyViewingSchedules(),
+      viewingService.getPublicProperties(),
+      hopDongThueService.cuaToi(),
+    ])
+      .then(([schedulesRes, propsRes, contractsRes]) => {
+        if (schedulesRes.status === 'fulfilled' && schedulesRes.value?.data) {
+          setAppointments(schedulesRes.value.data.slice(0, 5))
+        }
+        if (propsRes.status === 'fulfilled' && propsRes.value?.data) {
+          setProperties(propsRes.value.data.slice(0, 6))
+        }
+        if (contractsRes.status === 'fulfilled' && contractsRes.value?.data) {
+          setContracts(contractsRes.value.data)
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const savedCount = JSON.parse(localStorage.getItem('savedProperties') || '[]').length
+  const upcomingCount = appointments.filter(a => a.trangThai === 'CHO_XAC_NHAN' || a.trangThai === 'DA_XAC_NHAN').length
+  const activeContracts = contracts.filter(c => c.trangThai === 'DANG_HIEU_LUC' || c.trangThai === 'CON_HIEU_LUC').length
+
+  const kpiData = [
+    { label: 'Nhà đã lưu', value: savedCount || '0', change: savedCount > 0 ? `${savedCount} nhà quan tâm` : 'Chưa lưu nhà nào', tone: 'blue', icon: 'heart' },
+    { label: 'Lịch xem sắp tới', value: String(upcomingCount).padStart(2, '0'), change: appointments.length > 0 ? `${appointments.length} lịch đã đặt` : 'Chưa có lịch xem', tone: 'orange', icon: 'calendar' },
+    { label: 'Hợp đồng hiệu lực', value: String(activeContracts), change: activeContracts > 0 ? `${activeContracts} hợp đồng` : 'Chưa có hợp đồng', tone: 'violet', icon: 'document' },
+  ]
 
   const openProperty = (propertyId) => navigate(`/bat-dong-san/${propertyId}`)
 
@@ -104,6 +103,17 @@ export default function TenantDashboardPage() {
       event.preventDefault()
       openProperty(propertyId)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-primary-container border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -117,17 +127,17 @@ export default function TenantDashboardPage() {
           <p className="mt-2 text-sm text-slate-500">Chào mừng quay trở lại hệ thống</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Link to="/bat-dong-san" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+          <Link to="/tenant/tim-nha" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
             Tìm nhà mới
           </Link>
-          <button type="button" className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600">
+          <Link to="/tenant/dat-lich-xem" className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600">
             Đặt lịch xem nhà
-          </button>
+          </Link>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {KPI_DATA.map((card) => (
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {kpiData.map((card) => (
           <div key={card.label} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
             <div className="flex items-start justify-between">
               <div>
@@ -145,145 +155,98 @@ export default function TenantDashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="space-y-6">
+          {/* Gợi ý bất động sản */}
           <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-on-surface">Nhà đã lưu gần đây</h2>
-                <p className="mt-1 text-sm text-slate-500">Danh sách bạn đang quan tâm nhất</p>
+                <h2 className="text-lg font-bold text-on-surface">Bất động sản nổi bật</h2>
+                <p className="mt-1 text-sm text-slate-500">Đề xuất cho bạn</p>
               </div>
-              <button type="button" className="hidden text-sm font-semibold text-primary-container hover:underline sm:block">Xem tất cả</button>
+              <Link to="/tenant/tim-nha" className="text-sm font-semibold text-primary-container hover:underline">Xem tất cả</Link>
             </div>
-            <div className="grid gap-5 lg:grid-cols-2">
-              {SAVED_PROPERTIES.map((property) => (
-                <article
-                  key={property.id}
-                  role="link"
-                  tabIndex={0}
-                  aria-label={`Xem chi tiết ${property.title}`}
-                  onClick={() => openProperty(property.id)}
-                  onKeyDown={(event) => handleCardKeyDown(event, property.id)}
-                  className="group cursor-pointer overflow-hidden rounded-2xl border border-slate-100 bg-white transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-container/30"
-                >
-                  <div className="relative h-44 overflow-hidden">
-                    <img src={property.image} alt={property.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                    <span className="absolute left-3 top-3 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                      {property.status}
-                    </span>
-                    <button type="button" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} aria-label="Bỏ lưu" className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-red-500 shadow-sm">
-                      <Icon type="heart" />
-                    </button>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-on-surface">{property.title}</h3>
-                    <p className="mt-2 text-lg font-bold text-primary-container">{property.price}</p>
-                    <div className="mt-3 flex items-center gap-4 text-sm text-slate-500">
-                      <span>{property.district}</span>
-                      <span className="h-1 w-1 rounded-full bg-slate-300" />
-                      <span>{property.area}</span>
-                    </div>
-                    <div className="mt-4">
-                      <Link
-                        to={`/tenant/dat-lich-xem?propertyId=${property.id}`}
-                        onClick={(event) => event.stopPropagation()}
-                        onKeyDown={(event) => event.stopPropagation()}
-                        className="block w-full rounded-xl bg-orange-500 py-2.5 text-center text-sm font-semibold text-white hover:bg-orange-600"
-                      >
-                        Đặt lịch xem
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-on-surface">Gợi ý bất động sản</h2>
-                <p className="mt-1 text-sm text-slate-500">Đề xuất theo nhu cầu và nhà bạn đã lưu</p>
+            {properties.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-slate-500">Chưa có bất động sản nào</p>
               </div>
-              <span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-600">AI gợi ý</span>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {RECOMMENDATIONS.map((property) => (
-                <Link key={property.id} to={`/bat-dong-san/${property.id}`} className="group overflow-hidden rounded-2xl border border-slate-100">
-                  <img src={property.image} alt={property.title} className="h-32 w-full object-cover transition duration-500 group-hover:scale-105" />
-                  <div className="p-3.5">
-                    <p className="truncate text-sm font-semibold text-on-surface">{property.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{property.district}</p>
-                    <p className="mt-2 text-sm font-bold text-primary-container">{property.price}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <button type="button" className="mt-5 w-full rounded-xl border border-primary-container/20 bg-blue-50 py-3 text-sm font-semibold text-primary-container transition hover:bg-blue-100">
-              Xem thêm gợi ý phù hợp
-            </button>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {properties.map((item) => (
+                  <Link key={item.id} to={`/bat-dong-san/${item.id}`} className="group overflow-hidden rounded-2xl border border-slate-100">
+                    <div className="h-32 bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                      <svg className="h-10 w-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                    </div>
+                    <div className="p-3.5">
+                      <p className="truncate text-sm font-semibold text-on-surface">{item.loaiNha} {item.diaChi}</p>
+                      <p className="mt-1 text-xs text-slate-500">{item.diaChi}</p>
+                      <p className="mt-2 text-sm font-bold text-primary-container">{formatShortPrice(item.giaThue)}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
         <aside className="space-y-6">
+          {/* Hồ sơ nhanh */}
           <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-bold text-on-surface">Hồ sơ nhanh</h2>
             <div className="mt-5 flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-lg font-bold text-white">NA</div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-lg font-bold text-white">
+                {displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
               <div>
                 <p className="font-semibold text-on-surface">{displayName}</p>
-                <p className="text-xs text-slate-500">Thành viên xác minh</p>
+                <p className="text-xs text-slate-500">Thành viên</p>
               </div>
             </div>
-            <div className="mt-5 rounded-2xl bg-gradient-to-br from-blue-600 to-primary p-4 text-white">
-              <p className="text-xs text-blue-100">Trạng thái thành viên</p>
-              <p className="mt-1 font-semibold">Premium Member</p>
-              <p className="mt-2 text-xs text-blue-100">Hiệu lực đến 31/12/2026</p>
-            </div>
-            <button type="button" className="mt-4 w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+            <Link to="/tenant/ho-so" className="mt-4 block w-full rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
               Chỉnh sửa hồ sơ
-            </button>
+            </Link>
           </section>
 
+          {/* Lịch xem sắp tới */}
           <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-on-surface">Lịch xem sắp tới</h2>
-              <button type="button" className="text-xs font-semibold text-primary-container">Xem lịch</button>
+              <Link to="/tenant/lich-xem" className="text-xs font-semibold text-primary-container">Xem lịch</Link>
             </div>
-            <div className="space-y-4">
-              {APPOINTMENTS.map((appointment) => (
-                <div key={`${appointment.date}-${appointment.title}`} className="flex gap-3">
-                  <div className="flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-blue-50 text-primary-container">
-                    <span className="text-lg font-bold leading-none">{appointment.date}</span>
-                    <span className="text-[10px] font-semibold">{appointment.month}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-on-surface">{appointment.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{appointment.time} - {appointment.location}</p>
-                    <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${TONES[appointment.tone]}`}>
-                      {appointment.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-on-surface">Thông báo mới</h2>
-              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-600">3 mới</span>
-            </div>
-            <div className="space-y-3">
-              {NOTIFICATIONS.map((notification) => (
-                <div key={notification.title} className="flex gap-3 rounded-2xl bg-slate-50 p-3">
-                  <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${NOTIFICATION_DOTS[notification.tone]}`} />
-                  <div>
-                    <p className="text-sm font-semibold text-on-surface">{notification.title}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{notification.message}</p>
-                    <p className="mt-2 text-[11px] text-slate-400">{notification.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {appointments.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-sm text-slate-500">Chưa có lịch xem nào</p>
+                <Link to="/tenant/dat-lich-xem" className="mt-2 inline-block text-sm font-medium text-primary-container hover:underline">
+                  Đặt lịch xem nhà
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {appointments.map((apt) => {
+                  const date = apt.thoiGian ? new Date(apt.thoiGian) : null
+                  const day = date ? date.getDate() : '--'
+                  const month = date ? `TH${String(date.getMonth() + 1).padStart(2, '0')}` : ''
+                  const time = date ? `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : ''
+                  const statusLabel = STATUS_LABELS[apt.trangThai] || apt.trangThai || ''
+                  const statusTone = STATUS_TONES[apt.trangThai] || 'slate'
+                  return (
+                    <div key={apt.id} className="flex gap-3">
+                      <div className="flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-blue-50 text-primary-container">
+                        <span className="text-lg font-bold leading-none">{day}</span>
+                        <span className="text-[10px] font-semibold">{month}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-on-surface">{apt.batDongSan?.loaiNha || apt.batDongSan?.diaChi || `BĐS #${apt.batDongSanId || apt.id}`}</p>
+                        <p className="mt-1 text-xs text-slate-500">{time} - {apt.batDongSan?.diaChi || ''}</p>
+                        <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${TONES[statusTone]}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </section>
         </aside>
       </div>
