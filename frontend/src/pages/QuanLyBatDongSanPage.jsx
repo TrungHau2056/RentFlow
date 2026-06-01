@@ -5,6 +5,8 @@ import chuNhaService from '../services/chuNhaService'
 
 const STATUS_CONFIG = {
   cho_tiep_nhan: { label: 'Chờ tiếp nhận', color: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' },
+  cho_xac_nhan: { label: 'Chờ xác nhận', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+  cho_danh_gia: { label: 'Chờ đánh giá', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
   cho_khao_sat: { label: 'Chờ khảo sát', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
   cho_ky_hop_dong: { label: 'Chờ ký hợp đồng', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
   dang_hien_thi: { label: 'Đang hiển thị', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-400' },
@@ -14,6 +16,8 @@ const STATUS_CONFIG = {
 
 const BE_STATUS_MAP = {
   CHO_DUYET: 'cho_tiep_nhan',
+  CHO_XAC_NHAN: 'cho_xac_nhan',
+  CHO_DANH_GIA: 'cho_danh_gia',
   DA_KHAO_SAT: 'cho_khao_sat',
   DANG_SOAN_HOP_DONG: 'cho_ky_hop_dong',
   SAN_SANG_CHO_THUE: 'dang_hien_thi',
@@ -26,6 +30,8 @@ const BE_STATUS_MAP = {
 
 const WORKFLOW_STEPS = [
   { key: 'cho_tiep_nhan', label: 'Tiếp nhận' },
+  { key: 'cho_xac_nhan', label: 'Xác nhận' },
+  { key: 'cho_danh_gia', label: 'Đánh giá' },
   { key: 'cho_khao_sat', label: 'Khảo sát' },
   { key: 'cho_ky_hop_dong', label: 'Ký HĐ' },
   { key: 'dang_hien_thi', label: 'Hiển thị' },

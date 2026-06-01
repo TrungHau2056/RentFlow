@@ -60,7 +60,7 @@ public class LichHenXemNhaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'KHACH_HANG')")
+    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'MOI_GIOI', 'KHACH_HANG')")
     @Operation(summary = "Danh sách lịch hẹn", description = "Lấy danh sách lịch hẹn xem nhà (có thể lọc theo nhiều tiêu chí)")
     public ApiSuccessResponse<List<LichHenXemNhaResponseDTO>> getAll(
             @RequestParam(required = false) Long nhanVienId,
@@ -121,6 +121,21 @@ public class LichHenXemNhaController {
                 .status(HttpStatus.OK.value())
                 .message("Đổi lịch hẹn thành công")
                 .data(lichHenXemNhaService.reschedule(id, LocalDateTime.parse(body.get("thoiGian"))))
+                .build();
+    }
+
+    @PatchMapping("/{id}/assign-broker")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Chỉ định môi giới", description = "Chỉ định nhân viên môi giới phụ trách lịch xem nhà")
+    public ApiSuccessResponse<LichHenXemNhaResponseDTO> assignBroker(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        Object raw = body.get("nhanVienId");
+        Long nhanVienId = raw != null ? ((Number) raw).longValue() : null;
+        return ApiSuccessResponse.<LichHenXemNhaResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Chỉ định môi giới thành công")
+                .data(lichHenXemNhaService.assignBroker(id, nhanVienId))
                 .build();
     }
 

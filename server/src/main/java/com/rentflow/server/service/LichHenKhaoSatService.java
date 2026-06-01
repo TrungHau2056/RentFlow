@@ -72,6 +72,9 @@ public class LichHenKhaoSatService {
                 : securityUtils.getCurrentUser().getNhanVienSet().stream().findFirst()
                         .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
 
+        bds.setTrangThai(TrangThaiBatDongSan.CHO_XAC_NHAN.name());
+        batDongSanRepository.save(bds);
+
         LichHenKhaoSat lh = LichHenKhaoSat.builder()
                 .batDongSan(bds)
                 .chuNha(chuNha)
@@ -120,6 +123,13 @@ public class LichHenKhaoSatService {
         }
 
         lh.setTrangThai(trangThaiMoi);
+
+        if (TrangThaiLichHen.DA_XAC_NHAN.name().equals(trangThaiMoi)) {
+            BatDongSan bds = lh.getBatDongSan();
+            bds.setTrangThai(TrangThaiBatDongSan.CHO_DANH_GIA.name());
+            batDongSanRepository.save(bds);
+        }
+
         return toResponseDTO(lichHenKhaoSatRepository.save(lh));
     }
 

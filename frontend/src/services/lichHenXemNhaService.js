@@ -26,6 +26,11 @@ const lichHenXemNhaService = {
     return response.data;
   },
 
+  async assignBroker(id, nhanVienId) {
+    const response = await api.patch(`/api/lich-hen-xem-nha/${id}/assign-broker`, { nhanVienId });
+    return response.data;
+  },
+
   async ghiPhanHoi(id, data) {
     const response = await api.put(`/api/lich-hen-xem-nha/${id}/phan-hoi`, data);
     return response.data;

@@ -21,11 +21,23 @@ public class LichHenXemNhaResponseDTO {
     @Schema(description = "Tên khách hàng", example = "Trần Văn B")
     private String tenKhachHang;
 
+    @Schema(description = "SĐT khách hàng", example = "0909123456")
+    private String sdtKhachHang;
+
+    @Schema(description = "Email khách hàng", example = "tranvanb@email.com")
+    private String emailKhachHang;
+
     @Schema(description = "ID bất động sản", example = "1")
     private Long batDongSanId;
 
     @Schema(description = "Địa chỉ bất động sản", example = "123 Nguyễn Huệ")
     private String diaChiBatDongSan;
+
+    @Schema(description = "Loại bất động sản", example = "Căn hộ")
+    private String loaiBatDongSan;
+
+    @Schema(description = "Giá thuê bất động sản", example = "15000000")
+    private Double giaBatDongSan;
 
     @Schema(description = "ID nhân viên", example = "1")
     private Long nhanVienId;
@@ -33,10 +45,13 @@ public class LichHenXemNhaResponseDTO {
     @Schema(description = "Tên nhân viên", example = "Lê Thị C")
     private String tenNhanVien;
 
+    @Schema(description = "SĐT nhân viên", example = "0918123456")
+    private String sdtNhanVien;
+
     @Schema(description = "Thời gian hẹn", example = "2026-06-10T09:00:00")
     private LocalDateTime thoiGian;
 
-    @Schema(description = "Trạng thái", example = "LEN_LICH")
+    @Schema(description = "Trạng thái", example = "CHO_XAC_NHAN")
     private String trangThai;
 
     @Schema(description = "Phản hồi", example = "Khách hài lòng")

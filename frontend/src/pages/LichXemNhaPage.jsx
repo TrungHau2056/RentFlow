@@ -1,13 +1,29 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import lichHenXemNhaService from '../services/lichHenXemNhaService'
+import nhanVienService from '../services/nhanVienService'
+
+const STATUS_MAP = {
+  CHO_XAC_NHAN: 'cho_xac_nhan',
+  DA_XAC_NHAN: 'da_xac_nhan',
+  DA_HOAN_THANH: 'da_xem',
+  DA_HUY: 'da_huy',
+}
+
 const STATUS_CONFIG = {
   cho_xac_nhan: { label: 'Chờ xác nhận', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
   da_xac_nhan: { label: 'Đã xác nhận', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
   da_xem: { label: 'Đã xem', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
   da_huy: { label: 'Đã hủy', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-400' },
-  doi_lich: { label: 'Dời lịch', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-400' },
 }
+
+const KET_QUA_CONFIG = {
+  QUAN_TAM: { label: 'Quan tâm', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-400' },
+  KHONG_QUAN_TAM: { label: 'Không quan tâm', color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-400' },
+  CHO_QUYET_DINH: { label: 'Chờ quyết định', color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-400' },
+}
+
+const STATUS_OPTIONS = ['Tất cả', 'Chờ xác nhận', 'Đã xác nhận', 'Đã xem', 'Đã hủy']
 
 const HINH_THUC_CONFIG = {
   truc_tiep: { label: 'Trực tiếp', color: 'text-blue-600 bg-blue-50', icon: '🏠' },
@@ -15,13 +31,41 @@ const HINH_THUC_CONFIG = {
   di_cung_moi_gioi: { label: 'Đi cùng MG', color: 'text-teal-600 bg-teal-50', icon: '🤝' },
 }
 
-const KET_QUA_CONFIG = {
-  quan_tam: { label: 'Quan tâm', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-400' },
-  khong_quan_tam: { label: 'Không quan tâm', color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-400' },
-  cho_quyet_dinh: { label: 'Chờ quyết định', color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-400' },
+function getHinhThuc(key) {
+  return HINH_THUC_CONFIG[key] || { label: 'Trực tiếp', color: 'text-blue-600 bg-blue-50', icon: '🏠' }
 }
 
-const STATUS_OPTIONS = ['Tất cả', 'Chờ xác nhận', 'Đã xác nhận', 'Đã xem', 'Đã hủy', 'Dời lịch']
+function mapViewing(item) {
+  const thoiGian = item.thoiGian ? new Date(item.thoiGian) : new Date()
+  const ngayXem = thoiGian.toISOString().slice(0, 10)
+  const gioXem = thoiGian.toTimeString().slice(0, 5)
+  let hinhThuc = 'truc_tiep'
+  if (item.noiDungTraoDoi) {
+    const match = item.noiDungTraoDoi.match(/Hình thức xem:\s*(\S+)/)
+    if (match) hinhThuc = match[1]
+  }
+  return {
+    id: item.id,
+    ma: `#${String(item.id).padStart(5, '0')}`,
+    khachHang: item.tenKhachHang || '—',
+    sdtKH: item.sdtKhachHang || '',
+    emailKH: item.emailKhachHang || '',
+    batDongSan: item.diaChiBatDongSan || `BĐS #${item.batDongSanId}`,
+    diaChiBDS: item.diaChiBatDongSan || '',
+    loaiBDS: item.loaiBatDongSan || '',
+    giaBDS: item.giaBatDongSan || 0,
+    nhanVienId: item.nhanVienId || null,
+    moiGioi: item.tenNhanVien || 'Chưa phân công',
+    sdtMoiGioi: item.sdtNhanVien || '',
+    ngayXem,
+    gioXem,
+    hinhThuc,
+    trangThai: STATUS_MAP[item.trangThai] || item.trangThai?.toLowerCase() || 'cho_xac_nhan',
+    ketQua: item.ketQua || null,
+    ghiChu: item.noiDungTraoDoi || '',
+    phanHoi: item.phanHoi || '',
+  }
+}
 const SORT_OPTIONS = [
   { key: 'newest', label: 'Mới nhất' },
   { key: 'oldest', label: 'Cũ nhất' },
@@ -149,7 +193,7 @@ function CalendarDay({ date, schedules, isSelected, onSelect }) {
 // ── Schedule row (table mode) ────────────────────────────────────────
 function ScheduleRow({ schedule, isSelected, onSelect }) {
   const status = STATUS_CONFIG[schedule.trangThai]
-  const hinhThuc = HINH_THUC_CONFIG[schedule.hinhThuc]
+  const hinhThuc = getHinhThuc(schedule.hinhThuc)
 
   return (
     <tr
@@ -162,7 +206,7 @@ function ScheduleRow({ schedule, isSelected, onSelect }) {
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-semibold text-cyan-700">{schedule.khachHang.charAt(0)}</span>
+            <span className="text-[10px] font-semibold text-cyan-700">{schedule.khachHang?.charAt(0)}</span>
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-slate-800 truncate">{schedule.khachHang}</p>
@@ -176,7 +220,7 @@ function ScheduleRow({ schedule, isSelected, onSelect }) {
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-semibold text-violet-700">{schedule.moiGioi.charAt(0)}</span>
+            <span className="text-[10px] font-semibold text-violet-700">{schedule.moiGioi?.charAt(0)}</span>
           </div>
           <p className="text-sm text-slate-700">{schedule.moiGioi}</p>
         </div>
@@ -201,30 +245,14 @@ function ScheduleRow({ schedule, isSelected, onSelect }) {
 }
 
 // ── Detail panel ─────────────────────────────────────────────────────
-function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
+function ScheduleDetail({ schedule, onClose, onConfirm, onReschedule, onCancel, onUpdateResult, onAssignBroker, brokers, loading }) {
   if (!schedule) return null
   const status = STATUS_CONFIG[schedule.trangThai]
-  const hinhThuc = HINH_THUC_CONFIG[schedule.hinhThuc]
+  const hinhThuc = getHinhThuc(schedule.hinhThuc)
   const ketQua = schedule.ketQua ? KET_QUA_CONFIG[schedule.ketQua] : null
 
-  const timelineIcon = {
-    create: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
-    confirm: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
-    complete: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-    cancel: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
-    reschedule: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
-  }
-  const timelineColor = {
-    create: 'bg-blue-500',
-    confirm: 'bg-emerald-500',
-    complete: 'bg-emerald-500',
-    cancel: 'bg-red-500',
-    reschedule: 'bg-purple-500',
-  }
-
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden sticky top-6">
-      {/* Header */}
+    <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
       <div className="bg-linear-to-r from-blue-600 to-indigo-700 p-5">
         <div className="flex items-start justify-between">
           <div>
@@ -248,13 +276,12 @@ function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
       </div>
 
       <div className="p-5 space-y-5 max-h-[calc(100vh-220px)] overflow-y-auto">
-        {/* Customer info */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Khách hàng</h4>
           <div className="bg-cyan-50 rounded-lg p-3 border border-cyan-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-cyan-600 flex items-center justify-center shrink-0">
-                <span className="text-white text-sm font-semibold">{schedule.khachHang.charAt(0)}</span>
+                <span className="text-white text-sm font-semibold">{schedule.khachHang?.charAt(0)}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800">{schedule.khachHang}</p>
@@ -264,7 +291,6 @@ function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
           </div>
         </div>
 
-        {/* Property info */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Bất động sản</h4>
           <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
@@ -277,23 +303,42 @@ function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
           </div>
         </div>
 
-        {/* Broker info */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Môi giới phụ trách</h4>
           <div className="bg-violet-50 rounded-lg p-3 border border-violet-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
-                <span className="text-white text-sm font-semibold">{schedule.moiGioi.charAt(0)}</span>
+            {schedule.trangThai === 'cho_xac_nhan' && brokers ? (
+              <div className="space-y-2">
+                <select
+                  value={schedule.nhanVienId || ''}
+                  onChange={(e) => {
+                    const id = parseInt(e.target.value)
+                    if (id) onAssignBroker(schedule.id, id)
+                  }}
+                  className="w-full rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">-- Chọn môi giới --</option>
+                  {brokers.map(b => (
+                    <option key={b.id} value={b.id}>{b.hoTen} ({b.soDienThoai})</option>
+                  ))}
+                </select>
+                {schedule.moiGioi && (
+                  <p className="text-xs text-slate-500">Đã chọn: <strong>{schedule.moiGioi}</strong></p>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800">{schedule.moiGioi}</p>
-                <p className="text-xs text-slate-500">{schedule.sdtMoiGioi}</p>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
+                  <span className="text-white text-sm font-semibold">{schedule.moiGioi?.charAt(0) || '?'}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">{schedule.moiGioi || 'Chưa phân công'}</p>
+                  <p className="text-xs text-slate-500">{schedule.sdtMoiGioi}</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Viewing time */}
         <div>
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Thời gian xem</h4>
           <div className="bg-white rounded-lg p-3 border border-slate-200">
@@ -311,7 +356,6 @@ function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
           </div>
         </div>
 
-        {/* Notes */}
         {schedule.ghiChu && (
           <div>
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Ghi chú</h4>
@@ -321,80 +365,52 @@ function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
           </div>
         )}
 
-        {/* Cancel / reschedule reason */}
-        {schedule.lyDoHuy && (
+        {schedule.phanHoi && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              {schedule.trangThai === 'da_huy' ? 'Lý do hủy' : 'Lý do dời lịch'}
-            </h4>
-            <div className={`rounded-lg p-3 border text-sm ${
-              schedule.trangThai === 'da_huy' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-purple-50 border-purple-100 text-purple-800'
-            }`}>
-              {schedule.lyDoHuy}
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Phản hồi</h4>
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100 text-sm text-blue-800">
+              {schedule.phanHoi}
             </div>
           </div>
         )}
 
-        {/* Result */}
         {schedule.ketQua && (
           <div>
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Kết quả sau xem nhà</h4>
-            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100 space-y-2">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${ketQua.color}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${ketQua.dot}`} />
-                {ketQua.label}
+            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${ketQua?.color || ''}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${ketQua?.dot || ''}`} />
+                {ketQua?.label || schedule.ketQua}
               </span>
-              {schedule.nhanXetKH && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-600">Nhận xét khách hàng:</p>
-                  <p className="text-sm text-slate-700">{schedule.nhanXetKH}</p>
-                </div>
-              )}
-              {schedule.ghiChuMG && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-600">Ghi chú môi giới:</p>
-                  <p className="text-sm text-slate-700">{schedule.ghiChuMG}</p>
-                </div>
-              )}
             </div>
           </div>
         )}
 
-        {/* Activity timeline */}
-        <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Lịch sử hoạt động</h4>
-          <div className="space-y-0">
-            {schedule.lichSu.map((item, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 ${timelineColor[item.loai] || 'bg-slate-400'}`}>
-                    {timelineIcon[item.loai]}
-                  </div>
-                  {i < schedule.lichSu.length - 1 && <div className="w-0.5 flex-1 bg-slate-200 my-0.5" />}
-                </div>
-                <div className="pb-4">
-                  <p className="text-sm text-slate-700">{item.noiDung}</p>
-                  <p className="text-xs text-slate-400">{formatDate(item.ngay)} · {item.nguoi}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Action buttons */}
         <div className="border-t border-slate-200 pt-4 space-y-2">
           {schedule.trangThai === 'cho_xac_nhan' && (
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">
-              Xác nhận lịch
+            <button
+              onClick={() => onConfirm(schedule.id)}
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Đang xử lý...' : 'Xác nhận lịch'}
             </button>
           )}
           {(schedule.trangThai === 'cho_xac_nhan' || schedule.trangThai === 'da_xac_nhan') && (
             <>
-              <button className="w-full bg-white hover:bg-slate-50 text-purple-700 border border-purple-200 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+              <button
+                onClick={() => onReschedule(schedule)}
+                disabled={loading}
+                className="w-full bg-white hover:bg-slate-50 text-purple-700 border border-purple-200 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Dời lịch
               </button>
-              <button className="w-full bg-white hover:bg-slate-50 text-red-600 border border-red-200 py-2.5 rounded-xl text-sm font-semibold transition-colors">
-                Hủy lịch
+              <button
+                onClick={() => onCancel(schedule.id)}
+                disabled={loading}
+                className="w-full bg-white hover:bg-slate-50 text-red-600 border border-red-200 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Đang xử lý...' : 'Hủy lịch'}
               </button>
             </>
           )}
@@ -406,7 +422,7 @@ function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
               Cập nhật kết quả
             </button>
           )}
-          {schedule.trangThai === 'da_xem' && schedule.ketQua === 'quan_tam' && (
+          {schedule.trangThai === 'da_xem' && schedule.ketQua === 'QUAN_TAM' && (
             <Link
               to="/admin/hop-dong-thue"
               className="block w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors text-center"
@@ -429,18 +445,22 @@ function ScheduleDetail({ schedule, onClose, onUpdateResult }) {
 }
 
 // ── Result update modal ──────────────────────────────────────────────
-function ResultModal({ schedule, onClose }) {
+function ResultModal({ schedule, onClose, onSave, loading }) {
   const [ketQua, setKetQua] = useState('')
   const [nhanXet, setNhanXet] = useState('')
   const [ghiChuMG, setGhiChuMG] = useState('')
 
   if (!schedule) return null
 
+  const handleSave = () => {
+    if (!ketQua) return
+    onSave(schedule.id, ketQua, nhanXet, ghiChuMG)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-        {/* Modal header */}
         <div className="bg-linear-to-r from-emerald-600 to-teal-600 p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -456,7 +476,6 @@ function ResultModal({ schedule, onClose }) {
         </div>
 
         <div className="p-6 space-y-5">
-          {/* Schedule summary */}
           <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
@@ -478,14 +497,13 @@ function ResultModal({ schedule, onClose }) {
             </div>
           </div>
 
-          {/* Result select */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Kết quả xem nhà *</label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { key: 'quan_tam', label: 'Quan tâm', color: 'border-emerald-300 bg-emerald-50 text-emerald-700', activeColor: 'border-emerald-500 bg-emerald-100 text-emerald-800 ring-2 ring-emerald-300' },
-                { key: 'khong_quan_tam', label: 'Không quan tâm', color: 'border-red-300 bg-red-50 text-red-700', activeColor: 'border-red-500 bg-red-100 text-red-800 ring-2 ring-red-300' },
-                { key: 'cho_quyet_dinh', label: 'Chờ quyết định', color: 'border-amber-300 bg-amber-50 text-amber-700', activeColor: 'border-amber-500 bg-amber-100 text-amber-800 ring-2 ring-amber-300' },
+                { key: 'QUAN_TAM', label: 'Quan tâm', color: 'border-emerald-300 bg-emerald-50 text-emerald-700', activeColor: 'border-emerald-500 bg-emerald-100 text-emerald-800 ring-2 ring-emerald-300' },
+                { key: 'KHONG_QUAN_TAM', label: 'Không quan tâm', color: 'border-red-300 bg-red-50 text-red-700', activeColor: 'border-red-500 bg-red-100 text-red-800 ring-2 ring-red-300' },
+                { key: 'CHO_QUYET_DINH', label: 'Chờ quyết định', color: 'border-amber-300 bg-amber-50 text-amber-700', activeColor: 'border-amber-500 bg-amber-100 text-amber-800 ring-2 ring-amber-300' },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -500,7 +518,6 @@ function ResultModal({ schedule, onClose }) {
             </div>
           </div>
 
-          {/* Customer comment */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Nhận xét khách hàng</label>
             <textarea
@@ -512,7 +529,6 @@ function ResultModal({ schedule, onClose }) {
             />
           </div>
 
-          {/* Broker note */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Ghi chú môi giới</label>
             <textarea
@@ -526,24 +542,24 @@ function ResultModal({ schedule, onClose }) {
 
           <p className="text-xs text-slate-400 italic">Kết quả sẽ tự động lưu vào lịch sử làm việc khách hàng.</p>
 
-          {/* Buttons */}
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
+              disabled={loading}
               className="flex-1 bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 py-2.5 rounded-xl text-sm font-semibold transition-colors"
             >
               Hủy
             </button>
             <button
-              onClick={onClose}
-              disabled={!ketQua}
+              onClick={handleSave}
+              disabled={!ketQua || loading}
               className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                ketQua
+                ketQua && !loading
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   : 'bg-slate-100 text-slate-400 cursor-not-allowed'
               }`}
             >
-              Lưu kết quả
+              {loading ? 'Đang lưu...' : 'Lưu kết quả'}
             </button>
           </div>
         </div>
@@ -567,15 +583,17 @@ export default function LichXemNhaPage() {
     return { month: now.getMonth(), year: now.getFullYear() }
   })
   const [schedules, setSchedules] = useState([])
+  const [brokers, setBrokers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
   const fetchSchedules = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const res = await lichHenXemNhaService.danhSach()
-      setSchedules(res.data || [])
+      setSchedules((res.data || []).map(mapViewing))
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Lỗi tải dữ liệu')
     } finally {
@@ -585,7 +603,59 @@ export default function LichXemNhaPage() {
 
   useEffect(() => {
     fetchSchedules()
+    nhanVienService.danhSachMoiGioi()
+      .then(res => setBrokers(res.data || []))
+      .catch(() => {})
   }, [fetchSchedules])
+
+  const handleConfirm = (id) => {
+    setActionLoading(true)
+    lichHenXemNhaService.capNhatTrangThai(id, 'DA_XAC_NHAN')
+      .then(() => fetchSchedules())
+      .catch(() => {})
+      .finally(() => setActionLoading(false))
+  }
+
+  const handleCancel = (id) => {
+    setActionLoading(true)
+    lichHenXemNhaService.capNhatTrangThai(id, 'DA_HUY')
+      .then(() => fetchSchedules())
+      .catch(() => {})
+      .finally(() => setActionLoading(false))
+  }
+
+  const handleReschedule = (schedule) => {
+    const newTime = prompt('Nhập thời gian mới (YYYY-MM-DD HH:mm):')
+    if (!newTime) return
+    setActionLoading(true)
+    lichHenXemNhaService.capNhat(schedule.id, { thoiGian: newTime })
+      .then(() => fetchSchedules())
+      .catch(() => {})
+      .finally(() => setActionLoading(false))
+  }
+
+  const handleAssignBroker = (id, nhanVienId) => {
+    setActionLoading(true)
+    lichHenXemNhaService.assignBroker(id, nhanVienId)
+      .then(() => fetchSchedules())
+      .catch(() => alert('Không thể chỉ định môi giới. Vui lòng thử lại.'))
+      .finally(() => setActionLoading(false))
+  }
+
+  const handleSaveResult = (id, ketQuaVal, nhanXet, ghiChuMG) => {
+    setActionLoading(true)
+    const phanHoi = `Kết quả: ${ketQuaVal}${nhanXet ? `\nKhách hàng: ${nhanXet}` : ''}${ghiChuMG ? `\nMôi giới: ${ghiChuMG}` : ''}`
+    Promise.all([
+      lichHenXemNhaService.capNhat(id, { ketQua: ketQuaVal, phanHoi, noiDungTraoDoi: phanHoi }),
+      lichHenXemNhaService.capNhatTrangThai(id, 'DA_HOAN_THANH'),
+    ])
+      .then(() => {
+        setResultModal(null)
+        fetchSchedules()
+      })
+      .catch(() => {})
+      .finally(() => setActionLoading(false))
+  }
 
   const selected = useMemo(() => schedules.find(s => s.id === selectedId), [selectedId, schedules])
 
@@ -595,10 +665,10 @@ export default function LichXemNhaPage() {
     if (search) {
       const q = search.toLowerCase()
       list = list.filter(s =>
-        s.ma.toLowerCase().includes(q) ||
-        s.khachHang.toLowerCase().includes(q) ||
-        s.batDongSan.toLowerCase().includes(q) ||
-        s.moiGioi.toLowerCase().includes(q)
+        s.ma?.toLowerCase().includes(q) ||
+        s.khachHang?.toLowerCase().includes(q) ||
+        s.batDongSan?.toLowerCase().includes(q) ||
+        s.moiGioi?.toLowerCase().includes(q)
       )
     }
 
@@ -608,7 +678,6 @@ export default function LichXemNhaPage() {
         'Đã xác nhận': 'da_xac_nhan',
         'Đã xem': 'da_xem',
         'Đã hủy': 'da_huy',
-        'Dời lịch': 'doi_lich',
       }
       list = list.filter(s => s.trangThai === statusMap[filterStatus])
     }
@@ -633,9 +702,8 @@ export default function LichXemNhaPage() {
     }
 
     return list
-  }, [search, filterStatus, filterMoiGioi, sortBy])
+  }, [search, filterStatus, filterMoiGioi, sortBy, schedules])
 
-  // KPI values
   const kpi = useMemo(() => ({
     total: schedules.length,
     choXacNhan: schedules.filter(s => s.trangThai === 'cho_xac_nhan').length,
@@ -644,7 +712,6 @@ export default function LichXemNhaPage() {
     daHuy: schedules.filter(s => s.trangThai === 'da_huy').length,
   }), [schedules])
 
-  // Calendar helpers
   const calendarDays = useMemo(() => {
     const { month, year } = calMonth
     const firstDay = new Date(year, month, 1)
@@ -757,15 +824,15 @@ export default function LichXemNhaPage() {
         <AlertCard
           icon="⏰"
           title="Lịch xem sắp tới"
-          count={schedules.filter(s => (s.trangThai === 'cho_xac_nhan' || s.trangThai === 'da_xac_nhan') && new Date(s.ngayXem) >= new Date()).length}
+          count={schedules.filter(s => (s.trangThai === 'cho_xac_nhan' || s.trangThai === 'da_xac_nhan') && s.ngayXem && new Date(s.ngayXem) >= new Date()).length}
           detail="Cần xác nhận và chuẩn bị cho lịch xem trong 48h tới"
           variant="amber"
         />
         <AlertCard
           icon="🔄"
-          title="Yêu cầu dời lịch"
-          count={schedules.filter(s => s.trangThai === 'doi_lich').length}
-          detail="Khách hàng yêu cầu đổi thời gian xem nhà"
+          title="Đã xác nhận"
+          count={kpi.daXacNhan}
+          detail="Lịch xem đã được xác nhận, chờ tiến hành"
           variant="blue"
         />
         <AlertCard
@@ -950,27 +1017,24 @@ export default function LichXemNhaPage() {
           )}
         </div>
 
-        {/* Detail panel */}
-        {selected && (
-          <div className="hidden xl:block w-105 shrink-0">
+      </div>
+
+      {/* Detail modal overlay */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedId(null)}>
+          <div className="fixed inset-0 bg-black/40" />
+          <div className="relative w-full max-w-[460px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <ScheduleDetail
               schedule={selected}
               onClose={() => setSelectedId(null)}
+              onConfirm={handleConfirm}
+              onReschedule={handleReschedule}
+              onCancel={handleCancel}
               onUpdateResult={(s) => setResultModal(s)}
+              onAssignBroker={handleAssignBroker}
+              brokers={brokers}
+              loading={actionLoading}
             />
-          </div>
-        )}
-      </div>
-
-      {/* Empty state when no selection */}
-      {!selected && (
-        <div className="hidden xl:flex items-center justify-center w-105 shrink-0">
-          <div className="text-center py-16">
-            <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <p className="text-sm text-slate-400">Chọn lịch xem để xem chi tiết</p>
           </div>
         </div>
       )}
@@ -980,6 +1044,8 @@ export default function LichXemNhaPage() {
         <ResultModal
           schedule={resultModal}
           onClose={() => setResultModal(null)}
+          onSave={handleSaveResult}
+          loading={actionLoading}
         />
       )}
     </div>
