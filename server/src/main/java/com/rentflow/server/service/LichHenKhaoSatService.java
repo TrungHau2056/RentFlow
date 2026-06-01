@@ -145,6 +145,10 @@ public class LichHenKhaoSatService {
             BatDongSan bds = lh.getBatDongSan();
             bds.setTrangThai(TrangThaiBatDongSan.DA_KHAO_SAT.name());
             batDongSanRepository.save(bds);
+        } else {
+            BatDongSan bds = lh.getBatDongSan();
+            bds.setTrangThai(TrangThaiBatDongSan.TU_CHOI.name());
+            batDongSanRepository.save(bds);
         }
 
         return toResponseDTO(lichHenKhaoSatRepository.save(lh));

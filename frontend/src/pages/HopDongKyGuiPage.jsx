@@ -40,6 +40,16 @@ const WORKFLOW_MAP = {
   TU_CHOI: 2, DA_KY: 5, HOAN_THANH: 5, DA_HUY: 5,
 }
 
+const TRANG_THAI_HOP_DONG = {
+  NHAP: { label: 'Nháp', color: 'bg-slate-50 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+  CHO_PHE_DUYET: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+  DA_PHE_DUYET: { label: 'Chờ ký', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
+  TU_CHOI: { label: 'Từ chối', color: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400' },
+  DA_KY: { label: 'Đang hiệu lực', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
+  HOAN_THANH: { label: 'Đã kết thúc', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+  DA_HUY: { label: 'Đã hủy', color: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400' },
+}
+
 function formatVND(amount) {
   if (amount == null) return '—'
   return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ'
@@ -72,6 +82,7 @@ function mapContract(item) {
     ngayKetThuc: item.ngayKetThuc,
     thoiHan: thoiHan ? `${thoiHan} tháng` : '—',
     tienDamBao: item.tienDamBao || 0,
+    trangThai: rawStatus,
     status: status,
     tienDamBaoTrangThai: rawStatus === 'DA_KY' || rawStatus === 'HOAN_THANH' ? 'dang_giu' : 'cho_duyet',
     workflowStep: WORKFLOW_MAP[rawStatus] || 1,
@@ -315,7 +326,7 @@ export default function HopDongKyGuiPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await hopDongKyGuiService.danhSach()
+      const res = await hopDongKyGuiService.theoChuNhaHienTai()
       const mapped = (res?.data || []).map(mapContract)
       setContracts(mapped)
     } catch (err) {

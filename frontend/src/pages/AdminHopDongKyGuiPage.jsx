@@ -665,7 +665,7 @@ function CreateContractModal({ onClose, onCreate, chuNhaList, batDongSanList }) 
               </label>
 
               <label className="col-span-2">
-                <span className="block text-xs font-semibold text-slate-600 mb-1.5">Bất động sản *</span>
+                <span className="block text-xs font-semibold text-slate-600 mb-1.5">Bất động sản * <span className="font-normal text-slate-400">(danh sách nhà đã khảo sát)</span></span>
                 <select
                   value={formData.batDongSanId}
                   onChange={(e) => setFormData((prev) => ({ ...prev, batDongSanId: e.target.value }))}
@@ -673,7 +673,7 @@ function CreateContractModal({ onClose, onCreate, chuNhaList, batDongSanList }) 
                   required
                 >
                   <option value="">-- Chọn bất động sản --</option>
-                  {(batDongSanList || []).map((bds) => (
+                  {(batDongSanList || []).filter(bds => bds.trangThai === 'DA_KHAO_SAT').map((bds) => (
                     <option key={bds.id} value={bds.id}>{bds.diaChi}</option>
                   ))}
                 </select>

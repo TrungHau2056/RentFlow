@@ -130,15 +130,17 @@ function SurveyResultForm({ survey, onSubmit, saving }) {
     <div className="space-y-4">
       <div>
         <p className="text-sm font-semibold text-slate-900">Đánh giá</p>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {['Tốt', 'Cần chỉnh sửa', 'Không đạt'].map((option) => (
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {['Tốt', 'Không đạt'].map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => setRating(option)}
               className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                 rating === option
-                  ? 'border-blue-600 bg-blue-50 text-blue-700'
+                  ? option === 'Tốt'
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+                    : 'border-red-600 bg-red-50 text-red-700'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -457,6 +459,7 @@ export default function AdminLichKhaoSatPage() {
   const { batDongSanId } = useParams()
   const navigate = useNavigate()
   const [selectedSurvey, setSelectedSurvey] = useState(null)
+  const [reviewSurvey, setReviewSurvey] = useState(null)
   const [surveys, setSurveys] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -578,7 +581,7 @@ export default function AdminLichKhaoSatPage() {
             <table className="min-w-[960px] w-full divide-y divide-slate-200 text-left">
               <thead className="bg-slate-50">
                 <tr>
-                  {['Mã lịch', 'Bất động sản', 'Chủ nhà', 'Nhân viên khảo sát', 'Thời gian', 'Trạng thái'].map((column) => (
+                  {['Mã lịch', 'Bất động sản', 'Chủ nhà', 'Nhân viên khảo sát', 'Thời gian', 'Trạng thái', 'Đánh giá'].map((column) => (
                     <th key={column} className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
                       {column}
                     </th>
@@ -607,6 +610,32 @@ export default function AdminLichKhaoSatPage() {
                     <td className="px-4 py-4">
                       <StatusBadge status={survey.trangThai} />
                     </td>
+                    <td className="px-4 py-4">
+                      {survey.trangThai === 'DA_XAC_NHAN' && (
+                        <button
+                          type="button"
+                          onClick={() => setReviewSurvey(survey)}
+                          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                        >
+                          Đánh giá
+                        </button>
+                      )}
+                      {survey.trangThai === 'DA_HOAN_THANH' && (
+                        (() => {
+                          const r = survey.ketQuaKhaoSat?.split('.')[0] || 'Đã đánh giá'
+                          const isTot = r === 'Tốt'
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${isTot ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${isTot ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              {r}
+                            </span>
+                          )
+                        })()
+                      )}
+                      {!(survey.trangThai === 'DA_XAC_NHAN' || survey.trangThai === 'DA_HOAN_THANH') && (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -621,6 +650,25 @@ export default function AdminLichKhaoSatPage() {
         </div>
       )}
       <SurveyDrawer survey={selectedSurvey} onClose={() => setSelectedSurvey(null)} onSaveResult={handleSaveResult} saving={saving} onStatusChange={handleStatusChange} />
+      {reviewSurvey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setReviewSurvey(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-slate-400">Đánh giá kết quả khảo sát</p>
+                <h3 className="text-lg font-bold text-slate-900">{reviewSurvey.diaChiBatDongSan}</h3>
+              </div>
+              <button onClick={() => setReviewSurvey(null)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors">
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <SurveyResultForm survey={reviewSurvey} onSubmit={(data) => { handleSaveResult(reviewSurvey.id, data); setReviewSurvey(null) }} saving={saving} />
+          </div>
+        </div>
+      )}
       {showCreate && (
         <CreateSurveyDrawer
           onClose={() => { setShowCreate(false); setCreateProperty(null) }}

@@ -516,7 +516,7 @@ export default function LegalPage() {
         contractService.getKyGuiContracts(),
         contractService.getThueContracts(),
       ])
-      const kyGuiList = (kyGuiRes?.data || []).map(mapKyGuiContract)
+      const kyGuiList = (kyGuiRes?.data || []).filter(item => item.trangThai !== 'NHAP').map(mapKyGuiContract)
       const thueList = (thueRes?.data || []).map(mapThueContract)
       setRequests([...kyGuiList, ...thueList])
     } catch (err) {
