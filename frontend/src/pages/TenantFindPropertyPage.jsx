@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import viewingService from '../services/viewingService'
+import khachHangService from '../services/khachHangService'
 
 const LOAI_NHA_OPTIONS = [
   { value: 'can-ho', label: 'Căn hộ' },
@@ -22,6 +23,28 @@ const QUAN_HUYEN_OPTIONS = [
   { value: 'nam-tu-liem', label: 'Nam Từ Liêm' },
   { value: 'bac-tu-liem', label: 'Bắc Từ Liêm' },
 ]
+
+const DISTRICT_LABEL_TO_VALUE = Object.fromEntries(
+  QUAN_HUYEN_OPTIONS.map(o => [o.label, o.value])
+)
+
+const DISTRICT_VALUE_SET = new Set(QUAN_HUYEN_OPTIONS.map(o => o.value))
+
+const DISTRICT_NORMALIZED_LABEL_TO_VALUE = Object.fromEntries(
+  QUAN_HUYEN_OPTIONS.map(o => [normalizeText(o.label), o.value])
+)
+
+const PREF_TYPE_TO_FILTER = {
+  'can_ho': 'can-ho',
+  'can-ho': 'can-ho',
+  'nha_rieng': 'nha-rieng',
+  'nha-rieng': 'nha-rieng',
+  'nha_pho': 'nha-rieng',
+  'studio': 'studio',
+  'biet_thu': 'biet-thu',
+  'biet-thu': 'biet-thu',
+  'kios': 'kios',
+}
 
 const KHOANG_GIA_OPTIONS = [
   { value: '0-10', label: 'Dưới 10 triệu', min: 0, max: 10000000 },
@@ -57,7 +80,57 @@ function formatPrice(vnd) {
   return (vnd || 0).toLocaleString('vi-VN') + ' đ/tháng'
 }
 
-function mapProperty(item, index) {
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+}
+
+function resolveDistrictFilterValue(district) {
+  const value = String(district || '').trim()
+  if (!value) return null
+  if (DISTRICT_VALUE_SET.has(value)) return value
+  return DISTRICT_LABEL_TO_VALUE[value] || DISTRICT_NORMALIZED_LABEL_TO_VALUE[normalizeText(value)] || null
+}
+
+function findBestPriceRange(minPrice, maxPrice) {
+  const minVnd = (minPrice || 0) * 1000000
+  const maxVnd = (maxPrice != null ? maxPrice : Infinity) * 1000000
+  let bestMatch = null
+  let bestOverlap = -1
+
+  for (const range of KHOANG_GIA_OPTIONS) {
+    const rMax = range.max === Infinity ? maxVnd : range.max
+    const overlapStart = Math.max(minVnd, range.min)
+    const overlapEnd = Math.min(maxVnd, rMax)
+    const overlap = Math.max(0, overlapEnd - overlapStart)
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap
+      bestMatch = range.value
+    }
+  }
+
+  return bestMatch
+}
+
+function parseBudgetRange(budget) {
+  const numbers = String(budget || '')
+    .match(/\d[\d.,]*/g)
+    ?.map(v => Number(v.replace(/[.,]/g, '')))
+    .filter(Number.isFinite) || []
+  if (numbers.length === 0) return {}
+
+  const toMillion = value => value >= 1000000 ? value / 1000000 : value
+  return {
+    minPrice: toMillion(numbers[0]),
+    maxPrice: toMillion(numbers[1] || numbers[0]),
+  }
+}
+
+function mapProperty(item) {
   const typeKey = LOAI_NHA_MAP[item.loaiNha] || 'can-ho'
   const statusInfo = STATUS_MAP[item.trangThai] || { label: 'Mới', style: 'bg-blue-50 text-blue-700 border-blue-200' }
   return {
@@ -86,8 +159,9 @@ export default function TenantFindPropertyPage() {
   const [sortBy, setSortBy] = useState('moi-nhat')
   const [currentPage, setCurrentPage] = useState(1)
 
+  const [autoApplied, setAutoApplied] = useState(false)
+
   useEffect(() => {
-    setLoading(true)
     viewingService.getPublicProperties()
       .then(res => {
         setProperties((res?.data || []).map(mapProperty))
@@ -95,6 +169,45 @@ export default function TenantFindPropertyPage() {
       .catch(() => setProperties([]))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (autoApplied) return
+    khachHangService.me()
+      .then(res => {
+        const data = res?.data
+        if (!data || !data.nhuCauThue) return
+        try {
+          const prefs = JSON.parse(data.nhuCauThue)
+          const propertyTypes = prefs.propertyTypes || prefs.loaiBatDongSan || []
+          const districts = prefs.districts || prefs.khuVuc || []
+
+          if (propertyTypes.length > 0) {
+            const mapped = propertyTypes
+              .map(t => PREF_TYPE_TO_FILTER[t])
+              .filter(Boolean)
+            if (mapped.length > 0) setFilterType(mapped)
+          }
+          if (districts.length > 0) {
+            const mapped = districts
+              .map(resolveDistrictFilterValue)
+              .filter(Boolean)
+            if (mapped.length > 0) setFilterDistrict(mapped)
+          }
+          if (prefs.minPrice != null || prefs.maxPrice != null || prefs.nganSach) {
+            const budgetRange = prefs.nganSach ? parseBudgetRange(prefs.nganSach) : {}
+            const bestMatch = findBestPriceRange(
+              prefs.minPrice ?? budgetRange.minPrice,
+              prefs.maxPrice ?? budgetRange.maxPrice
+            )
+            if (bestMatch) setFilterPrice(bestMatch)
+          }
+          setAutoApplied(true)
+        } catch {
+          // ignore parse errors
+        }
+      })
+      .catch(() => {})
+  }, [autoApplied])
 
   const toggleType = (value) => {
     setFilterType(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value])
@@ -129,7 +242,11 @@ export default function TenantFindPropertyPage() {
       if (range) result = result.filter(p => p.priceRaw >= range.min && p.priceRaw < range.max)
     }
     if (filterDistrict.length > 0) {
-      result = result.filter(p => filterDistrict.some(d => p.location.includes(d)))
+      result = result.filter(p => filterDistrict.some(d => {
+        const district = QUAN_HUYEN_OPTIONS.find(o => o.value === d)
+        const location = normalizeText(p.location)
+        return location.includes(normalizeText(district?.label || d))
+      }))
     }
 
     switch (sortBy) {
