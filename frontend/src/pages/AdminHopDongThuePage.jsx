@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import contractService from '../services/contractService'
+import { normalizeInternalRole, ROLE_GROUPS } from '../config/roles'
 
 const STATUS_CONFIG = {
   cho_ky: { label: 'Chờ ký', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -790,6 +792,11 @@ function EmptyState() {
 }
 
 export default function AdminHopDongThuePage() {
+  const navigate = useNavigate()
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  const roleGroup = normalizeInternalRole(userInfo?.role)
+  const isNhanVienDaiLy = roleGroup === ROLE_GROUPS.AGENCY
+
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -952,6 +959,17 @@ export default function AdminHopDongThuePage() {
           <h1 className="text-2xl font-bold text-slate-800">Quản lý hợp đồng thuê</h1>
           <p className="text-slate-500 text-sm mt-1">Theo dõi và quản lý hợp đồng thuê bất động sản</p>
         </div>
+        {isNhanVienDaiLy && (
+          <button
+            onClick={() => navigate('/admin/hop-dong-thue/tao-moi')}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Tạo hợp đồng thuê
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-5 gap-4 mb-6">
