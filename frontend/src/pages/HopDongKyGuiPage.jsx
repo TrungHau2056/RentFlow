@@ -41,6 +41,7 @@ const WORKFLOW_MAP = {
 }
 
 function formatVND(amount) {
+  if (amount == null) return '—'
   return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ'
 }
 
@@ -113,78 +114,8 @@ function KPICard({ icon, label, value, color, bgColor, trend }) {
   )
 }
 
-function WorkflowTimeline({ currentStep }) {
-  return (
-    <div className="py-4">
-      <div className="flex items-center">
-        {WORKFLOW_STEPS.map((step, i) => {
-          const stepNum = i + 1
-          const isActive = stepNum <= currentStep
-          const isCurrent = stepNum === currentStep
-          const isLast = i === WORKFLOW_STEPS.length - 1
-          return (
-            <div key={step.key} className="flex items-center flex-1">
-              <div className="flex flex-col items-center">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                  isActive
-                    ? isCurrent ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-400'
-                }`}>
-                  {isActive && !isCurrent ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : stepNum}
-                </div>
-                <span className={`text-[10px] mt-1.5 text-center leading-tight whitespace-nowrap ${isCurrent ? 'text-amber-700 font-semibold' : isActive ? 'text-blue-600 font-medium' : 'text-slate-400'}`}>
-                  {step.label}
-                </span>
-              </div>
-              {!isLast && (
-                <div className={`flex-1 h-0.5 mx-1 rounded-full ${stepNum < currentStep ? 'bg-blue-500' : 'bg-slate-200'}`} />
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function DepositTimeline({ status }) {
-  const steps = [
-    { key: 'cho_duyet', label: 'Chờ nộp' },
-    { key: 'dang_giu', label: 'Đang giữ' },
-    { key: 'da_khau_tru', label: 'Khấu trừ' },
-    { key: 'da_hoan_tra', label: 'Hoàn trả' },
-  ]
-  const currentIdx = steps.findIndex(s => s.key === status)
-
-  return (
-    <div className="flex items-center gap-2">
-      {steps.map((step, i) => {
-        const isActive = i <= currentIdx
-        const isCurrent = i === currentIdx
-        return (
-          <div key={step.key} className="flex items-center gap-2 flex-1">
-            <div className="flex items-center gap-1.5">
-              <div className={`w-2.5 h-2.5 rounded-full ${isCurrent ? 'bg-amber-400 ring-2 ring-amber-100' : isActive ? 'bg-blue-500' : 'bg-slate-200'}`} />
-              <span className={`text-xs ${isCurrent ? 'text-amber-700 font-medium' : isActive ? 'text-blue-600' : 'text-slate-400'}`}>
-                {step.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={`flex-1 h-px ${i < currentIdx ? 'bg-blue-300' : 'bg-slate-200'}`} />
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 function ContractRow({ contract, isSelected, onSelect }) {
-  const status = STATUS_CONFIG[contract.status]
+  const status = TRANG_THAI_HOP_DONG[contract.trangThai] || TRANG_THAI_HOP_DONG.NHAP
   return (
     <div
       onClick={() => onSelect(contract.id)}
@@ -194,25 +125,24 @@ function ContractRow({ contract, isSelected, onSelect }) {
     >
       <div className="p-4 flex items-center gap-4">
         <div className="shrink-0 w-40">
-          <p className="font-mono text-sm font-semibold text-blue-600">{contract.maHopDong}</p>
-          <p className="text-xs text-on-surface-variant mt-0.5">{formatDate(contract.ngayKy)}</p>
+          <p className="font-mono text-sm font-semibold text-blue-600">#{String(contract.id).padStart(5, '0')}</p>
+          <p className="text-xs text-on-surface-variant mt-0.5">{contract.ngayKy ? formatDate(contract.ngayKy) : 'Chưa ký'}</p>
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-on-surface truncate">{contract.tenBDS}</p>
-          <p className="text-sm text-on-surface-variant truncate">{contract.diaChiBDS}</p>
+          <p className="font-semibold text-on-surface truncate">{contract.loaiBatDongSan || 'Bất động sản'} - {contract.diaChiBatDongSan}</p>
+          <p className="text-sm text-on-surface-variant truncate">NV: {contract.tenNhanVien || '—'}</p>
         </div>
 
         <div className="shrink-0 w-32 text-center">
-          <p className="text-sm font-medium text-on-surface">{contract.thoiHan}</p>
-          <p className="text-xs text-on-surface-variant">{formatDate(contract.ngayBatDau)} – {formatDate(contract.ngayKetThuc)}</p>
+          <p className="text-sm font-medium text-on-surface">
+            {contract.ngayBatDau ? `${formatDate(contract.ngayBatDau)}` : '—'}
+          </p>
+          <p className="text-xs text-on-surface-variant">{contract.ngayKetThuc ? formatDate(contract.ngayKetThuc) : '—'}</p>
         </div>
 
         <div className="shrink-0 w-36 text-right">
           <p className="text-sm font-semibold text-on-surface">{formatVND(contract.tienDamBao)}</p>
-          <span className={`text-xs font-medium ${DEPOSIT_STATUS[contract.tienDamBaoTrangThai]?.color}`}>
-            {DEPOSIT_STATUS[contract.tienDamBaoTrangThai]?.label}
-          </span>
         </div>
 
         <div className="shrink-0">
@@ -233,15 +163,15 @@ function ContractRow({ contract, isSelected, onSelect }) {
 
 function ContractDetail({ contract, onClose }) {
   if (!contract) return null
-  const status = STATUS_CONFIG[contract.status]
+  const status = TRANG_THAI_HOP_DONG[contract.trangThai] || TRANG_THAI_HOP_DONG.NHAP
 
   return (
     <div className="bg-white rounded-xl border border-outline-variant shadow-xl overflow-hidden sticky top-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-blue-100 text-xs font-medium mb-1">{contract.maHopDong}</p>
-            <h3 className="text-white font-bold text-lg">{contract.tenBDS}</h3>
+            <p className="text-blue-100 text-xs font-medium mb-1">#{String(contract.id).padStart(5, '0')}</p>
+            <h3 className="text-white font-bold text-lg">{contract.loaiBatDongSan || 'Bất động sản'}</h3>
             <span className={`inline-block mt-2 px-2.5 py-1 rounded-md text-xs font-medium border ${status.color}`}>
               ● {status.label}
             </span>
@@ -267,6 +197,10 @@ function ContractDetail({ contract, onClose }) {
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Thông tin bất động sản</h4>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-xs text-on-surface-variant">Địa chỉ</p>
+              <p className="text-sm font-medium text-on-surface">{contract.diaChiBatDongSan}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-on-surface-variant">Loại</p>
               <p className="text-sm font-medium text-on-surface">{contract.loaiBDS || '—'}</p>
             </div>
@@ -275,12 +209,8 @@ function ContractDetail({ contract, onClose }) {
               <p className="text-sm font-medium text-on-surface">{contract.dienTich || '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-on-surface-variant">Giá thuê đề xuất</p>
-              <p className="text-sm font-medium text-blue-600">{contract.giaThueDeXuat}</p>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-on-surface-variant">Phí ký gửi</p>
-              <p className="text-sm font-medium text-on-surface">{contract.phiKyGui}</p>
+              <p className="text-xs text-on-surface-variant">Tiền đảm bảo</p>
+              <p className="text-sm font-medium text-on-surface">{formatVND(contract.tienDamBao)}</p>
             </div>
           </div>
         </div>
@@ -289,20 +219,16 @@ function ContractDetail({ contract, onClose }) {
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Điều khoản ký gửi</h4>
           <div className="bg-slate-50 rounded-lg p-3 space-y-2">
             <div className="flex justify-between text-sm">
+              <span className="text-on-surface-variant">Ngày ký</span>
+              <span className="font-medium text-on-surface">{contract.ngayKy ? formatDate(contract.ngayKy) : '—'}</span>
+            </div>
+            <div className="flex justify-between text-sm">
               <span className="text-on-surface-variant">Ngày bắt đầu</span>
-              <span className="font-medium text-on-surface">{formatDate(contract.ngayBatDau)}</span>
+              <span className="font-medium text-on-surface">{contract.ngayBatDau ? formatDate(contract.ngayBatDau) : '—'}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-on-surface-variant">Ngày kết thúc</span>
-              <span className="font-medium text-on-surface">{formatDate(contract.ngayKetThuc)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-on-surface-variant">Thời hạn</span>
-              <span className="font-medium text-on-surface">{contract.thoiHan}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-on-surface-variant">Phí ký gửi</span>
-              <span className="font-medium text-on-surface">{contract.phiKyGui}</span>
+              <span className="font-medium text-on-surface">{contract.ngayKetThuc ? formatDate(contract.ngayKetThuc) : '—'}</span>
             </div>
           </div>
         </div>
@@ -339,10 +265,10 @@ function ContractDetail({ contract, onClose }) {
 
         <div className="flex gap-2 pt-2">
           <Link
-            to={`/dashboard/hop-dong-ky-gui/${contract.id}`}
+            to={`/dashboard/bat-dong-san/${contract.batDongSanId}`}
             className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-medium text-sm text-center hover:bg-blue-700 transition-colors"
           >
-            Xem chi tiết
+            Xem bất động sản
           </Link>
         </div>
       </div>
@@ -409,12 +335,12 @@ export default function HopDongKyGuiPage() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(c =>
-        c.maHopDong.toLowerCase().includes(q) ||
-        c.tenBDS.toLowerCase().includes(q) ||
-        c.diaChiBDS.toLowerCase().includes(q)
+        String(c.id).includes(q) ||
+        (c.diaChiBatDongSan && c.diaChiBatDongSan.toLowerCase().includes(q)) ||
+        (c.loaiBatDongSan && c.loaiBatDongSan.toLowerCase().includes(q))
       )
     }
-    if (filterStatus !== 'all') result = result.filter(c => c.status === filterStatus)
+    if (filterStatus !== 'all') result = result.filter(c => c.trangThai === filterStatus)
     return result
   }, [searchQuery, filterStatus, contracts])
 
@@ -469,15 +395,14 @@ export default function HopDongKyGuiPage() {
           value={kpiData.total}
           color="text-blue-600"
           bgColor="bg-blue-50"
-          trend={15}
+          trend={0}
         />
         <KPICard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-          label="Đang hiệu lực"
+          label="Đã ký / Hoàn thành"
           value={kpiData.active}
           color="text-emerald-600"
           bgColor="bg-emerald-50"
-          trend={10}
         />
         <KPICard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -485,15 +410,13 @@ export default function HopDongKyGuiPage() {
           value={kpiData.pending}
           color="text-amber-600"
           bgColor="bg-amber-50"
-          trend={0}
         />
         <KPICard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>}
-          label="Đã kết thúc"
-          value={kpiData.ended}
+          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>}
+          label="Bản nháp"
+          value={kpiData.draft}
           color="text-slate-600"
           bgColor="bg-slate-50"
-          trend={-5}
         />
       </div>
 
@@ -505,7 +428,7 @@ export default function HopDongKyGuiPage() {
             </svg>
             <input
               type="text"
-              placeholder="Tìm kiếm mã hợp đồng, bất động sản..."
+              placeholder="Tìm kiếm mã hợp đồng, địa chỉ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface placeholder:text-outline focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none text-sm"
@@ -518,7 +441,7 @@ export default function HopDongKyGuiPage() {
             className="px-3 py-2.5 rounded-lg border border-outline-variant bg-white text-sm text-on-surface focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
           >
             <option value="all">Tất cả trạng thái</option>
-            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+            {Object.entries(TRANG_THAI_HOP_DONG).map(([key, cfg]) => (
               <option key={key} value={key}>{cfg.label}</option>
             ))}
           </select>

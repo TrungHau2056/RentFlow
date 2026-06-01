@@ -37,11 +37,27 @@ public class HopDongKyGuiService {
         return hopDongKyGuiRepository.findAll().stream().map(this::toResponseDTO).toList();
     }
 
+    public List<HopDongKyGuiResponseDTO> getByCurrentChuNha() {
+        TaiKhoan currentUser = securityUtils.getCurrentUser();
+        ChuNha chuNha = currentUser.getChuNhaSet().stream().findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
+        return hopDongKyGuiRepository.findByChuNha(chuNha).stream()
+                .map(this::toResponseDTO).toList();
+    }
+
     public HopDongKyGuiResponseDTO getById(Long id) {
         HopDongKyGui hd = hopDongKyGuiRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.HOP_DONG_NOT_FOUND));
         verifyChuNhaOwnership(hd.getChuNha().getId());
         return toResponseDTO(hd);
+    }
+
+    public List<HopDongKyGuiResponseDTO> getByBatDongSan(Long batDongSanId) {
+        BatDongSan bds = batDongSanRepository.findById(batDongSanId)
+                .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        verifyChuNhaOwnership(bds.getChuNha().getId());
+        return hopDongKyGuiRepository.findByBatDongSan(bds).stream()
+                .map(this::toResponseDTO).toList();
     }
 
     public HopDongKyGuiResponseDTO create(HopDongKyGuiRequestDTO dto) {
@@ -147,6 +163,7 @@ public class HopDongKyGuiService {
                 .tenChuNha(hd.getChuNha().getHoTen())
                 .batDongSanId(hd.getBatDongSan().getId())
                 .diaChiBatDongSan(hd.getBatDongSan().getDiaChi())
+                .loaiBatDongSan(hd.getBatDongSan().getLoaiNha())
                 .nhanVienId(hd.getNhanVien().getId())
                 .tenNhanVien(hd.getNhanVien().getHoTen())
                 .ngayKy(hd.getNgayKy())

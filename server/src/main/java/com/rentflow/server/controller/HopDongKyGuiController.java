@@ -35,6 +35,28 @@ public class HopDongKyGuiController {
                 .build();
     }
 
+    @GetMapping("/chu-nha/me")
+    @PreAuthorize("hasRole('CHU_NHA')")
+    @Operation(summary = "Hợp đồng theo chủ nhà hiện tại", description = "Lấy hợp đồng ký gửi của chủ nhà đang đăng nhập")
+    public ApiSuccessResponse<List<HopDongKyGuiResponseDTO>> getByCurrentChuNha() {
+        return ApiSuccessResponse.<List<HopDongKyGuiResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get consignment contracts for current owner successfully")
+                .data(hopDongKyGuiService.getByCurrentChuNha())
+                .build();
+    }
+
+    @GetMapping("/by-bat-dong-san/{batDongSanId}")
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'CHU_NHA')")
+    @Operation(summary = "Hợp đồng theo BĐS", description = "Lấy hợp đồng ký gửi theo bất động sản")
+    public ApiSuccessResponse<List<HopDongKyGuiResponseDTO>> getByBatDongSan(@PathVariable Long batDongSanId) {
+        return ApiSuccessResponse.<List<HopDongKyGuiResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get consignment contracts by property successfully")
+                .data(hopDongKyGuiService.getByBatDongSan(batDongSanId))
+                .build();
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT', 'CHU_NHA')")
     @Operation(summary = "Chi tiết hợp đồng ký gửi", description = "Lấy thông tin hợp đồng ký gửi theo ID")

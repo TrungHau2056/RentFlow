@@ -84,6 +84,7 @@ public class KhachHangService {
                 .nhuCauThue(kh.getNhuCauThue())
                 .tieuChiTimNha(kh.getTieuChiTimNha())
                 .nhuCauThueChiTiet(kh.getNhuCauThueChiTiet())
+                .nhanVienMoiGioiId(kh.getNhanVienMoiGioi() != null ? kh.getNhanVienMoiGioi().getId() : null)
                 .build();
     }
 }

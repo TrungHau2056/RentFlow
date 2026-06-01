@@ -1,51 +1,49 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import lichHenKhaoSatService from '../services/lichHenKhaoSatService'
+import batDongSanService from '../services/batDongSanService'
 
 const STATUS_CONFIG = {
-  cho_xac_nhan: {
+  CHO_XAC_NHAN: {
     label: 'Chờ xác nhận',
     className: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
     dot: 'bg-amber-500',
   },
-  da_xac_nhan: {
+  DA_XAC_NHAN: {
     label: 'Đã xác nhận',
     className: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
     dot: 'bg-blue-500',
   },
-  hoan_thanh: {
+  DA_HOAN_THANH: {
     label: 'Hoàn thành',
     className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
     dot: 'bg-emerald-500',
   },
-  da_huy: {
+  DA_HUY: {
     label: 'Hủy',
     className: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
     dot: 'bg-rose-500',
   },
 }
 
-const WORKFLOW_STEPS = [
-  'Đăng ký ký gửi',
-  'Tạo lịch khảo sát',
-  'Đã khảo sát',
-  'Chờ hợp đồng',
-  'Hoàn tất',
-]
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
 
-const WEEK_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
-const MONTH_DAYS = Array.from({ length: 35 }, (_, index) => index + 1)
+function formatTime(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
 
-function formatDate(date) {
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(date))
+function formatDateTimeLocal(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function StatusBadge({ status }) {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.cho_xac_nhan
-
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.CHO_XAC_NHAN
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${config.className}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
@@ -89,65 +87,30 @@ function ActionButton({ label, variant = 'secondary', children, onClick, disable
   )
 }
 
-function CalendarEvent({ survey, onOpen }) {
-  const config = STATUS_CONFIG[survey.status]
-
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(survey)}
-      className={`w-full truncate rounded-md px-2 py-1 text-left text-xs font-semibold ${config.className}`}
-    >
-      {survey.time} · {survey.property}
-    </button>
-  )
-}
-
-function CalendarView({ mode, surveys, onOpen }) {
-  const surveysByDate = useMemo(() => (
-    surveys.reduce((acc, survey) => {
-      acc[survey.date] = acc[survey.date] || []
-      acc[survey.date].push(survey)
-      return acc
-    }, {})
-  ), [surveys])
-
-  const today = new Date()
-  const todayStr = today.toISOString().slice(0, 10)
-  const daySurveys = surveysByDate[todayStr] || []
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() - today.getDay() + 1 + i)
-    return d.toISOString().slice(0, 10)
-  })
-
-  if (mode === 'day') {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-4 py-3">
-          <h2 className="text-base font-bold text-slate-900">Day View · {today.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</h2>
-          <p className="text-sm text-slate-500">Lịch khảo sát trong ngày</p>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00'].map((slot) => {
-            const slotSurveys = daySurveys.filter((survey) => survey.time.startsWith(slot.slice(0, 2)))
-
-            return (
-              <div key={slot} className="grid grid-cols-[72px_minmax(0,1fr)] gap-3 px-4 py-3">
-                <span className="text-xs font-semibold text-slate-400">{slot}</span>
-                <div className="space-y-2">
-                  {slotSurveys.length > 0 ? (
-                    slotSurveys.map((survey) => <CalendarEvent key={survey.id} survey={survey} onOpen={onOpen} />)
-                  ) : (
-                    <div className="h-7 rounded-md border border-dashed border-slate-200" />
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    )
+  const handleSubmit = async () => {
+    const bdsId = property ? Number(batDongSanId) : Number(selectedBdsId)
+    if (!bdsId) {
+      setError('Vui lòng chọn bất động sản')
+      return
+    }
+    if (!thoiGian) {
+      setError('Vui lòng chọn thời gian khảo sát')
+      return
+    }
+    try {
+      setSubmitting(true)
+      setError('')
+      await lichHenKhaoSatService.tao({
+        batDongSanId: bdsId,
+        thoiGian: new Date(thoiGian).toISOString(),
+      })
+      onCreated()
+      navigate('/admin/lich-khao-sat')
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Tạo lịch thất bại')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (mode === 'week') {
@@ -440,8 +403,63 @@ function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange })
               <div className="mt-3 rounded-lg border border-slate-200 p-4">
                 <WorkflowTimeline currentStep={survey.workflowStep} />
               </div>
-            </section>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-1.5">Bất động sản</label>
+              <select
+                value={selectedBdsId}
+                onChange={(e) => setSelectedBdsId(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+              >
+                <option value="">Chọn bất động sản</option>
+                {propertyList.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.diaChi} ({p.loaiNha || '—'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-1.5">Thời gian khảo sát</label>
+            <input
+              type="datetime-local"
+              value={thoiGian}
+              onChange={(e) => setThoiGian(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+            />
           </div>
+
+          <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Nhân viên phụ trách</p>
+            <p className="text-sm font-medium text-slate-800">Bạn (người tạo lịch)</p>
+          </div>
+
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-slate-200 px-5 py-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {submitting ? 'Đang tạo...' : 'Tạo lịch khảo sát'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Hủy
+          </button>
         </div>
       </aside>
     </>
@@ -449,7 +467,8 @@ function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange })
 }
 
 export default function AdminLichKhaoSatPage() {
-  const [calendarMode, setCalendarMode] = useState('week')
+  const { batDongSanId } = useParams()
+  const navigate = useNavigate()
   const [selectedSurvey, setSelectedSurvey] = useState(null)
   const [surveys, setSurveys] = useState([])
   const [loading, setLoading] = useState(true)
@@ -499,12 +518,26 @@ export default function AdminLichKhaoSatPage() {
     }
   }
 
+  useEffect(() => {
+    if (batDongSanId) {
+      setShowCreate(true)
+      batDongSanService.chiTiet(Number(batDongSanId))
+        .then((res) => setCreateProperty(res.data))
+        .catch(() => {})
+    }
+  }, [batDongSanId])
+
+  const handleCreated = () => {
+    setShowCreate(false)
+    fetchSurveys()
+  }
+
   const kpis = useMemo(() => [
     { label: 'Tổng lịch khảo sát', value: surveys.length, note: 'Toàn bộ lịch trong pipeline', accent: 'bg-slate-200' },
-    { label: 'Chờ xác nhận', value: surveys.filter((survey) => survey.status === 'cho_xac_nhan').length, note: 'Cần gọi xác nhận', accent: 'bg-amber-100' },
-    { label: 'Đã xác nhận', value: surveys.filter((survey) => survey.status === 'da_xac_nhan').length, note: 'Sẵn sàng khảo sát', accent: 'bg-blue-100' },
-    { label: 'Hoàn thành', value: surveys.filter((survey) => survey.status === 'hoan_thanh').length, note: 'Đã có kết quả khảo sát', accent: 'bg-emerald-100' },
-    { label: 'Hủy', value: surveys.filter((survey) => survey.status === 'da_huy').length, note: 'Cần xử lý lại lịch', accent: 'bg-rose-100' },
+    { label: 'Chờ xác nhận', value: surveys.filter((s) => s.trangThai === 'CHO_XAC_NHAN').length, note: 'Cần gọi xác nhận', accent: 'bg-amber-100' },
+    { label: 'Đã xác nhận', value: surveys.filter((s) => s.trangThai === 'DA_XAC_NHAN').length, note: 'Sẵn sàng khảo sát', accent: 'bg-blue-100' },
+    { label: 'Hoàn thành', value: surveys.filter((s) => s.trangThai === 'DA_HOAN_THANH').length, note: 'Đã có kết quả khảo sát', accent: 'bg-emerald-100' },
+    { label: 'Hủy', value: surveys.filter((s) => s.trangThai === 'DA_HUY').length, note: 'Cần xử lý lại lịch', accent: 'bg-rose-100' },
   ], [surveys])
 
   if (loading) return (
@@ -531,7 +564,10 @@ export default function AdminLichKhaoSatPage() {
             <h1 className="text-2xl font-bold text-slate-900">Lịch khảo sát</h1>
             <p className="mt-1 text-sm text-slate-500">Quản lý lịch hẹn khảo sát bất động sản</p>
           </div>
-          <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -545,46 +581,16 @@ export default function AdminLichKhaoSatPage() {
           ))}
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Calendar View</h2>
-              <p className="text-sm text-slate-500">Lịch hiện đại theo ngày, tuần, tháng giống Google Calendar</p>
-            </div>
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-              {[
-                ['day', 'Day View'],
-                ['week', 'Week View'],
-                ['month', 'Month View'],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setCalendarMode(value)}
-                  className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
-                    calendarMode === value ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <CalendarView mode={calendarMode} surveys={surveys} onOpen={setSelectedSurvey} />
-
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-4 py-3">
             <h2 className="text-base font-bold text-slate-900">Danh sách lịch khảo sát</h2>
             <p className="text-sm text-slate-500">Theo dõi nhân viên, chủ nhà và trạng thái xử lý</p>
           </div>
-
           <div className="overflow-x-auto">
             <table className="min-w-[960px] w-full divide-y divide-slate-200 text-left">
               <thead className="bg-slate-50">
                 <tr>
-                  {['Mã lịch', 'Bất động sản', 'Chủ nhà', 'Nhân viên khảo sát', 'Ngày giờ', 'Trạng thái'].map((column) => (
+                  {['Mã lịch', 'Bất động sản', 'Chủ nhà', 'Nhân viên khảo sát', 'Thời gian', 'Trạng thái'].map((column) => (
                     <th key={column} className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
                       {column}
                     </th>
@@ -594,22 +600,24 @@ export default function AdminLichKhaoSatPage() {
               <tbody className="divide-y divide-slate-100 bg-white">
                 {surveys.map((survey) => (
                   <tr key={survey.id} className="transition hover:bg-slate-50">
-                    <td className="px-4 py-4 text-sm font-bold text-slate-900">{survey.id}</td>
+                    <td className="px-4 py-4 text-sm font-bold text-slate-900">#{String(survey.id).padStart(4, '0')}</td>
                     <td className="px-4 py-4">
                       <button
                         type="button"
                         onClick={() => setSelectedSurvey(survey)}
                         className="text-left text-sm font-bold text-slate-900 hover:text-blue-700"
                       >
-                        {survey.property}
-                        <span className="mt-1 block text-xs font-medium text-slate-500">{survey.address}</span>
+                        {survey.diaChiBatDongSan}
+                        <span className="mt-1 block text-xs font-medium text-slate-500">#{String(survey.batDongSanId).padStart(4, '0')}</span>
                       </button>
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-700">{survey.owner}</td>
-                    <td className="px-4 py-4 text-sm text-slate-700">{survey.inspector}</td>
-                    <td className="px-4 py-4 text-sm font-semibold text-slate-900">{formatDate(survey.date)} · {survey.time}</td>
+                    <td className="px-4 py-4 text-sm text-slate-700">{survey.tenChuNha}</td>
+                    <td className="px-4 py-4 text-sm text-slate-700">{survey.tenNhanVien}</td>
+                    <td className="px-4 py-4 text-sm font-semibold text-slate-900">
+                      {formatDate(survey.thoiGian)} · {formatTime(survey.thoiGian)}
+                    </td>
                     <td className="px-4 py-4">
-                      <StatusBadge status={survey.status} />
+                      <StatusBadge status={survey.trangThai} />
                     </td>
                   </tr>
                 ))}

@@ -31,6 +31,16 @@ const lichHenKhaoSatService = {
     return response.data;
   },
 
+  async theoBatDongSan(batDongSanId) {
+    const response = await api.get(`/api/lich-hen-khao-sat/bat-dong-san/${batDongSanId}`);
+    return response.data;
+  },
+
+  async theoChuNhaHienTai() {
+    const response = await api.get('/api/lich-hen-khao-sat/chu-nha/me');
+    return response.data;
+  },
+
   async xoa(id) {
     const response = await api.delete(`/api/lich-hen-khao-sat/${id}`);
     return response.data;

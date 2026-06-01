@@ -28,6 +28,11 @@ const batDongSanService = {
     return response.data;
   },
 
+  async capNhatChiTiet(id, data) {
+    const response = await api.put(`/api/bat-dong-san-cong-khai/${id}/chi-tiet`, data);
+    return response.data;
+  },
+
   async capNhat(id, data) {
     const response = await api.put(`/api/bat-dong-san/${id}`, data);
     return response.data;

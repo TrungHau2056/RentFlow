@@ -34,6 +34,17 @@ public class ChuNhaController {
                 .build();
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('CHU_NHA')")
+    @Operation(summary = "Chủ nhà hiện tại", description = "Lấy thông tin chủ nhà của người dùng đang đăng nhập")
+    public ApiSuccessResponse<ChuNhaResponseDTO> getCurrent() {
+        return ApiSuccessResponse.<ChuNhaResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get current landlord successfully")
+                .data(chuNhaService.getCurrentChuNha())
+                .build();
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'CHU_NHA')")
     @Operation(summary = "Chi tiết chủ nhà", description = "Lấy thông tin chủ nhà theo ID")

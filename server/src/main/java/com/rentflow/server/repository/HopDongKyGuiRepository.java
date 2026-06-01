@@ -1,5 +1,6 @@
 package com.rentflow.server.repository;
 
+import com.rentflow.server.entity.BatDongSan;
 import com.rentflow.server.entity.ChuNha;
 import com.rentflow.server.entity.HopDongKyGui;
 import com.rentflow.server.entity.NhanVien;
@@ -16,6 +17,7 @@ import java.util.Optional;
 public interface HopDongKyGuiRepository extends JpaRepository<HopDongKyGui, Long> {
     List<HopDongKyGui> findByChuNha(ChuNha chuNha);
     List<HopDongKyGui> findByNhanVien(NhanVien nhanVien);
+    List<HopDongKyGui> findByBatDongSan(BatDongSan batDongSan);
     List<HopDongKyGui> findByTrangThai(String trangThai);
 
     long countByTrangThai(String trangThai);

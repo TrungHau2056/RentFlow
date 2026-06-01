@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import viewingService from '../services/viewingService'
+import lichHenKhaoSatService from '../services/lichHenKhaoSatService'
 
 const STATUS_CONFIG = {
   cho_xac_nhan: { label: 'Chờ xác nhận', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -57,15 +57,11 @@ function mapSurvey(item) {
     ngayKhaoSat,
     gioKhaoSat,
     diaChi: item.diaChiBatDongSan || '',
+    tenChuNha: item.tenChuNha || '',
     nhanVien: item.tenNhanVien || '',
-    sdtNV: '',
-    chucVu: '',
-    status: STATUS_MAP[item.trangThai] || item.trangThai?.toLowerCase() || 'cho_xac_nhan',
-    ghiChu: '',
-    ketQua: null,
-    hinhAnh: [],
-    workflowStep: 2,
-    ngayDangKy: ngayKhaoSat,
+    trangThai: STATUS_MAP[item.trangThai] || item.trangThai?.toLowerCase() || 'cho_xac_nhan',
+    ketQuaKhaoSat: item.ketQuaKhaoSat || null,
+    workflowStep: item.trangThai === 'DA_HOAN_THANH' ? 3 : item.trangThai === 'DA_XAC_NHAN' ? 2 : 1,
   }
 }
 
@@ -122,7 +118,7 @@ function WorkflowTimeline({ currentStep }) {
 }
 
 function CalendarView({ surveys, onSelectDate }) {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 5, 1))
+  const [currentDate, setCurrentDate] = useState(new Date())
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -159,7 +155,6 @@ function CalendarView({ surveys, onSelectDate }) {
 
   return (
     <div className="bg-white rounded-xl border border-outline-variant overflow-hidden">
-      {/* Calendar Header */}
       <div className="flex items-center justify-between p-4 border-b border-outline-variant">
         <h3 className="text-base font-semibold text-on-surface capitalize">{monthName}</h3>
         <div className="flex items-center gap-1">
@@ -176,14 +171,12 @@ function CalendarView({ surveys, onSelectDate }) {
         </div>
       </div>
 
-      {/* Day Headers */}
       <div className="grid grid-cols-7 border-b border-outline-variant">
         {DAYS_VN.map(d => (
           <div key={d} className="py-2 text-center text-xs font-semibold text-on-surface-variant">{d}</div>
         ))}
       </div>
 
-      {/* Calendar Grid */}
       <div className="grid grid-cols-7">
         {cells.map((cell, i) => {
           const dateStr = cell.isCurrentMonth
@@ -206,7 +199,7 @@ function CalendarView({ surveys, onSelectDate }) {
                 {cell.day}
               </div>
               {daySurveys.map(s => {
-                const cfg = STATUS_CONFIG[s.status]
+                const cfg = STATUS_CONFIG[s.trangThai]
                 return (
                   <div key={s.id} className={`px-1.5 py-0.5 rounded text-[10px] font-medium mb-0.5 truncate ${cfg.color}`}>
                     {s.gioKhaoSat} {s.tenBDS.split(' ').slice(0, 2).join(' ')}
@@ -222,7 +215,7 @@ function CalendarView({ surveys, onSelectDate }) {
 }
 
 function SurveyCard({ survey, isSelected, onSelect }) {
-  const status = STATUS_CONFIG[survey.status]
+  const status = STATUS_CONFIG[survey.trangThai]
   return (
     <div
       onClick={() => onSelect(survey.id)}
@@ -258,20 +251,19 @@ function SurveyCard({ survey, isSelected, onSelect }) {
           <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
-          <span>{survey.nhanVien} – {survey.chucVu}</span>
+          <span>{survey.nhanVien}</span>
         </div>
       </div>
     </div>
   )
 }
 
-function SurveyDetail({ survey, onClose }) {
+function SurveyDetail({ survey, onClose, onConfirm, onCancel, loading }) {
   if (!survey) return null
-  const status = STATUS_CONFIG[survey.status]
+  const status = STATUS_CONFIG[survey.trangThai]
 
   return (
-    <div className="bg-white rounded-xl border border-outline-variant shadow-xl overflow-hidden sticky top-6">
-      {/* Header */}
+    <div className="bg-white rounded-xl border border-outline-variant shadow-xl overflow-hidden">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-5">
         <div className="flex items-start justify-between">
           <div>
@@ -293,7 +285,6 @@ function SurveyDetail({ survey, onClose }) {
       </div>
 
       <div className="p-5 space-y-5 max-h-[calc(100vh-220px)] overflow-y-auto">
-        {/* Date & Time */}
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-blue-600 flex flex-col items-center justify-center text-white shrink-0">
@@ -307,33 +298,23 @@ function SurveyDetail({ survey, onClose }) {
           </div>
         </div>
 
-        {/* Workflow */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Tiến trình xử lý</h4>
           <WorkflowTimeline currentStep={survey.workflowStep} />
         </div>
 
-        {/* Staff Info */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Nhân viên phụ trách</h4>
           <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-4">
             <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-              <span className="text-blue-600 font-semibold text-sm">{survey.nhanVien.charAt(0)}</span>
+              <span className="text-blue-600 font-semibold text-sm">{survey.nhanVien ? survey.nhanVien.charAt(0) : 'N'}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-on-surface">{survey.nhanVien}</p>
-              <p className="text-sm text-on-surface-variant">{survey.chucVu}</p>
+              <p className="font-semibold text-on-surface">{survey.nhanVien || 'Chưa phân công'}</p>
             </div>
-            <a href={`tel:${survey.sdtNV.replace(/\s/g, '')}`} className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition-colors" title={survey.sdtNV}>
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </a>
           </div>
-          <p className="text-xs text-on-surface-variant mt-1.5 ml-1">SĐT: {survey.sdtNV}</p>
         </div>
 
-        {/* Address */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Địa chỉ khảo sát</h4>
           <div className="bg-slate-50 rounded-lg p-4">
@@ -347,98 +328,39 @@ function SurveyDetail({ survey, onClose }) {
           </div>
         </div>
 
-        {/* Notes */}
-        {survey.ghiChu && (
-          <div>
-            <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Ghi chú khảo sát</h4>
-            <p className="text-sm text-on-surface-variant leading-relaxed bg-amber-50 p-4 rounded-lg border border-amber-100">
-              {survey.ghiChu}
-            </p>
-          </div>
-        )}
-
-        {/* Cancel Reason */}
-        {survey.lyDoHuy && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">Lý do hủy</h4>
-            <p className="text-sm text-red-600">{survey.lyDoHuy}</p>
-          </div>
-        )}
-
-        {/* Survey Result */}
-        {survey.ketQua && (
+        {survey.ketQuaKhaoSat && (
           <div>
             <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Kết quả khảo sát</h4>
-            <div className="space-y-3">
-              {/* Rating */}
-              <div className="flex items-center gap-3 bg-emerald-50 rounded-lg p-4 border border-emerald-100">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  survey.ketQua.danhGia === 'Xuất sắc' ? 'bg-emerald-500' :
-                  survey.ketQua.danhGia === 'Tốt' ? 'bg-blue-500' : 'bg-amber-500'
-                }`}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Đánh giá: {survey.ketQua.danhGia}</p>
-                  <p className="text-xs text-on-surface-variant">Trạng thái: {survey.ketQua.trangThaiXuLy}</p>
-                </div>
-              </div>
-
-              {/* Detail */}
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Chi tiết</p>
-                <p className="text-sm text-on-surface-variant leading-relaxed">{survey.ketQua.chiTiet}</p>
-              </div>
-
-              {/* Recommendation */}
-              <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Khuyến nghị</p>
-                <p className="text-sm text-blue-800 leading-relaxed">{survey.ketQua.khuyenNghi}</p>
-              </div>
-
-              {/* Photos */}
-              {survey.ketQua.hinhAnh?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Hình ảnh khảo sát</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {survey.ketQua.hinhAnh.map((img, i) => (
-                      <img key={i} src={img} alt={`Khảo sát ${i + 1}`} className="w-full h-24 object-cover rounded-lg" />
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+              <p className="text-sm text-emerald-800">{survey.ketQuaKhaoSat}</p>
             </div>
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex gap-2 pt-2">
-          {survey.status === 'cho_xac_nhan' && (
+          {survey.trangThai === 'cho_xac_nhan' && (
             <>
-              <button className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors">
-                Xác nhận lịch
+              <button
+                onClick={() => onConfirm(survey.id)}
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Đang xử lý...' : 'Xác nhận lịch'}
               </button>
-              <button className="flex-1 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant font-medium text-sm hover:bg-slate-50 transition-colors">
+              <button className="flex-1 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant font-medium text-sm hover:bg-slate-50 transition-colors" disabled={loading}>
                 Đổi lịch
               </button>
             </>
           )}
-          {(survey.status === 'cho_xac_nhan' || survey.status === 'da_xac_nhan') && (
-            <button className="py-2.5 px-4 rounded-lg border border-red-200 text-red-600 font-medium text-sm hover:bg-red-50 transition-colors">
-              Hủy lịch
+          {(survey.trangThai === 'cho_xac_nhan' || survey.trangThai === 'da_xac_nhan') && (
+            <button
+              onClick={() => onCancel(survey.id)}
+              disabled={loading}
+              className="py-2.5 px-4 rounded-lg border border-red-200 text-red-600 font-medium text-sm hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Đang xử lý...' : 'Hủy lịch'}
             </button>
           )}
-          <a
-            href={`tel:${survey.sdtNV.replace(/\s/g, '')}`}
-            className="py-2.5 px-4 rounded-lg border border-outline-variant text-on-surface-variant font-medium text-sm hover:bg-slate-50 transition-colors"
-            title="Liên hệ nhân viên"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-          </a>
         </div>
       </div>
     </div>
@@ -479,10 +401,11 @@ export default function LichKhaoSatPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [surveys, setSurveys] = useState([])
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState(false)
 
-  useEffect(() => {
+  const fetchData = () => {
     setLoading(true)
-    viewingService.getSurveyAppointments()
+    lichHenKhaoSatService.theoChuNhaHienTai()
       .then(res => {
         if (res?.data) {
           setSurveys(res.data.map(mapSurvey))
@@ -490,11 +413,31 @@ export default function LichKhaoSatPage() {
       })
       .catch(() => setSurveys([]))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
   }, [])
+
+  const handleConfirm = (id) => {
+    setActionLoading(true)
+    lichHenKhaoSatService.capNhatTrangThai(id, 'DA_XAC_NHAN')
+      .then(() => fetchData())
+      .catch(() => {})
+      .finally(() => setActionLoading(false))
+  }
+
+  const handleCancel = (id) => {
+    setActionLoading(true)
+    lichHenKhaoSatService.capNhatTrangThai(id, 'DA_HUY')
+      .then(() => fetchData())
+      .catch(() => {})
+      .finally(() => setActionLoading(false))
+  }
 
   const filtered = useMemo(() => {
     let result = [...surveys]
-    if (activeTab !== 'all') result = result.filter(s => s.status === activeTab)
+    if (activeTab !== 'all') result = result.filter(s => s.trangThai === activeTab)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(s =>
@@ -508,14 +451,14 @@ export default function LichKhaoSatPage() {
 
   const kpiData = useMemo(() => ({
     total: surveys.length,
-    choXacNhan: surveys.filter(s => s.status === 'cho_xac_nhan').length,
-    daXacNhan: surveys.filter(s => s.status === 'da_xac_nhan').length,
-    daHoanThanh: surveys.filter(s => s.status === 'da_hoan_thanh').length,
+    choXacNhan: surveys.filter(s => s.trangThai === 'cho_xac_nhan').length,
+    daXacNhan: surveys.filter(s => s.trangThai === 'da_xac_nhan').length,
+    daHoanThanh: surveys.filter(s => s.trangThai === 'da_hoan_thanh').length,
   }), [surveys])
 
   const selectedSurvey = selectedId ? surveys.find(s => s.id === selectedId) : null
 
-  if (loading) {
+  if (loading && surveys.length === 0) {
     return (
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center justify-center py-20">
@@ -527,13 +470,11 @@ export default function LichKhaoSatPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto">
-      {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-on-surface">Lịch khảo sát</h1>
         <p className="text-on-surface-variant text-sm mt-1">Theo dõi lịch hẹn khảo sát bất động sản với đại lý</p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <KPICard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
@@ -565,10 +506,8 @@ export default function LichKhaoSatPage() {
         />
       </div>
 
-      {/* Toolbar */}
       <div className="bg-white rounded-xl border border-outline-variant p-4 mb-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Tabs */}
           <div className="flex items-center gap-1">
             {TAB_OPTIONS.map(tab => (
               <button
@@ -586,7 +525,6 @@ export default function LichKhaoSatPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Search */}
             <div className="relative min-w-[220px]">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -600,7 +538,6 @@ export default function LichKhaoSatPage() {
               />
             </div>
 
-            {/* View Toggle */}
             <div className="flex items-center border border-outline-variant rounded-lg overflow-hidden">
               <button
                 onClick={() => setViewMode('list')}
@@ -625,14 +562,12 @@ export default function LichKhaoSatPage() {
         </div>
       </div>
 
-      {/* Content */}
       {filtered.length === 0 ? (
         <EmptyState />
       ) : viewMode === 'calendar' ? (
         <CalendarView surveys={filtered} onSelectDate={() => setViewMode('list')} />
       ) : (
         <div className="flex gap-6">
-          {/* Survey List */}
           <div className="flex-1">
             <div className="grid gap-4 md:grid-cols-2">
               {filtered.map(survey => (
@@ -646,10 +581,18 @@ export default function LichKhaoSatPage() {
             </div>
           </div>
 
-          {/* Detail Panel */}
           {selectedSurvey && (
-            <div className="w-[420px] shrink-0 hidden xl:block">
-              <SurveyDetail survey={selectedSurvey} onClose={() => setSelectedId(null)} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedId(null)}>
+              <div className="fixed inset-0 bg-black/40" />
+              <div className="relative w-full max-w-[460px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <SurveyDetail
+                  survey={selectedSurvey}
+                  onClose={() => setSelectedId(null)}
+                  onConfirm={handleConfirm}
+                  onCancel={handleCancel}
+                  loading={actionLoading}
+                />
+              </div>
             </div>
           )}
         </div>

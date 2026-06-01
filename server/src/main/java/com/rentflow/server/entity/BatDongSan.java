@@ -2,7 +2,9 @@ package com.rentflow.server.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,6 +53,10 @@ public class BatDongSan {
 
     @Column(name = "trang_thai")
     private String trangThai;
+
+    @CreationTimestamp
+    @Column(name = "ngay_tao", updatable = false)
+    private LocalDateTime ngayTao;
 
     @OneToMany(mappedBy = "batDongSan")
     private Set<HopDongKyGui> hopDongKyGuiSet = new HashSet<>();

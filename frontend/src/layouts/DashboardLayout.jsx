@@ -4,22 +4,16 @@ import { useState } from 'react'
 import Header from '../components/Header'
 
 const MENU_ITEMS = [
-  { path: '/dashboard', label: 'Tổng quan', icon: 'dashboard' },
   { path: '/dashboard/bat-dong-san', label: 'Nhà ký gửi', icon: 'building' },
   { path: '/dashboard/bat-dong-san/dang-ky', label: 'Đăng ký ký gửi', icon: 'plus' },
   { path: '/dashboard/hop-dong', label: 'Hợp đồng ký gửi', icon: 'contract' },
   { path: '/dashboard/tien-dam-bao', label: 'Tiền đảm bảo', icon: 'money' },
   { path: '/dashboard/lich-khao-sat', label: 'Lịch khảo sát', icon: 'calendar' },
   { path: '/dashboard/thong-bao', label: 'Thông báo', icon: 'bell' },
-  { path: '/dashboard/ho-so', label: 'Hồ sơ cá nhân', icon: 'user' },
 ]
 
 const ICONS = {
-  dashboard: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-    </svg>
-  ),
+
   building: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />

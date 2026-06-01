@@ -79,7 +79,7 @@ export default function LoginPage() {
         if (rememberMe) localStorage.setItem('rememberedIdentifier', normalizedIdentifier)
         else localStorage.removeItem('rememberedIdentifier')
         if (isInternalAdminRole(userInfo?.role)) navigate('/admin')
-        else if (userInfo?.role === 'CHU_NHA') navigate('/dashboard')
+        else if (userInfo?.role === 'CHU_NHA') navigate('/dashboard/bat-dong-san')
         else if (userInfo?.role === 'KHACH_HANG') navigate('/tenant')
         else navigate('/')
         setLoading(false)
@@ -103,7 +103,7 @@ export default function LoginPage() {
 
       const role = userInfo?.role
       if (isInternalAdminRole(role)) navigate('/admin')
-      else if (role === 'CHU_NHA') navigate('/dashboard')
+      else if (role === 'CHU_NHA') navigate('/dashboard/bat-dong-san')
       else if (role === 'KHACH_HANG') navigate('/tenant')
       else navigate('/')
     } catch (error) {

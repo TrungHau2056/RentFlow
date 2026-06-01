@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import HomePage from './pages/HomePage'
-import DashboardPage from './pages/DashboardPage'
+
 import BatDongSanPage from './pages/BatDongSanPage'
 import QuanLyBatDongSanPage from './pages/QuanLyBatDongSanPage'
 import DangKyKyGuiPage from './pages/DangKyKyGuiPage'
@@ -57,7 +57,7 @@ function HomeRoute() {
   }
 
   if (isInternalAdminRole(user.role)) return <Navigate to="/admin" replace />
-  if (user.role === 'CHU_NHA') return <Navigate to="/dashboard" replace />
+  if (user.role === 'CHU_NHA') return <Navigate to="/dashboard/bat-dong-san" replace />
   if (user.role === 'KHACH_HANG') return <Navigate to="/tenant" replace />
   return <Navigate to="/home" replace />
 }
@@ -88,7 +88,7 @@ function App() {
 
       {/* Chủ nhà routes — shared sidebar via DashboardLayout */}
       <Route path="/dashboard" element={<DashboardLayout />}>
-        <Route index element={<DashboardPage />} />
+        <Route index element={<Navigate to="/dashboard/bat-dong-san" replace />} />
         <Route path="bat-dong-san" element={<QuanLyBatDongSanPage />} />
         <Route path="bat-dong-san/:id" element={<ChiTietQuanLyBatDongSanPage />} />
         <Route path="bat-dong-san/dang-ky" element={<DangKyKyGuiPage />} />
@@ -110,6 +110,7 @@ function App() {
         <Route path="hop-dong-thue" element={<AdminHopDongThuePage />} />
         <Route path="hop-dong-thue/tao-moi" element={<TaoHopDongThuePage />} />
         <Route path="lich-khao-sat" element={<AdminLichKhaoSatPage />} />
+        <Route path="lich-khao-sat/tao/:batDongSanId" element={<AdminLichKhaoSatPage />} />
         <Route path="lich-xem-nha" element={<LichXemNhaPage />} />
         <Route path="phan-cong-moi-gioi" element={<PhanCongMoiGioiPage />} />
         <Route path="hoa-hong" element={<HoaHongPage />} />

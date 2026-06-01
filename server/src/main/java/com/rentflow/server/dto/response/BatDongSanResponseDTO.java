@@ -3,6 +3,8 @@ package com.rentflow.server.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Setter
 @Getter
 @Builder
@@ -31,6 +33,12 @@ public class BatDongSanResponseDTO {
     @Schema(description = "Mô tả", example = "Căn hộ cao cấp")
     private String moTa;
 
+    @Schema(description = "Loại nhà", example = "Căn hộ")
+    private String loaiNha;
+
     @Schema(description = "Trạng thái", example = "CHO_THUE")
     private String trangThai;
+
+    @Schema(description = "Ngày tạo", example = "2026-01-15T10:30:00")
+    private LocalDateTime ngayTao;
 }

@@ -30,4 +30,7 @@ public class KhachHangResponseDTO {
 
     @Schema(description = "Nhu cầu thuê chi tiết", example = "Căn hộ 2PN, giá dưới 10tr")
     private String nhuCauThueChiTiet;
+
+    @Schema(description = "ID nhân viên môi giới được phân công", example = "1")
+    private Long nhanVienMoiGioiId;
 }

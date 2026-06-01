@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import khachHangService from '../services/khachHangService'
-import quanTriService from '../services/quanTriService'
+import nhanVienService from '../services/nhanVienService'
+import batDongSanService from '../services/batDongSanService'
+import lichHenXemNhaService from '../services/lichHenXemNhaService'
 
 const KANBAN_COLUMNS = [
   { key: 'chua_phan_cong', label: 'Chưa phân công', color: 'border-t-slate-400', bg: 'bg-slate-50', headerBg: 'bg-slate-100' },
@@ -155,7 +157,7 @@ function BrokerCard({ broker, isSelected, onSelect }) {
 }
 
 // ── Kanban customer card ─────────────────────────────────────────────
-function KanbanCard({ customer, onAssign, brokers }) {
+function KanbanCard({ customer, onAssign, onAppointment, brokers }) {
   const priority = PRIORITY_CONFIG[customer.priority]
   const broker = (brokers || []).find(b => b.id === customer.moiGioiId)
   const colorSet = broker ? BROKER_COLORS[(broker.id - 1) % BROKER_COLORS.length] : null
@@ -200,25 +202,36 @@ function KanbanCard({ customer, onAssign, brokers }) {
         </div>
       </div>
 
-      {/* Broker tag */}
-      {broker ? (
-        <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium ${colorSet.light}`}>
-          <div className={`w-4 h-4 rounded-full ${colorSet.bg} flex items-center justify-center`}>
-            <span className="text-[8px] text-white font-bold">{broker.avatar}</span>
+      {/* Broker tag & actions */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {broker ? (
+          <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium ${colorSet.light}`}>
+            <div className={`w-4 h-4 rounded-full ${colorSet.bg} flex items-center justify-center`}>
+              <span className="text-[8px] text-white font-bold">{broker.avatar}</span>
+            </div>
+            {broker.ten}
           </div>
-          {broker.ten}
-        </div>
-      ) : (
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAssign(customer) }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors border border-dashed border-slate-300"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Phân công
+          </button>
+        )}
         <button
-          onClick={(e) => { e.stopPropagation(); onAssign(customer) }}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors border border-dashed border-slate-300"
+          onClick={(e) => { e.stopPropagation(); onAppointment(customer) }}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 transition-colors border border-emerald-200"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          Phân công
+          Lịch hẹn
         </button>
-      )}
+      </div>
 
       {/* Deadline */}
       {customer.deadline && days !== null && days <= 7 && days > 0 && (
@@ -373,13 +386,30 @@ function BrokerDetailPanel({ broker, onClose, customers }) {
 }
 
 // ── Assignment modal ─────────────────────────────────────────────────
-function AssignmentModal({ customer, onClose, brokers }) {
+function AssignmentModal({ customer, onClose, brokers, onAssigned }) {
   const [selectedBroker, setSelectedBroker] = useState('')
   const [priority, setPriority] = useState(customer?.priority || 'trung_binh')
   const [ghiChu, setGhiChu] = useState('')
   const [deadline, setDeadline] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   if (!customer) return null
+
+  const handleAssign = async () => {
+    if (!selectedBroker) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await nhanVienService.ganKhachHang(Number(selectedBroker), customer.id)
+      onAssigned?.(Number(selectedBroker))
+      onClose()
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Phân công thất bại')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -497,22 +527,198 @@ function AssignmentModal({ customer, onClose, brokers }) {
             />
           </div>
 
+          {/* Error */}
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2 border border-red-200">{error}</p>
+          )}
+
           {/* Buttons */}
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
-              className="flex-1 bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              disabled={submitting}
+              className="flex-1 bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
             >
               Hủy
             </button>
             <button
-              onClick={onClose}
-              disabled={!selectedBroker}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                selectedBroker ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              onClick={handleAssign}
+              disabled={!selectedBroker || submitting}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+                selectedBroker && !submitting ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
               }`}
             >
-              Phân công
+              {submitting && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              )}
+              {submitting ? 'Đang xử lý...' : 'Phân công'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Create Appointment Modal ────────────────────────────────────────
+function CreateAppointmentModal({ customer, brokers, properties, onClose, onCreated }) {
+  const [selectedBroker, setSelectedBroker] = useState(customer?.moiGioiId ? String(customer.moiGioiId) : '')
+  const [selectedProperty, setSelectedProperty] = useState('')
+  const [appointmentDate, setAppointmentDate] = useState('')
+  const [appointmentTime, setAppointmentTime] = useState('')
+  const [notes, setNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  if (!customer) return null
+
+  const handleCreate = async () => {
+    if (!selectedBroker || !selectedProperty || !appointmentDate || !appointmentTime) return
+    setSubmitting(true)
+    setError('')
+    try {
+      const thoiGian = `${appointmentDate}T${appointmentTime}:00`
+      await lichHenXemNhaService.tao({
+        khachHangId: customer.id,
+        batDongSanId: Number(selectedProperty),
+        nhanVienId: Number(selectedBroker),
+        thoiGian,
+        noiDungTraoDoi: notes || undefined,
+      })
+      onCreated?.()
+      onClose()
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Tạo lịch hẹn thất bại')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        {/* Header */}
+        <div className="bg-linear-to-r from-emerald-600 to-teal-700 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-emerald-200 text-xs">Tạo lịch hẹn xem nhà</p>
+              <h3 className="text-white font-bold text-lg">{customer.ten}</h3>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Customer info */}
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-slate-400">Nhu cầu</p>
+                <p className="font-medium text-slate-800">{customer.nhuCau || 'Chưa có'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">SĐT</p>
+                <p className="font-medium text-slate-800">{customer.sdt}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Select broker */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Môi giới phụ trách *</label>
+            <select
+              value={selectedBroker}
+              onChange={(e) => setSelectedBroker(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+            >
+              <option value="">-- Chọn môi giới --</option>
+              {brokers.map(b => (
+                <option key={b.id} value={b.id}>{b.ten} - {b.sdt}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Select property */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Bất động sản *</label>
+            <select
+              value={selectedProperty}
+              onChange={(e) => setSelectedProperty(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+            >
+              <option value="">-- Chọn bất động sản --</option>
+              {properties.map(p => (
+                <option key={p.id} value={p.id}>{p.diaChi} - {p.loaiNha || ''}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date & Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Ngày hẹn *</label>
+              <input
+                type="date"
+                value={appointmentDate}
+                onChange={(e) => setAppointmentDate(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Giờ hẹn *</label>
+              <input
+                type="time"
+                value={appointmentTime}
+                onChange={(e) => setAppointmentTime(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Ghi chú</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              placeholder="Nội dung trao đổi, ghi chú thêm..."
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+            />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2 border border-red-200">{error}</p>
+          )}
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={!selectedBroker || !selectedProperty || !appointmentDate || !appointmentTime || submitting}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+                selectedBroker && selectedProperty && appointmentDate && appointmentTime && !submitting
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              {submitting && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              )}
+              {submitting ? 'Đang xử lý...' : 'Tạo lịch hẹn'}
             </button>
           </div>
         </div>
@@ -525,6 +731,8 @@ function AssignmentModal({ customer, onClose, brokers }) {
 export default function PhanCongMoiGioiPage() {
   const [selectedBrokerId, setSelectedBrokerId] = useState(null)
   const [assignModal, setAssignModal] = useState(null)
+  const [appointmentModal, setAppointmentModal] = useState(null)
+  const [properties, setProperties] = useState([])
   const [search, setSearch] = useState('')
   const [filterPriority, setFilterPriority] = useState('all')
   const [brokers, setBrokers] = useState([])
@@ -536,40 +744,44 @@ export default function PhanCongMoiGioiPage() {
     setLoading(true)
     setError(null)
     try {
-      const [brokerRes, customerRes] = await Promise.all([
-        quanTriService.danhSachTaiKhoan(),
+      const [brokerRes, customerRes, propertyRes] = await Promise.all([
+        nhanVienService.danhSachMoiGioi(),
         khachHangService.danhSach(),
+        batDongSanService.danhSach(),
       ])
-      const accounts = brokerRes.data || []
-      const mappedBrokers = accounts.filter(acc => acc.vaiTro === 'NHAN_VIEN_DAI_LY').map(acc => ({
-        id: acc.id,
-        ten: acc.tenNhanVien || acc.hoTen || '',
-        sdt: acc.soDienThoai || '',
-        email: acc.email || '',
-        avatar: (acc.tenNhanVien || acc.hoTen || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'NV',
-        soKhachDangPhuTrach: acc.soKhachDangPhuTrach || 0,
-        tyLeChot: acc.tyLeChot || 0,
-        lichXemSapToi: acc.lichXemSapToi || 0,
-        hoaHongThang: acc.hoaHongThang || 0,
-        khachHang: acc.danhSachKhachHang || [],
+      const employees = brokerRes.data || []
+      const mappedBrokers = employees.map(nv => ({
+        id: nv.id,
+        ten: nv.hoTen || '',
+        sdt: nv.soDienThoai || '',
+        email: nv.email || '',
+        avatar: (nv.hoTen || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'NV',
+        soKhachDangPhuTrach: nv.soKhachDangPhuTrach || 0,
+        tyLeChot: nv.tyLeChot || 0,
+        lichXemSapToi: nv.lichXemSapToi || 0,
+        hoaHongThang: nv.hoaHongThang || 0,
+        khachHang: nv.danhSachKhachHang || [],
       }))
 
       const mappedCustomers = (customerRes.data || []).map(c => ({
         id: c.id,
-        ten: c.tenKhachHang || c.hoTen || '',
+        ten: c.hoTen || '',
         sdt: c.soDienThoai || '',
-        nhuCau: c.nhuCau || '',
+        nhuCau: c.nhuCauThue || '',
+        tieuChiTimNha: c.tieuChiTimNha || '',
+        nhuCauThueChiTiet: c.nhuCauThueChiTiet || '',
         khuVuc: c.khuVuc || '',
         khoangGia: c.khoangGia || '',
-        moiGioiId: c.moiGioiId || c.nhanVienId || null,
+        moiGioiId: c.nhanVienMoiGioiId || null,
         trangThai: c.trangThai || 'chua_phan_cong',
-        priority: c.priority || c.doUuTien || 'trung_binh',
+        priority: c.priority || 'trung_binh',
         ghiChu: c.ghiChu || '',
         deadline: c.deadline || null,
       }))
 
       setBrokers(mappedBrokers)
       setCustomers(mappedCustomers)
+      setProperties(propertyRes.data || [])
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Lỗi tải dữ liệu')
     } finally {
@@ -768,7 +980,7 @@ export default function PhanCongMoiGioiPage() {
                     {/* Cards */}
                     <div className="p-3 space-y-3 min-h-48">
                       {cards.map(c => (
-                        <KanbanCard key={c.id} customer={c} onAssign={setAssignModal} brokers={brokers} />
+                        <KanbanCard key={c.id} customer={c} onAssign={setAssignModal} onAppointment={setAppointmentModal} brokers={brokers} />
                       ))}
                       {cards.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-8 text-slate-300">
@@ -886,7 +1098,22 @@ export default function PhanCongMoiGioiPage() {
 
       {/* Assignment modal */}
       {assignModal && (
-        <AssignmentModal customer={assignModal} onClose={() => setAssignModal(null)} brokers={brokers} />
+        <AssignmentModal customer={assignModal} onClose={() => setAssignModal(null)} brokers={brokers} onAssigned={(brokerId) => {
+          setCustomers(prev => prev.map(c => c.id === assignModal.id ? { ...c, moiGioiId: brokerId, trangThai: 'dang_tu_van' } : c))
+        }} />
+      )}
+
+      {/* Create appointment modal */}
+      {appointmentModal && (
+        <CreateAppointmentModal
+          customer={appointmentModal}
+          brokers={brokers}
+          properties={properties}
+          onClose={() => setAppointmentModal(null)}
+          onCreated={() => {
+            setCustomers(prev => prev.map(c => c.id === appointmentModal.id ? { ...c, trangThai: 'da_dat_lich' } : c))
+          }}
+        />
       )}
     </div>
   )

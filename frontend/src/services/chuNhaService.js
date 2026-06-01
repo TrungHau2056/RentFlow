@@ -1,6 +1,11 @@
 import api from './api';
 
 const chuNhaService = {
+  async me() {
+    const response = await api.get('/api/chu-nha/me');
+    return response.data;
+  },
+
   async danhSach() {
     const response = await api.get('/api/chu-nha');
     return response.data;

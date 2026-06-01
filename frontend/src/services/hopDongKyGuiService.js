@@ -11,6 +11,16 @@ const hopDongKyGuiService = {
     return response.data;
   },
 
+  async theoChuNhaHienTai() {
+    const response = await api.get('/api/hop-dong-ky-gui/chu-nha/me');
+    return response.data;
+  },
+
+  async theoBDS(batDongSanId) {
+    const response = await api.get(`/api/hop-dong-ky-gui/by-bat-dong-san/${batDongSanId}`);
+    return response.data;
+  },
+
   async tao(data) {
     const response = await api.post('/api/hop-dong-ky-gui', data);
     return response.data;

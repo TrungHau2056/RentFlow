@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import batDongSanService from '../services/batDongSanService'
 
 const STEPS = [
   { id: 1, title: 'Thông tin cơ bản', icon: 'document' },
-  { id: 2, title: 'Địa chỉ', icon: 'location' },
-  { id: 3, title: 'Mô tả & Tiện ích', icon: 'features' },
-  { id: 4, title: 'Hình ảnh', icon: 'image' },
-  { id: 5, title: 'Xác nhận', icon: 'check' },
+  { id: 2, title: 'Địa chỉ & Giá', icon: 'location' },
+  { id: 3, title: 'Mô tả & Xác nhận', icon: 'check' },
 ]
 
 const PROPERTY_TYPES = [
@@ -18,53 +17,8 @@ const PROPERTY_TYPES = [
   { id: 'nha_pho', label: 'Nhà phố', icon: 'townhouse' },
 ]
 
-const DISTRICTS_BY_CITY = {
-  HN: [
-    'Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Hai Bà Trưng', 'Tây Hồ',
-    'Cầu Giấy', 'Thanh Xuân', 'Hà Đông', 'Long Biên', 'Nam Từ Liêm',
-    'Bắc Từ Liêm', 'Hoàng Mai', 'Gia Lâm', 'Đan Phượng', 'Hoài Đức',
-    'Mê Linh', 'Phúc Thọ', 'Quốc Oai', 'Sóc Sơn', 'Thanh Trì',
-    'Thạch Thất', 'Thường Tín', 'Sơn Tây', 'Ba Vì', 'Chương Mỹ',
-    'Đông Anh', 'Phú Xuyên', 'Thanh Oai', 'Ứng Hòa', 'Mỹ Đức',
-  ],
-  'TP.HCM': [
-    'Quận 1', 'Quận 2', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7',
-    'Quận 8', 'Quận 9', 'Quận 10', 'Quận 11', 'Quận 12', 'Bình Thạnh',
-    'Gò Vấp', 'Phú Nhuận', 'Tân Bình', 'Tân Phú', 'Bình Tân', 'Thủ Đức',
-    'Bình Chánh', 'Hóc Môn', 'Củ Chi', 'Nhà Bè', 'Cần Giờ',
-  ],
-  DN: [
-    'Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn',
-    'Liên Chiểu', 'Cẩm Lệ', 'Hòa Vang', 'Hoàng Sa',
-  ],
-}
-
 const DIRECTIONS = [
   'Đông', 'Đông Nam', 'Nam', 'Tây Nam', 'Tây', 'Tây Bắc', 'Bắc', 'Đông Bắc'
-]
-
-const AMENITIES = [
-  { id: 'may_lanh', label: 'Máy lạnh', icon: '❄️' },
-  { id: 'noi_that', label: 'Nội thất đầy đủ', icon: '🛋️' },
-  { id: 'may_giat', label: 'Máy giặt', icon: '🧺' },
-  { id: 'tu_lanh', label: 'Tủ lạnh', icon: '🧊' },
-  { id: 'truyen_hinh', label: 'Truyền hình cáp', icon: '📺' },
-  { id: 'internet', label: 'Internet/WiFi', icon: '📶' },
-  { id: 'ho_boi', label: 'Hồ bơi', icon: '🏊' },
-  { id: 'gym', label: 'Phòng gym', icon: '💪' },
-  { id: 'bao_ve', label: 'Bảo vệ 24/7', icon: '👮' },
-  { id: 'thang_may', label: 'Thang máy', icon: '🛗' },
-  { id: 'cho_xe', label: 'Chỗ để xe', icon: '🚗' },
-  { id: 'san_vuon', label: 'Sân vườn', icon: '🌳' },
-]
-
-const NEARBY_FEATURES = [
-  { id: 'truong_hoc', label: 'Gần trường học', icon: '🏫' },
-  { id: 'benh_vien', label: 'Gần bệnh viện', icon: '🏥' },
-  { id: 'sieu_thi', label: 'Gần siêu thị', icon: '🛒' },
-  { id: 'cong_vien', label: 'Gần công viên', icon: '🌳' },
-  { id: 'metro', label: 'Gần metro', icon: '🚇' },
-  { id: 'nha_hang', label: 'Gần nhà hàng', icon: '🍽️' },
 ]
 
 function FormIcon({ type, className = "h-5 w-5" }) {
@@ -105,26 +59,17 @@ function FormIcon({ type, className = "h-5 w-5" }) {
     upload: (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
     ),
-    camera: (
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+    info: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     ),
-    trash: (
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    ),
-    plus: (
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    success: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     ),
     chevronLeft: (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
     ),
     chevronRight: (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-    ),
-    info: (
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    ),
-    success: (
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     ),
   }
   return (
@@ -184,128 +129,10 @@ function StepIndicator({ currentStep, steps }) {
   )
 }
 
-function PropertyTypeCard({ type, selected, onSelect }) {
-  const icons = {
-    building: '🏢',
-    home: '🏠',
-    villa: '🏡',
-    shop: '🏪',
-    room: '🚪',
-    townhouse: '🏘️',
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(type.id)}
-      className={`group flex flex-col items-center gap-3 rounded-2xl border-2 p-6 transition-all ${
-        selected === type.id
-          ? 'border-blue-500 bg-blue-50 shadow-md'
-          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-      }`}
-    >
-      <span className="text-4xl">{icons[type.icon]}</span>
-      <span className={`text-sm font-medium ${
-        selected === type.id ? 'text-blue-600' : 'text-slate-600'
-      }`}>
-        {type.label}
-      </span>
-    </button>
-  )
-}
-
-function ImageUploadZone({ images, onUpload, onRemove }) {
-  const [isDragging, setIsDragging] = useState(false)
-
-  const handleDrop = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
-    const newImages = Array.from({ length: 3 }, (_, i) => ({
-      id: Date.now() + i,
-      url: null,
-      name: `image-${Date.now()}-${i}.jpg`,
-    }))
-    onUpload(newImages)
-  }
-
-  return (
-    <div className="space-y-4">
-      <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        className={`relative rounded-2xl border-2 border-dashed p-8 transition-all ${
-          isDragging
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-slate-300 bg-slate-50 hover:border-slate-400'
-        }`}
-      >
-        <div className="flex flex-col items-center justify-center text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-            <FormIcon icon="upload" className="h-8 w-8 text-blue-600" />
-          </div>
-          <p className="text-base font-semibold text-slate-700">
-            Kéo thả hình ảnh vào đây
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            hoặc click để chọn file (tối đa 20 ảnh)
-          </p>
-          <button
-            type="button"
-            onClick={() => onUpload([{ id: Date.now(), url: null, name: 'image.jpg' }])}
-            className="mt-4 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Chọn hình ảnh
-          </button>
-        </div>
-      </div>
-
-      {images.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {images.map((image) => (
-            <div key={image.id} className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100">
-              {image.url ? (
-                <img src={image.url} alt={image.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <FormIcon icon="camera" className="h-8 w-8 text-slate-300" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                <button
-                  type="button"
-                  onClick={() => onRemove(image.id)}
-                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-red-500 transition hover:bg-red-500 hover:text-white"
-                >
-                  <FormIcon icon="trash" className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
-                <p className="truncate text-[10px] text-white">{image.name}</p>
-              </div>
-            </div>
-          ))}
-
-          {images.length < 20 && (
-            <button
-              type="button"
-              onClick={() => onUpload([{ id: Date.now(), url: null, name: 'new-image.jpg' }])}
-              className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-blue-400 hover:bg-blue-50"
-            >
-              <FormIcon icon="plus" className="h-8 w-8 text-slate-400" />
-              <span className="mt-2 text-xs text-slate-500">Thêm ảnh</span>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function SuccessScreen({ formData, onBack, requestCode }) {
+function SuccessScreen({ formData, batDongSanId, onBack }) {
   const timeline = [
-    { stage: 'Tiếp nhận', status: 'pending', desc: 'Nhân viên sẽ liên hệ trong 24h' },
-    { stage: 'Khảo sát', status: 'pending', desc: 'Khảo sát thực tế BĐS' },
+    { stage: 'Tiếp nhận', status: 'done', desc: 'Yêu cầu đã được ghi nhận' },
+    { stage: 'Khảo sát', status: 'pending', desc: 'Nhân viên sẽ liên hệ trong 24h' },
     { stage: 'Ký hợp đồng', status: 'pending', desc: 'Ký hợp đồng ký gửi chính thức' },
     { stage: 'Hiển thị cho thuê', status: 'pending', desc: 'Đăng tin và tìm khách thuê' },
   ]
@@ -320,7 +147,7 @@ function SuccessScreen({ formData, onBack, requestCode }) {
           Yêu cầu ký gửi đã được gửi thành công!
         </h2>
         <p className="mt-2 text-slate-500">
-          Mã yêu cầu: <span className="font-mono font-bold text-slate-700">{requestCode}</span>
+          Mã BĐS: <span className="font-mono font-bold text-slate-700">#{batDongSanId}</span>
         </p>
       </div>
 
@@ -329,19 +156,15 @@ function SuccessScreen({ formData, onBack, requestCode }) {
         <div className="space-y-3 text-sm">
           <div className="flex justify-between border-b border-slate-100 pb-2">
             <span className="text-slate-500">Loại bất động sản</span>
-            <span className="font-medium text-slate-900">
-              {PROPERTY_TYPES.find(t => t.id === formData.loaiNha)?.label || '-'}
-            </span>
-          </div>
-          <div className="flex justify-between border-b border-slate-100 pb-2">
-            <span className="text-slate-500">Tên BĐS</span>
-            <span className="font-medium text-slate-900">{formData.tenBds || '-'}</span>
+            <span className="font-medium text-slate-900">{formData.loaiNha || '-'}</span>
           </div>
           <div className="flex justify-between border-b border-slate-100 pb-2">
             <span className="text-slate-500">Địa chỉ</span>
-            <span className="font-medium text-slate-900">
-              {formData.diaChi}, {formData.quanHuyen}, {formData.thanhPho === 'HN' ? 'Hà Nội' : formData.thanhPho === 'TP.HCM' ? 'TP.HCM' : 'Đà Nẵng'}
-            </span>
+            <span className="font-medium text-slate-900">{formData.diaChi || '-'}</span>
+          </div>
+          <div className="flex justify-between border-b border-slate-100 pb-2">
+            <span className="text-slate-500">Diện tích</span>
+            <span className="font-medium text-slate-900">{formData.dienTich || '-'} m²</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Giá thuê đề xuất</span>
@@ -397,7 +220,6 @@ function SuccessScreen({ formData, onBack, requestCode }) {
 function readStoredUser() {
   const stored = localStorage.getItem('userInfo')
   if (!stored) return null
-
   try {
     return JSON.parse(stored)
   } catch {
@@ -411,24 +233,19 @@ export default function DangKyKyGuiPage() {
   const [userInfo] = useState(readStoredUser)
   const [currentStep, setCurrentStep] = useState(1)
   const [submitted, setSubmitted] = useState(false)
-  const [requestCode, setRequestCode] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [batDongSanId, setBatDongSanId] = useState(null)
   const [formData, setFormData] = useState({
     loaiNha: '',
-    tenBds: '',
     dienTich: '',
-    giaThue: '',
     soPhongNgu: '',
-    soWC: '',
+    soPhongVeSinh: '',
     huongNha: '',
-    thanhPho: 'HN',
-    quanHuyen: '',
-    phuongXa: '',
     diaChi: '',
+    giaThue: '',
+    giaDeXuat: '',
     moTa: '',
-    noiThat: [],
-    tienIch: [],
-    khuVucXungQuanh: [],
-    hinhAnh: [],
     chapNhanDieuKhoan: false,
   })
 
@@ -478,28 +295,17 @@ export default function DangKyKyGuiPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const toggleArrayField = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter(v => v !== value)
-        : [...prev[field], value]
-    }))
-  }
-
   const [stepErrors, setStepErrors] = useState({})
 
   const validateStep = (step) => {
     const errors = {}
     if (step === 1) {
       if (!formData.loaiNha) errors.loaiNha = 'Vui lòng chọn loại bất động sản'
-      if (!formData.tenBds.trim()) errors.tenBds = 'Vui lòng nhập tên bất động sản'
       if (!formData.dienTich) errors.dienTich = 'Vui lòng nhập diện tích'
-      if (!formData.giaThue) errors.giaThue = 'Vui lòng nhập giá thuê'
     }
     if (step === 2) {
-      if (!formData.quanHuyen) errors.quanHuyen = 'Vui lòng chọn quận/huyện'
-      if (!formData.diaChi.trim()) errors.diaChi = 'Vui lòng nhập địa chỉ chi tiết'
+      if (!formData.diaChi.trim()) errors.diaChi = 'Vui lòng nhập địa chỉ'
+      if (!formData.giaThue) errors.giaThue = 'Vui lòng nhập giá thuê'
     }
     return errors
   }
@@ -508,17 +314,43 @@ export default function DangKyKyGuiPage() {
     const errors = validateStep(currentStep)
     setStepErrors(errors)
     if (Object.keys(errors).length > 0) return
-    if (currentStep < 5) setCurrentStep(currentStep + 1)
+    if (currentStep < 3) setCurrentStep(currentStep + 1)
   }
 
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.chapNhanDieuKhoan) return
-    setRequestCode(`REQ-${Date.now().toString().slice(-6)}`)
-    setSubmitted(true)
+    setSubmitting(true)
+    setSubmitError('')
+
+    try {
+      const taoRes = await batDongSanService.tao({
+        diaChi: formData.diaChi,
+        dienTich: Number(formData.dienTich),
+        giaThue: Number(formData.giaThue) * 1000000,
+        moTa: formData.moTa,
+      })
+      const bdsId = taoRes.data.id
+
+      await batDongSanService.capNhatChiTiet(bdsId, {
+        loaiNha: formData.loaiNha,
+        huong: formData.huongNha || null,
+        soPhongNgu: formData.soPhongNgu ? Number(formData.soPhongNgu) : null,
+        soPhongVeSinh: formData.soPhongVeSinh ? Number(formData.soPhongVeSinh) : null,
+        giaDeXuat: formData.giaDeXuat ? Number(formData.giaDeXuat) * 1000000 : null,
+      })
+
+      setBatDongSanId(bdsId)
+      setSubmitted(true)
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Có lỗi xảy ra, vui lòng thử lại'
+      setSubmitError(msg)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const renderStep = () => {
@@ -527,65 +359,40 @@ export default function DangKyKyGuiPage() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Loại bất động sản</h3>
-              <p className="text-sm text-slate-500">Chọn loại hình bất động sản phù hợp</p>
+              <h3 className="text-lg font-bold text-slate-900">Thông tin cơ bản</h3>
+              <p className="text-sm text-slate-500">Chọn loại hình và thông số bất động sản</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {PROPERTY_TYPES.map(type => (
-                <PropertyTypeCard
-                  key={type.id}
-                  type={type}
-                  selected={formData.loaiNha}
-                  onSelect={(id) => updateField('loaiNha', id)}
-                />
-              ))}
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Loại bất động sản</label>
+              <select
+                value={formData.loaiNha}
+                onChange={(e) => updateField('loaiNha', e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="">Chọn loại</option>
+                {PROPERTY_TYPES.map(t => (
+                  <option key={t.id} value={t.label}>{t.label}</option>
+                ))}
+              </select>
+              {stepErrors.loaiNha && <p className="mt-1 text-xs text-red-500">{stepErrors.loaiNha}</p>}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Tên bất động sản
-                </label>
-                <input
-                  type="text"
-                  value={formData.tenBds}
-                  onChange={(e) => updateField('tenBds', e.target.value)}
-                  placeholder="Ví dụ: Căn hộ 2PN Vinhomes Golden River"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
-                />
-              </div>
-
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Diện tích (m²)
-                </label>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Diện tích (m²)</label>
                 <input
                   type="number"
                   value={formData.dienTich}
                   onChange={(e) => updateField('dienTich', e.target.value)}
-                  placeholder="75"
+                  placeholder="80"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
                 />
+                {stepErrors.dienTich && <p className="mt-1 text-xs text-red-500">{stepErrors.dienTich}</p>}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Giá thuê đề xuất (triệu/tháng)
-                </label>
-                <input
-                  type="number"
-                  value={formData.giaThue}
-                  onChange={(e) => updateField('giaThue', e.target.value)}
-                  placeholder="18"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Số phòng ngủ
-                </label>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Số phòng ngủ</label>
                 <select
                   value={formData.soPhongNgu}
                   onChange={(e) => updateField('soPhongNgu', e.target.value)}
@@ -599,12 +406,10 @@ export default function DangKyKyGuiPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Số WC
-                </label>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Số phòng vệ sinh</label>
                 <select
-                  value={formData.soWC}
-                  onChange={(e) => updateField('soWC', e.target.value)}
+                  value={formData.soPhongVeSinh}
+                  onChange={(e) => updateField('soPhongVeSinh', e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">Chọn</option>
@@ -614,10 +419,8 @@ export default function DangKyKyGuiPage() {
                 </select>
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Hướng nhà
-                </label>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Hướng nhà</label>
                 <select
                   value={formData.huongNha}
                   onChange={(e) => updateField('huongNha', e.target.value)}
@@ -637,75 +440,44 @@ export default function DangKyKyGuiPage() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Địa chỉ bất động sản</h3>
-              <p className="text-sm text-slate-500">Nhập thông tin địa chỉ chính xác</p>
+              <h3 className="text-lg font-bold text-slate-900">Địa chỉ & Giá</h3>
+              <p className="text-sm text-slate-500">Nhập địa chỉ và mức giá cho thuê</p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Địa chỉ</label>
+              <input
+                type="text"
+                value={formData.diaChi}
+                onChange={(e) => updateField('diaChi', e.target.value)}
+                placeholder="Số nhà, tên đường, phường/xã, quận/huyện, thành phố"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
+              />
+              {stepErrors.diaChi && <p className="mt-1 text-xs text-red-500">{stepErrors.diaChi}</p>}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Thành phố
-                </label>
-                <select
-                  value={formData.thanhPho}
-                  onChange={(e) => { updateField('thanhPho', e.target.value); updateField('quanHuyen', '') }}
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Giá thuê (triệu/tháng)</label>
+                <input
+                  type="number"
+                  value={formData.giaThue}
+                  onChange={(e) => updateField('giaThue', e.target.value)}
+                  placeholder="15"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="HN">Hà Nội</option>
-                  <option value="TP.HCM">TP. Hồ Chí Minh</option>
-                  <option value="DN">Đà Nẵng</option>
-                </select>
+                />
+                {stepErrors.giaThue && <p className="mt-1 text-xs text-red-500">{stepErrors.giaThue}</p>}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Quận/Huyện
-                </label>
-                <select
-                  value={formData.quanHuyen}
-                  onChange={(e) => updateField('quanHuyen', e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">Chọn quận/huyện</option>
-                  {(DISTRICTS_BY_CITY[formData.thanhPho] || []).map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Phường/Xã
-                </label>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Giá đề xuất (triệu)</label>
                 <input
-                  type="text"
-                  value={formData.phuongXa}
-                  onChange={(e) => updateField('phuongXa', e.target.value)}
-                  placeholder="Nhập phường/xã"
+                  type="number"
+                  value={formData.giaDeXuat}
+                  onChange={(e) => updateField('giaDeXuat', e.target.value)}
+                  placeholder="15"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
                 />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Địa chỉ chi tiết
-                </label>
-                <input
-                  type="text"
-                  value={formData.diaChi}
-                  onChange={(e) => updateField('diaChi', e.target.value)}
-                  placeholder="Số nhà, tên đường"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
-                />
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-xl border border-slate-200">
-              <div className="flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-                <div className="text-center">
-                  <FormIcon icon="location" className="mx-auto h-8 w-8 text-slate-400" />
-                  <p className="mt-2 text-sm text-slate-500">Bản đồ sẽ hiển thị ở đây</p>
-                </div>
               </div>
             </div>
           </div>
@@ -715,142 +487,36 @@ export default function DangKyKyGuiPage() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Mô tả & Tiện ích</h3>
-              <p className="text-sm text-slate-500">Cung cấp thông tin chi tiết về BĐS</p>
+              <h3 className="text-lg font-bold text-slate-900">Mô tả & Xác nhận</h3>
+              <p className="text-sm text-slate-500">Thêm mô tả và xác nhận gửi yêu cầu</p>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Mô tả chi tiết
-              </label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Mô tả chi tiết</label>
               <textarea
                 value={formData.moTa}
                 onChange={(e) => updateField('moTa', e.target.value)}
-                placeholder="Mô tả đặc điểm nổi bật, tình trạng nhà,..."
+                placeholder="Mô tả đặc điểm nổi bật, tình trạng nhà, tiện ích khu vực..."
                 rows={5}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 resize-none"
               />
             </div>
 
-            <div>
-              <label className="mb-3 block text-sm font-semibold text-slate-700">
-                Nội thất & Tiện ích
-              </label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {AMENITIES.map(item => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleArrayField('noiThat', item.id)}
-                    className={`flex items-center gap-2 rounded-xl border p-3 text-sm transition ${
-                      formData.noiThat.includes(item.id)
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                    }`}
-                  >
-                    <span>{item.icon}</span>
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-3 block text-sm font-semibold text-slate-700">
-                Khu vực xung quanh
-              </label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {NEARBY_FEATURES.map(item => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleArrayField('khuVucXungQuanh', item.id)}
-                    className={`flex items-center gap-2 rounded-xl border p-3 text-sm transition ${
-                      formData.khuVucXungQuanh.includes(item.id)
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                    }`}
-                  >
-                    <span>{item.icon}</span>
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Hình ảnh bất động sản</h3>
-              <p className="text-sm text-slate-500">Upload hình ảnh rõ nét để thu hút khách thuê</p>
-            </div>
-
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <div className="flex gap-3">
-                <FormIcon icon="info" className="h-5 w-5 text-amber-600 shrink-0" />
-                <div className="text-sm text-amber-700">
-                  <p className="font-semibold">Hướng dẫn upload ảnh:</p>
-                  <ul className="mt-1 list-disc pl-4 space-y-0.5">
-                    <li>Ảnh rõ nét, ánh sáng tốt</li>
-                    <li>Chụp đầy đủ các phòng</li>
-                    <li>Include mặt bằng nếu có</li>
-                    <li>Tối đa 20 ảnh</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <ImageUploadZone
-              images={formData.hinhAnh}
-              onUpload={(newImages) => updateField('hinhAnh', [...formData.hinhAnh, ...newImages])}
-              onRemove={(id) => updateField('hinhAnh', formData.hinhAnh.filter(img => img.id !== id))}
-            />
-          </div>
-        )
-
-      case 5:
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Xác nhận thông tin</h3>
-              <p className="text-sm text-slate-500">Kiểm tra lại thông tin trước khi gửi</p>
-            </div>
-
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
-                  <FormIcon icon={PROPERTY_TYPES.find(t => t.id === formData.loaiNha)?.icon || 'building'} className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900">{formData.tenBds || 'Chưa đặt tên'}</h4>
-                  <p className="text-xs text-slate-500">
-                    {PROPERTY_TYPES.find(t => t.id === formData.loaiNha)?.label || 'Loại nhà'}
-                  </p>
-                </div>
-              </div>
-
+              <h4 className="mb-4 font-bold text-slate-900">Thông tin đã nhập</h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Địa chỉ</span>
-                  <span className="font-medium text-slate-900">
-                    {formData.diaChi || '-'}, {formData.quanHuyen || '-'}
-                  </span>
+                  <span className="text-slate-500">Loại BĐS</span>
+                  <span className="font-medium text-slate-900">{formData.loaiNha || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Diện tích</span>
                   <span className="font-medium text-slate-900">{formData.dienTich || '-'} m²</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Giá thuê</span>
-                  <span className="font-bold text-blue-600">{formData.giaThue || '-'} triệu/tháng</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Phòng ngủ / WC</span>
+                  <span className="text-slate-500">Phòng ngủ / VS</span>
                   <span className="font-medium text-slate-900">
-                    {formData.soPhongNgu || '-'} / {formData.soWC || '-'}
+                    {formData.soPhongNgu || '-'} / {formData.soPhongVeSinh || '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -858,19 +524,25 @@ export default function DangKyKyGuiPage() {
                   <span className="font-medium text-slate-900">{formData.huongNha || '-'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Nội thất</span>
-                  <span className="font-medium text-slate-900">{formData.noiThat.length} mục</span>
+                  <span className="text-slate-500">Địa chỉ</span>
+                  <span className="font-medium text-slate-900">{formData.diaChi || '-'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Tiện ích xung quanh</span>
-                  <span className="font-medium text-slate-900">{formData.khuVucXungQuanh.length} mục</span>
+                  <span className="text-slate-500">Giá thuê</span>
+                  <span className="font-bold text-blue-600">{formData.giaThue || '-'} triệu/tháng</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Hình ảnh</span>
-                  <span className="font-medium text-slate-900">{formData.hinhAnh.length} ảnh</span>
+                  <span className="text-slate-500">Giá đề xuất</span>
+                  <span className="font-medium text-slate-900">{formData.giaDeXuat || '-'} triệu</span>
                 </div>
               </div>
             </div>
+
+            {submitError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-medium text-red-600">{submitError}</p>
+              </div>
+            )}
 
             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <input
@@ -906,7 +578,7 @@ export default function DangKyKyGuiPage() {
             <FormIcon icon="chevronLeft" className="h-4 w-4" />
             Về dashboard
           </Link>
-          <SuccessScreen formData={formData} requestCode={requestCode} onBack={() => navigate('/dashboard')} />
+          <SuccessScreen formData={formData} batDongSanId={batDongSanId} onBack={() => navigate('/dashboard')} />
         </div>
       </div>
     )
@@ -939,14 +611,14 @@ export default function DangKyKyGuiPage() {
             <button
               type="button"
               onClick={prevStep}
-              disabled={currentStep === 1}
+              disabled={currentStep === 1 || submitting}
               className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <FormIcon icon="chevronLeft" className="h-4 w-4" />
               Quay lại
             </button>
 
-            {currentStep < 5 ? (
+            {currentStep < 3 ? (
               <button
                 type="button"
                 onClick={nextStep}
@@ -959,11 +631,23 @@ export default function DangKyKyGuiPage() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!formData.chapNhanDieuKhoan}
+                disabled={!formData.chapNhanDieuKhoan || submitting}
                 className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <FormIcon icon="check" className="h-4 w-4" />
-                Gửi yêu cầu ký gửi
+                {submitting ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Đang gửi...
+                  </>
+                ) : (
+                  <>
+                    <FormIcon icon="check" className="h-4 w-4" />
+                    Gửi yêu cầu ký gửi
+                  </>
+                )}
               </button>
             )}
           </div>

@@ -35,6 +35,21 @@ public class LichHenKhaoSatService {
         return lichHenKhaoSatRepository.findAll().stream().map(this::toResponseDTO).toList();
     }
 
+    public List<LichHenKhaoSatResponseDTO> getByBatDongSan(Long batDongSanId) {
+        BatDongSan bds = batDongSanRepository.findById(batDongSanId)
+                .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        return lichHenKhaoSatRepository.findByBatDongSan(bds).stream()
+                .map(this::toResponseDTO).toList();
+    }
+
+    public List<LichHenKhaoSatResponseDTO> getByCurrentChuNha() {
+        TaiKhoan currentUser = securityUtils.getCurrentUser();
+        ChuNha chuNha = currentUser.getChuNhaSet().stream().findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
+        return lichHenKhaoSatRepository.findByChuNha(chuNha).stream()
+                .map(this::toResponseDTO).toList();
+    }
+
     public LichHenKhaoSatResponseDTO getById(Long id) {
         LichHenKhaoSat lh = lichHenKhaoSatRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LICH_HEN_NOT_FOUND));
@@ -45,10 +60,17 @@ public class LichHenKhaoSatService {
     public LichHenKhaoSatResponseDTO create(LichHenKhaoSatRequestDTO dto) {
         BatDongSan bds = batDongSanRepository.findById(dto.getBatDongSanId())
                 .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
-        ChuNha chuNha = chuNhaRepository.findById(dto.getChuNhaId())
-                .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
-        NhanVien nhanVien = nhanVienRepository.findById(dto.getNhanVienId())
-                .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
+
+        ChuNha chuNha = dto.getChuNhaId() != null
+                ? chuNhaRepository.findById(dto.getChuNhaId())
+                        .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND))
+                : bds.getChuNha();
+
+        NhanVien nhanVien = dto.getNhanVienId() != null
+                ? nhanVienRepository.findById(dto.getNhanVienId())
+                        .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND))
+                : securityUtils.getCurrentUser().getNhanVienSet().stream().findFirst()
+                        .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
 
         LichHenKhaoSat lh = LichHenKhaoSat.builder()
                 .batDongSan(bds)

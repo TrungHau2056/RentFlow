@@ -58,8 +58,22 @@ public class BatDongSanService {
     }
 
     public BatDongSanResponseDTO create(BatDongSanRequestDTO dto) {
-        ChuNha chuNha = chuNhaRepository.findById(dto.getChuNhaId())
-                .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
+        TaiKhoan currentUser = securityUtils.getCurrentUser();
+        boolean isChuNha = currentUser.getVaiTro() != null &&
+                "CHU_NHA".equals(currentUser.getVaiTro().getTenVaiTro());
+
+        ChuNha chuNha;
+        if (isChuNha) {
+            chuNha = chuNhaRepository.findByTaiKhoanId(currentUser.getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
+        } else {
+            if (dto.getChuNhaId() == null) {
+                throw new AppException(ErrorCode.CHU_NHA_NOT_FOUND);
+            }
+            chuNha = chuNhaRepository.findById(dto.getChuNhaId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
+        }
+
         BatDongSan bds = BatDongSan.builder()
                 .chuNha(chuNha)
                 .diaChi(dto.getDiaChi())
@@ -85,6 +99,7 @@ public class BatDongSanService {
     public void delete(Long id) {
         BatDongSan bds = batDongSanRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        verifyChuNhaOwnership(bds.getChuNha().getId());
         batDongSanRepository.delete(bds);
     }
 
@@ -138,6 +153,7 @@ public class BatDongSanService {
     public BatDongSanResponseDTO updateTrangThai(Long id, String trangThaiMoi) {
         BatDongSan bds = batDongSanRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        verifyChuNhaOwnership(bds.getChuNha().getId());
 
         try {
             TrangThaiBatDongSan.valueOf(trangThaiMoi);
@@ -174,6 +190,7 @@ public class BatDongSanService {
                 .soPhongNgu(bds.getSoPhongNgu())
                 .soPhongVeSinh(bds.getSoPhongVeSinh())
                 .trangThai(bds.getTrangThai())
+                .ngayTao(bds.getNgayTao())
                 .build();
     }
 
@@ -192,6 +209,7 @@ public class BatDongSanService {
                 .soPhongVeSinh(bds.getSoPhongVeSinh())
                 .moTa(bds.getMoTa())
                 .trangThai(bds.getTrangThai())
+                .ngayTao(bds.getNgayTao())
                 .build();
     }
 
@@ -204,7 +222,9 @@ public class BatDongSanService {
                 .dienTich(bds.getDienTich())
                 .giaThue(bds.getGiaThue())
                 .moTa(bds.getMoTa())
+                .loaiNha(bds.getLoaiNha())
                 .trangThai(bds.getTrangThai())
+                .ngayTao(bds.getNgayTao())
                 .build();
     }
 }
