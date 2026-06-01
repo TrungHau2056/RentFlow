@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import lichHenKhaoSatService from '../services/lichHenKhaoSatService'
 
 const STATUS_CONFIG = {
@@ -69,7 +69,7 @@ function KpiCard({ label, value, note, accent }) {
   )
 }
 
-function ActionButton({ label, variant = 'secondary', children }) {
+function ActionButton({ label, variant = 'secondary', children, onClick, disabled }) {
   const className = variant === 'primary'
     ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
     : variant === 'danger'
@@ -79,7 +79,9 @@ function ActionButton({ label, variant = 'secondary', children }) {
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
       {label}
@@ -240,8 +242,18 @@ function WorkflowTimeline({ currentStep }) {
   )
 }
 
-function SurveyResultForm({ survey }) {
+function SurveyResultForm({ survey, onSubmit, saving }) {
   const [rating, setRating] = useState(survey.result?.rating || 'Tốt')
+  const [condition, setCondition] = useState(survey.result?.condition || '')
+  const [furniture, setFurniture] = useState(survey.result?.furniture || '')
+  const [ghiChu, setGhiChu] = useState(survey.result?.note || '')
+
+  const handleSubmit = () => {
+    if (!onSubmit) return
+    const dat = rating === 'Tốt'
+    const ketQuaKhaoSat = [rating, condition, furniture].filter(Boolean).join('. ')
+    onSubmit({ ketQuaKhaoSat, dat, ghiChu })
+  }
 
   return (
     <div className="space-y-4">
@@ -268,7 +280,8 @@ function SurveyResultForm({ survey }) {
       <label className="block">
         <span className="text-sm font-semibold text-slate-900">Hiện trạng nhà</span>
         <textarea
-          defaultValue={survey.result?.condition || ''}
+          value={condition}
+          onChange={(e) => setCondition(e.target.value)}
           rows={3}
           placeholder="Mô tả kết cấu, tường, sàn, điện nước, vệ sinh..."
           className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -278,7 +291,8 @@ function SurveyResultForm({ survey }) {
       <label className="block">
         <span className="text-sm font-semibold text-slate-900">Nội thất</span>
         <textarea
-          defaultValue={survey.result?.furniture || ''}
+          value={furniture}
+          onChange={(e) => setFurniture(e.target.value)}
           rows={3}
           placeholder="Tình trạng nội thất, thiết bị bàn giao, hạng mục cần bổ sung..."
           className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -299,7 +313,8 @@ function SurveyResultForm({ survey }) {
       <label className="block">
         <span className="text-sm font-semibold text-slate-900">Ghi chú khảo sát</span>
         <textarea
-          defaultValue={survey.result?.note || ''}
+          value={ghiChu}
+          onChange={(e) => setGhiChu(e.target.value)}
           rows={3}
           placeholder="Ghi chú nội bộ, đề xuất xử lý, điều kiện chuyển hợp đồng..."
           className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -307,15 +322,40 @@ function SurveyResultForm({ survey }) {
       </label>
 
       <div className="flex flex-wrap gap-2">
-        <ActionButton label="Lưu kết quả" variant="primary" />
+        <ActionButton label={saving ? 'Đang lưu...' : 'Lưu kết quả'} variant="primary" onClick={handleSubmit} disabled={saving} />
         <ActionButton label="Chuyển sang tạo hợp đồng ký gửi" />
       </div>
     </div>
   )
 }
 
-function SurveyDrawer({ survey, onClose }) {
+function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange }) {
+  const resultFormRef = useRef(null)
+  const [actionLoading, setActionLoading] = useState(null)
+
   if (!survey) return null
+
+  const handleConfirm = async () => {
+    setActionLoading('confirm')
+    try {
+      await onStatusChange(survey.id, 'DA_XAC_NHAN')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleCancel = async () => {
+    setActionLoading('cancel')
+    try {
+      await onStatusChange(survey.id, 'DA_HUY')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const scrollToResult = () => {
+    resultFormRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   return (
     <>
@@ -325,7 +365,7 @@ function SurveyDrawer({ survey, onClose }) {
         onClick={onClose}
         className="fixed inset-0 z-40 bg-slate-950/35"
       />
-      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-3xl flex-col bg-white shadow-2xl sm:w-[720px]">
+      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-3xl flex-col bg-white shadow-2xl sm:w-180">
         <div className="border-b border-slate-200 px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -349,10 +389,15 @@ function SurveyDrawer({ survey, onClose }) {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <ActionButton label="Xác nhận lịch" variant="primary" />
-            <ActionButton label="Dời lịch" />
-            <ActionButton label="Hủy lịch" variant="danger" />
-            <ActionButton label="Cập nhật kết quả" />
+            {survey.status === 'cho_xac_nhan' && (
+              <ActionButton label={actionLoading === 'confirm' ? 'Đang xử lý...' : 'Xác nhận lịch'} variant="primary" onClick={handleConfirm} disabled={!!actionLoading} />
+            )}
+            {survey.status !== 'da_huy' && survey.status !== 'hoan_thanh' && (
+              <ActionButton label={actionLoading === 'cancel' ? 'Đang xử lý...' : 'Hủy lịch'} variant="danger" onClick={handleCancel} disabled={!!actionLoading} />
+            )}
+            {survey.status === 'da_xac_nhan' && (
+              <ActionButton label="Cập nhật kết quả" onClick={scrollToResult} />
+            )}
           </div>
         </div>
 
@@ -382,10 +427,10 @@ function SurveyDrawer({ survey, onClose }) {
                 </div>
               </section>
 
-              <section>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Survey Result Form</h3>
+              <section ref={resultFormRef}>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Kết quả khảo sát</h3>
                 <div className="mt-3 rounded-lg border border-slate-200 p-4">
-                  <SurveyResultForm survey={survey} />
+                  <SurveyResultForm survey={survey} onSubmit={(data) => onSaveResult(survey.id, data)} saving={saving} />
                 </div>
               </section>
             </div>
@@ -409,8 +454,10 @@ export default function AdminLichKhaoSatPage() {
   const [surveys, setSurveys] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
 
-  const fetchSurveys = useCallback(async () => {
+  const fetchSurveys = async () => {
     setLoading(true)
     setError(null)
     try {
@@ -421,11 +468,36 @@ export default function AdminLichKhaoSatPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSurveys()
-  }, [fetchSurveys])
+  }, [])
+
+  const handleSaveResult = async (surveyId, data) => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await lichHenKhaoSatService.ghiKetQua(surveyId, data)
+      await fetchSurveys()
+      setSelectedSurvey(null)
+    } catch (err) {
+      setSaveError(err.response?.data?.message || err.message || 'Lỗi lưu kết quả')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleStatusChange = async (surveyId, trangThai) => {
+    try {
+      await lichHenKhaoSatService.capNhatTrangThai(surveyId, trangThai)
+      await fetchSurveys()
+      setSelectedSurvey(null)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi cập nhật trạng thái')
+    }
+  }
 
   const kpis = useMemo(() => [
     { label: 'Tổng lịch khảo sát', value: surveys.length, note: 'Toàn bộ lịch trong pipeline', accent: 'bg-slate-200' },
@@ -547,7 +619,12 @@ export default function AdminLichKhaoSatPage() {
         </section>
       </div>
 
-      <SurveyDrawer survey={selectedSurvey} onClose={() => setSelectedSurvey(null)} />
+      {saveError && (
+        <div className="mx-auto max-w-7xl rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {saveError}
+        </div>
+      )}
+      <SurveyDrawer survey={selectedSurvey} onClose={() => setSelectedSurvey(null)} onSaveResult={handleSaveResult} saving={saving} onStatusChange={handleStatusChange} />
     </main>
   )
 }

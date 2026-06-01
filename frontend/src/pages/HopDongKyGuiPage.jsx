@@ -1,208 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-
-const CONTRACTS = [
-  {
-    id: 1,
-    maHopDong: 'HDKG-2025-001',
-    tenBDS: 'Biệt thự Vinhomes Cao cấp',
-    bdsId: 1,
-    ngayKy: '2024-12-20',
-    ngayBatDau: '2025-01-01',
-    ngayKetThuc: '2026-01-01',
-    thoiHan: '12 tháng',
-    tienDamBao: 10000000,
-    phiKyGui: '5%/năm',
-    giaThueDeXuat: '45 triệu/tháng',
-    status: 'dang_hieu_luc',
-    daiDienDaiLy: 'Nguyễn Thị Minh – Trưởng phòng Pháp lý',
-    moiGioi: 'Trần Văn Hùng – Môi giới cao cấp',
-    diaChiBDS: '123 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-    dienTich: '320 m²',
-    loaiBDS: 'Biệt thự',
-    dieuKhoanPhatSinh: 'Điều 7: Chủ nhà chịu phí sửa chữa cấu trúc. Điều 8: Đại lý được quyền quảng cáo trên các nền tảng đối tác.',
-    dieuKienChamDut: 'Hợp đồng chấm dứt khi: (1) Hết hạn không gia hạn, (2) Vi phạm điều khoản, (3) Thỏa thuận hai bên.',
-    tienDamBaoTrangThai: 'dang_giu',
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2024-12-15', noiDung: 'Tạo hợp đồng', icon: 'create' },
-      { ngay: '2024-12-18', noiDung: 'Pháp lý duyệt', icon: 'legal' },
-      { ngay: '2024-12-20', noiDung: 'Ký kết hợp đồng', icon: 'sign' },
-      { ngay: '2025-01-01', noiDung: 'Có hiệu lực', icon: 'active' },
-    ],
-  },
-  {
-    id: 2,
-    maHopDong: 'HDKG-2025-002',
-    tenBDS: 'Căn hộ Midtown Sài Đồng',
-    bdsId: 2,
-    ngayKy: '2025-01-12',
-    ngayBatDau: '2025-02-01',
-    ngayKetThuc: '2026-02-01',
-    thoiHan: '12 tháng',
-    tienDamBao: 5000000,
-    phiKyGui: '5%/năm',
-    giaThueDeXuat: '15 triệu/tháng',
-    status: 'cho_duyet',
-    daiDienDaiLy: 'Nguyễn Thị Minh – Trưởng phòng Pháp lý',
-    moiGioi: 'Lê Quốc Anh – Môi giới',
-    diaChiBDS: '29 Liễu Giai, Ba Đình, Hà Nội',
-    dienTich: '95 m²',
-    loaiBDS: 'Căn hộ',
-    dieuKhoanPhatSinh: 'Điều 7: Nội thất do chủ nhà cung cấp. Điều 8: Đại lý chịu phí quảng cáo.',
-    dieuKienChamDut: 'Hợp đồng chấm dứt khi: (1) Hết hạn không gia hạn, (2) Vi phạm điều khoản, (3) Thỏa thuận hai bên.',
-    tienDamBaoTrangThai: 'cho_duyet',
-    workflowStep: 3,
-    lichSu: [
-      { ngay: '2025-01-10', noiDung: 'Tạo hợp đồng', icon: 'create' },
-      { ngay: '2025-01-12', noiDung: 'Chờ pháp lý duyệt', icon: 'legal' },
-    ],
-  },
-  {
-    id: 3,
-    maHopDong: 'HDKG-2024-015',
-    tenBDS: 'Nhà phố cổ khu phố cổ',
-    bdsId: 3,
-    ngayKy: '2025-01-22',
-    ngayBatDau: '2025-02-01',
-    ngayKetThuc: '2026-02-01',
-    thoiHan: '12 tháng',
-    tienDamBao: 8000000,
-    phiKyGui: '5%/năm',
-    giaThueDeXuat: '28 triệu/tháng',
-    status: 'cho_ky',
-    daiDienDaiLy: 'Phạm Thị Hương – Phó phòng Pháp lý',
-    moiGioi: 'Trần Văn Hùng – Môi giới cao cấp',
-    diaChiBDS: '56 Hàng Bài, Hoàn Kiếm, Hà Nội',
-    dienTich: '65 m²',
-    loaiBDS: 'Nhà phố',
-    dieuKhoanPhatSinh: 'Điều 7: Nhà phố kinh doanh, chủ nhà chịu phí cấp phép. Điều 8: Đại lý hỗ trợ thủ tục pháp lý.',
-    dieuKienChamDut: 'Hợp đồng chấm dứt khi: (1) Hết hạn không gia hạn, (2) Vi phạm điều khoản, (3) Thỏa thuận hai bên.',
-    tienDamBaoTrangThai: 'cho_duyet',
-    workflowStep: 4,
-    lichSu: [
-      { ngay: '2025-01-18', noiDung: 'Tạo hợp đồng', icon: 'create' },
-      { ngay: '2025-01-20', noiDung: 'Pháp lý duyệt', icon: 'legal' },
-      { ngay: '2025-01-22', noiDung: 'Chờ ký kết', icon: 'sign' },
-    ],
-  },
-  {
-    id: 4,
-    maHopDong: 'HDKG-2024-008',
-    tenBDS: 'Biệt thự sân vườn Tây Hồ',
-    bdsId: 4,
-    ngayKy: '2024-11-10',
-    ngayBatDau: '2024-12-01',
-    ngayKetThuc: '2025-12-01',
-    thoiHan: '12 tháng',
-    tienDamBao: 15000000,
-    phiKyGui: '4%/năm',
-    giaThueDeXuat: '65 triệu/tháng',
-    status: 'da_ket_thuc',
-    daiDienDaiLy: 'Nguyễn Thị Minh – Trưởng phòng Pháp lý',
-    moiGioi: 'Trần Văn Hùng – Môi giới cao cấp',
-    diaChiBDS: 'Nguyễn Văn Hưởng, Tây Hồ, Hà Nội',
-    dienTich: '450 m²',
-    loaiBDS: 'Biệt thự',
-    dieuKhoanPhatSinh: 'Điều 7: Bể bơi và sân vườn do chủ nhà bảo trì. Điều 8: Đại lý thu hoa hồng 4%.',
-    dieuKienChamDut: 'Hợp đồng đã kết thúc theo thỏa thuận. Đã hoàn trả tiền đảm bảo.',
-    tienDamBaoTrangThai: 'da_hoan_tra',
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2024-11-05', noiDung: 'Tạo hợp đồng', icon: 'create' },
-      { ngay: '2024-11-08', noiDung: 'Pháp lý duyệt', icon: 'legal' },
-      { ngay: '2024-11-10', noiDung: 'Ký kết hợp đồng', icon: 'sign' },
-      { ngay: '2024-12-01', noiDung: 'Có hiệu lực', icon: 'active' },
-      { ngay: '2025-12-01', noiDung: 'Hết hạn, đã kết thúc', icon: 'end' },
-    ],
-  },
-  {
-    id: 5,
-    maHopDong: 'HDKG-2025-003',
-    tenBDS: 'Căn hộ Studio Times City',
-    bdsId: 5,
-    ngayKy: '2025-02-05',
-    ngayBatDau: '2025-03-01',
-    ngayKetThuc: '2026-03-01',
-    thoiHan: '12 tháng',
-    tienDamBao: 3000000,
-    phiKyGui: '5%/năm',
-    giaThueDeXuat: '8.5 triệu/tháng',
-    status: 'cho_duyet',
-    daiDienDaiLy: 'Phạm Thị Hương – Phó phòng Pháp lý',
-    moiGioi: 'Lê Quốc Anh – Môi giới',
-    diaChiBDS: 'Tòa T6, Times City, Hai Bà Trưng, Hà Nội',
-    dienTich: '42 m²',
-    loaiBDS: 'Căn hộ',
-    dieuKhoanPhatSinh: 'Điều 7: Nội thất đầy đủ, chủ nhà chịu phí bảo trì. Điều 8: Đại lý hỗ trợ tìm khách thuê.',
-    dieuKienChamDut: 'Hợp đồng chấm dứt khi: (1) Hết hạn không gia hạn, (2) Vi phạm điều khoản, (3) Thỏa thuận hai bên.',
-    tienDamBaoTrangThai: 'cho_duyet',
-    workflowStep: 3,
-    lichSu: [
-      { ngay: '2025-02-03', noiDung: 'Tạo hợp đồng', icon: 'create' },
-      { ngay: '2025-02-05', noiDung: 'Chờ pháp lý duyệt', icon: 'legal' },
-    ],
-  },
-  {
-    id: 6,
-    maHopDong: 'HDKG-2024-005',
-    tenBDS: 'Nhà mặt phố Đống Đa',
-    bdsId: 6,
-    ngayKy: '2024-10-25',
-    ngayBatDau: '2024-11-01',
-    ngayKetThuc: '2025-11-01',
-    thoiHan: '12 tháng',
-    tienDamBao: 7000000,
-    phiKyGui: '5%/năm',
-    giaThueDeXuat: '22 triệu/tháng',
-    status: 'dang_hieu_luc',
-    daiDienDaiLy: 'Nguyễn Thị Minh – Trưởng phòng Pháp lý',
-    moiGioi: 'Trần Văn Hùng – Môi giới cao cấp',
-    diaChiBDS: '88 Láng Hạ, Đống Đa, Hà Nội',
-    dienTich: '85 m²',
-    loaiBDS: 'Nhà riêng',
-    dieuKhoanPhatSinh: 'Điều 7: Nhà mặt phố phù hợp kinh doanh. Điều 8: Đại lý hỗ trợ quảng cáo đa kênh.',
-    dieuKienChamDut: 'Hợp đồng chấm dứt khi: (1) Hết hạn không gia hạn, (2) Vi phạm điều khoản, (3) Thỏa thuận hai bên.',
-    tienDamBaoTrangThai: 'dang_giu',
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2024-10-20', noiDung: 'Tạo hợp đồng', icon: 'create' },
-      { ngay: '2024-10-22', noiDung: 'Pháp lý duyệt', icon: 'legal' },
-      { ngay: '2024-10-25', noiDung: 'Ký kết hợp đồng', icon: 'sign' },
-      { ngay: '2024-11-01', noiDung: 'Có hiệu lực', icon: 'active' },
-    ],
-  },
-  {
-    id: 7,
-    maHopDong: 'HDKG-2024-012',
-    tenBDS: 'Penthouse Keangnam',
-    bdsId: 7,
-    ngayKy: '2024-09-18',
-    ngayBatDau: '2024-10-01',
-    ngayKetThuc: '2025-10-01',
-    thoiHan: '12 tháng',
-    tienDamBao: 20000000,
-    phiKyGui: '4%/năm',
-    giaThueDeXuat: '55 triệu/tháng',
-    status: 'tam_dung',
-    daiDienDaiLy: 'Nguyễn Thị Minh – Trưởng phòng Pháp lý',
-    moiGioi: 'Trần Văn Hùng – Môi giới cao cấp',
-    diaChiBDS: 'Tòa Keangnam, Phạm Hùng, Cầu Giấy, Hà Nội',
-    dienTich: '180 m²',
-    loaiBDS: 'Căn hộ',
-    dieuKhoanPhatSinh: 'Điều 7: Nội thất nhập khẩu Ý, chủ nhà chịu phí bảo hiểm. Điều 8: Đại lý thu hoa hồng 4%. Hợp đồng tạm dừng do tranh chấp nội thất.',
-    dieuKienChamDut: 'Hợp đồng tạm dừng chờ giải quyết tranh chấp. Sẽ tiếp tục khi hai bên đồng thuận.',
-    tienDamBaoTrangThai: 'dang_giu',
-    workflowStep: 5,
-    lichSu: [
-      { ngay: '2024-09-15', noiDung: 'Tạo hợp đồng', icon: 'create' },
-      { ngay: '2024-09-17', noiDung: 'Pháp lý duyệt', icon: 'legal' },
-      { ngay: '2024-09-18', noiDung: 'Ký kết hợp đồng', icon: 'sign' },
-      { ngay: '2024-10-01', noiDung: 'Có hiệu lực', icon: 'active' },
-      { ngay: '2025-03-10', noiDung: 'Tạm dừng – Tranh chấp nội thất', icon: 'pause' },
-    ],
-  },
-]
+import hopDongKyGuiService from '../services/hopDongKyGuiService'
 
 const STATUS_CONFIG = {
   cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -227,14 +25,19 @@ const WORKFLOW_STEPS = [
   { key: 'hieu_luc', label: 'Hiệu lực' },
 ]
 
-const ACTIVITY_ICONS = {
-  create: { color: 'bg-blue-500', symbol: '+' },
-  legal: { color: 'bg-purple-500', symbol: '§' },
-  sign: { color: 'bg-emerald-500', symbol: '✓' },
-  active: { color: 'bg-indigo-500', symbol: '▶' },
-  end: { color: 'bg-slate-400', symbol: '■' },
-  pause: { color: 'bg-red-400', symbol: '❚❚' },
-  update: { color: 'bg-amber-500', symbol: '↻' },
+const STATUS_MAP = {
+  NHAP: 'cho_duyet',
+  CHO_PHE_DUYET: 'cho_duyet',
+  DA_PHE_DUYET: 'cho_ky',
+  TU_CHOI: 'tam_dung',
+  DA_KY: 'dang_hieu_luc',
+  HOAN_THANH: 'da_ket_thuc',
+  DA_HUY: 'da_ket_thuc',
+}
+
+const WORKFLOW_MAP = {
+  NHAP: 1, CHO_PHE_DUYET: 2, DA_PHE_DUYET: 3,
+  TU_CHOI: 2, DA_KY: 5, HOAN_THANH: 5, DA_HUY: 5,
 }
 
 function formatVND(amount) {
@@ -242,7 +45,46 @@ function formatVND(amount) {
 }
 
 function formatDate(dateStr) {
+  if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function calcThoiHan(ngayBatDau, ngayKetThuc) {
+  if (!ngayBatDau || !ngayKetThuc) return null
+  const start = new Date(ngayBatDau)
+  const end = new Date(ngayKetThuc)
+  return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
+}
+
+function mapContract(item) {
+  const rawStatus = item.trangThai || ''
+  const status = STATUS_MAP[rawStatus] || 'cho_duyet'
+  const thoiHan = calcThoiHan(item.ngayBatDau, item.ngayKetThuc)
+
+  return {
+    id: item.id,
+    maHopDong: `HĐKG-${item.id}`,
+    tenBDS: item.diaChiBatDongSan || `BĐS #${item.batDongSanId}`,
+    bdsId: item.batDongSanId,
+    ngayKy: item.ngayKy || '',
+    ngayBatDau: item.ngayBatDau || item.ngayKy,
+    ngayKetThuc: item.ngayKetThuc,
+    thoiHan: thoiHan ? `${thoiHan} tháng` : '—',
+    tienDamBao: item.tienDamBao || 0,
+    status: status,
+    tienDamBaoTrangThai: rawStatus === 'DA_KY' || rawStatus === 'HOAN_THANH' ? 'dang_giu' : 'cho_duyet',
+    workflowStep: WORKFLOW_MAP[rawStatus] || 1,
+    diaChiBDS: item.diaChiBatDongSan || '',
+    loaiBDS: '',
+    dienTich: '',
+    giaThueDeXuat: item.giaThue ? `${formatVND(item.giaThue)}/tháng` : '—',
+    phiKyGui: '5%/năm',
+    daiDienDaiLy: item.tenNhanVien || '—',
+    moiGioi: '',
+    dieuKhoanPhatSinh: '',
+    dieuKienChamDut: '',
+    lichSu: [],
+  }
 }
 
 function KPICard({ icon, label, value, color, bgColor, trend }) {
@@ -351,25 +193,21 @@ function ContractRow({ contract, isSelected, onSelect }) {
       }`}
     >
       <div className="p-4 flex items-center gap-4">
-        {/* Contract ID */}
         <div className="shrink-0 w-40">
           <p className="font-mono text-sm font-semibold text-blue-600">{contract.maHopDong}</p>
           <p className="text-xs text-on-surface-variant mt-0.5">{formatDate(contract.ngayKy)}</p>
         </div>
 
-        {/* Property Info */}
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-on-surface truncate">{contract.tenBDS}</p>
           <p className="text-sm text-on-surface-variant truncate">{contract.diaChiBDS}</p>
         </div>
 
-        {/* Duration */}
         <div className="shrink-0 w-32 text-center">
           <p className="text-sm font-medium text-on-surface">{contract.thoiHan}</p>
           <p className="text-xs text-on-surface-variant">{formatDate(contract.ngayBatDau)} – {formatDate(contract.ngayKetThuc)}</p>
         </div>
 
-        {/* Deposit */}
         <div className="shrink-0 w-36 text-right">
           <p className="text-sm font-semibold text-on-surface">{formatVND(contract.tienDamBao)}</p>
           <span className={`text-xs font-medium ${DEPOSIT_STATUS[contract.tienDamBaoTrangThai]?.color}`}>
@@ -377,14 +215,12 @@ function ContractRow({ contract, isSelected, onSelect }) {
           </span>
         </div>
 
-        {/* Status */}
         <div className="shrink-0">
           <span className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${status.color}`}>
             ● {status.label}
           </span>
         </div>
 
-        {/* Arrow */}
         <div className="shrink-0">
           <svg className="w-5 h-5 text-on-surface-variant" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
@@ -401,7 +237,6 @@ function ContractDetail({ contract, onClose }) {
 
   return (
     <div className="bg-white rounded-xl border border-outline-variant shadow-xl overflow-hidden sticky top-6">
-      {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5">
         <div className="flex items-start justify-between">
           <div>
@@ -423,23 +258,21 @@ function ContractDetail({ contract, onClose }) {
       </div>
 
       <div className="p-5 space-y-5 max-h-[calc(100vh-220px)] overflow-y-auto">
-        {/* Workflow */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Tiến trình pháp lý</h4>
           <WorkflowTimeline currentStep={contract.workflowStep} />
         </div>
 
-        {/* Property Info */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Thông tin bất động sản</h4>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-on-surface-variant">Loại</p>
-              <p className="text-sm font-medium text-on-surface">{contract.loaiBDS}</p>
+              <p className="text-sm font-medium text-on-surface">{contract.loaiBDS || '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-on-surface-variant">Diện tích</p>
-              <p className="text-sm font-medium text-on-surface">{contract.dienTich}</p>
+              <p className="text-sm font-medium text-on-surface">{contract.dienTich || '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-on-surface-variant">Giá thuê đề xuất</p>
@@ -452,7 +285,6 @@ function ContractDetail({ contract, onClose }) {
           </div>
         </div>
 
-        {/* Contract Terms */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Điều khoản ký gửi</h4>
           <div className="bg-slate-50 rounded-lg p-3 space-y-2">
@@ -475,15 +307,6 @@ function ContractDetail({ contract, onClose }) {
           </div>
         </div>
 
-        {/* Additional Terms */}
-        <div>
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Điều khoản phát sinh</h4>
-          <p className="text-sm text-on-surface-variant leading-relaxed bg-amber-50 p-3 rounded-lg border border-amber-100">
-            {contract.dieuKhoanPhatSinh}
-          </p>
-        </div>
-
-        {/* Representatives */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Đại diện</h4>
           <div className="space-y-2">
@@ -498,29 +321,9 @@ function ContractDetail({ contract, onClose }) {
                 <p className="text-sm font-medium text-on-surface">{contract.daiDienDaiLy}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-xs text-on-surface-variant">Môi giới</p>
-                <p className="text-sm font-medium text-on-surface">{contract.moiGioi}</p>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Termination Conditions */}
-        <div>
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Điều kiện chấm dứt</h4>
-          <p className="text-sm text-on-surface-variant leading-relaxed bg-slate-50 p-3 rounded-lg">
-            {contract.dieuKienChamDut}
-          </p>
-        </div>
-
-        {/* Deposit */}
         <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Tiền đảm bảo</h4>
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
@@ -534,31 +337,6 @@ function ContractDetail({ contract, onClose }) {
           </div>
         </div>
 
-        {/* Activity History */}
-        <div>
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Lịch sử xử lý</h4>
-          <div className="space-y-0">
-            {contract.lichSu.map((item, i) => {
-              const iconCfg = ACTIVITY_ICONS[item.icon] || ACTIVITY_ICONS.update
-              return (
-                <div key={i} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-7 h-7 rounded-full ${iconCfg.color} flex items-center justify-center shrink-0`}>
-                      <span className="text-white text-xs font-bold">{iconCfg.symbol}</span>
-                    </div>
-                    {i < contract.lichSu.length - 1 && <div className="w-px flex-1 bg-slate-200 my-1" />}
-                  </div>
-                  <div className="pb-4">
-                    <p className="text-sm font-medium text-on-surface">{item.noiDung}</p>
-                    <p className="text-xs text-on-surface-variant">{formatDate(item.ngay)}</p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Actions */}
         <div className="flex gap-2 pt-2">
           <Link
             to={`/dashboard/hop-dong-ky-gui/${contract.id}`}
@@ -566,16 +344,6 @@ function ContractDetail({ contract, onClose }) {
           >
             Xem chi tiết
           </Link>
-          <button className="py-2.5 px-4 rounded-lg border border-outline-variant text-on-surface-variant font-medium text-sm hover:bg-slate-50 transition-colors" title="Tải PDF">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </button>
-          {contract.status === 'dang_hieu_luc' && (
-            <button className="py-2.5 px-4 rounded-lg bg-amber-500 text-white font-medium text-sm hover:bg-amber-600 transition-colors" title="Gia hạn">
-              Gia hạn
-            </button>
-          )}
         </div>
       </div>
     </div>
@@ -610,12 +378,34 @@ function EmptyState() {
 }
 
 export default function HopDongKyGuiPage() {
+  const [contracts, setContracts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
 
+  const fetchContracts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await hopDongKyGuiService.danhSach()
+      const mapped = (res?.data || []).map(mapContract)
+      setContracts(mapped)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải danh sách hợp đồng')
+      setContracts([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchContracts()
+  }, [fetchContracts])
+
   const filtered = useMemo(() => {
-    let result = [...CONTRACTS]
+    let result = [...contracts]
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(c =>
@@ -626,26 +416,52 @@ export default function HopDongKyGuiPage() {
     }
     if (filterStatus !== 'all') result = result.filter(c => c.status === filterStatus)
     return result
-  }, [searchQuery, filterStatus])
+  }, [searchQuery, filterStatus, contracts])
 
   const kpiData = useMemo(() => ({
-    total: CONTRACTS.length,
-    active: CONTRACTS.filter(c => c.status === 'dang_hieu_luc').length,
-    pending: CONTRACTS.filter(c => ['cho_duyet', 'cho_ky'].includes(c.status)).length,
-    ended: CONTRACTS.filter(c => ['da_ket_thuc', 'tam_dung'].includes(c.status)).length,
-  }), [])
+    total: contracts.length,
+    active: contracts.filter(c => c.status === 'dang_hieu_luc').length,
+    pending: contracts.filter(c => ['cho_duyet', 'cho_ky'].includes(c.status)).length,
+    ended: contracts.filter(c => ['da_ket_thuc', 'tam_dung'].includes(c.status)).length,
+  }), [contracts])
 
-  const selectedContract = selectedId ? CONTRACTS.find(c => c.id === selectedId) : null
+  const selectedContract = selectedId ? contracts.find(c => c.id === selectedId) : null
+
+  if (loading) {
+    return (
+      <div className="max-w-[1600px] mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-[1600px] mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-md">
+          <svg className="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p className="text-red-700 font-medium mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+          <button onClick={fetchContracts} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+            Thử lại
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-[1600px] mx-auto">
-      {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-on-surface">Hợp đồng ký gửi</h1>
         <p className="text-on-surface-variant text-sm mt-1">Theo dõi hợp đồng ký gửi bất động sản của bạn</p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <KPICard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
@@ -681,7 +497,6 @@ export default function HopDongKyGuiPage() {
         />
       </div>
 
-      {/* Toolbar */}
       <div className="bg-white rounded-xl border border-outline-variant p-4 mb-6">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[240px]">
@@ -727,14 +542,11 @@ export default function HopDongKyGuiPage() {
         </div>
       </div>
 
-      {/* Content */}
       {filtered.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="flex gap-6">
-          {/* Contract List */}
           <div className="flex-1">
-            {/* Table Header */}
             <div className="grid grid-cols-[160px_1fr_128px_144px_auto_32px] gap-4 px-4 py-2.5 mb-2">
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Mã hợp đồng</span>
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Bất động sản</span>
@@ -756,9 +568,8 @@ export default function HopDongKyGuiPage() {
             </div>
           </div>
 
-          {/* Detail Panel */}
           {selectedContract && (
-            <div className="w-[420px] shrink-0 hidden xl:block">
+            <div className="w-105 shrink-0 hidden xl:block">
               <ContractDetail contract={selectedContract} onClose={() => setSelectedId(null)} />
             </div>
           )}

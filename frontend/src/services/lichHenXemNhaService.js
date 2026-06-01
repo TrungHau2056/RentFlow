@@ -30,6 +30,11 @@ const lichHenXemNhaService = {
     const response = await api.put(`/api/lich-hen-xem-nha/${id}/phan-hoi`, data);
     return response.data;
   },
+
+  async capNhatKetQua(id, data) {
+    const response = await api.put(`/api/lich-hen-xem-nha/${id}`, { ketQua: data.ketQua, nhanXetKH: data.nhanXet, ghiChuMG: data.ghiChu });
+    return response.data;
+  },
 };
 
 export default lichHenXemNhaService;

@@ -1,7 +1,15 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import quanTriService from '../services/quanTriService'
 
-const ROLE_OPTIONS = ['Tất cả role', 'Admin', 'Môi giới', 'Nhân viên đại lý', 'Pháp luật']
+const ROLE_OPTIONS = ['Tất cả role', 'Admin', 'Môi giới', 'Nhân viên đại lý', 'Kế toán', 'Pháp luật']
+
+const CREATE_ROLE_OPTIONS = [
+  { value: 'NHAN_VIEN_DAI_LY', label: 'Nhân viên đại lý' },
+  { value: 'KE_TOAN', label: 'Kế toán' },
+  { value: 'BO_PHAN_PHAP_LUAT', label: 'Pháp luật' },
+  { value: 'MOI_GIOI', label: 'Môi giới' },
+  { value: 'QUAN_TRI_VIEN', label: 'Admin' },
+]
 
 const PERMISSIONS = {
   Admin: [
@@ -53,7 +61,7 @@ const statusMap = (status) => {
 }
 
 const roleMap = (role) => {
-  const map = { QUAN_TRI_VIEN: 'Admin', NHAN_VIEN_DAI_LY: 'Nhân viên đại lý', MOI_GIOI: 'Môi giới', PHAP_LUAT: 'Pháp luật' }
+  const map = { QUAN_TRI_VIEN: 'Admin', NHAN_VIEN_DAI_LY: 'Nhân viên đại lý', KE_TOAN: 'Kế toán', BO_PHAN_PHAP_LUAT: 'Pháp luật', MOI_GIOI: 'Môi giới' }
   return map[role] || role
 }
 
@@ -222,7 +230,7 @@ function UserDetail({ user, onAction, inModal = false }) {
 }
 
 function CreateAccountModal({ onClose, onCreate }) {
-  const [formData, setFormData] = useState({ hoTen: '', email: '', tenVaiTro: 'Nhân viên đại lý', haiYeuTo: true })
+  const [formData, setFormData] = useState({ username: '', password: '', hoTen: '', email: '', soDienThoai: '', tenVaiTro: 'NHAN_VIEN_DAI_LY' })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
@@ -230,13 +238,21 @@ function CreateAccountModal({ onClose, onCreate }) {
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Tạo tài khoản nội bộ</h2>
-            <p className="mt-1 text-sm text-slate-500">Gán vai trò và gửi lời mời kích hoạt bảo mật.</p>
+            <p className="mt-1 text-sm text-slate-500">Tạo tài khoản cho nhân viên nội bộ.</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
             <Icon name="close" />
           </button>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <label>
+            <span className="mb-2 block text-xs font-semibold text-slate-600">Tên đăng nhập</span>
+            <input value={formData.username} onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="nhanvien01" />
+          </label>
+          <label>
+            <span className="mb-2 block text-xs font-semibold text-slate-600">Mật khẩu</span>
+            <input type="password" value={formData.password} onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="Ít nhất 6 ký tự" />
+          </label>
           <label className="sm:col-span-2">
             <span className="mb-2 block text-xs font-semibold text-slate-600">Họ và tên</span>
             <input value={formData.hoTen} onChange={(e) => setFormData((prev) => ({ ...prev, hoTen: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="Nhập tên nhân viên" />
@@ -246,19 +262,19 @@ function CreateAccountModal({ onClose, onCreate }) {
             <input value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="email@rentflow.vn" />
           </label>
           <label>
-            <span className="mb-2 block text-xs font-semibold text-slate-600">Role</span>
+            <span className="mb-2 block text-xs font-semibold text-slate-600">Số điện thoại</span>
+            <input value={formData.soDienThoai} onChange={(e) => setFormData((prev) => ({ ...prev, soDienThoai: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100" placeholder="0901234567" />
+          </label>
+          <label className="sm:col-span-2">
+            <span className="mb-2 block text-xs font-semibold text-slate-600">Vai trò</span>
             <select value={formData.tenVaiTro} onChange={(e) => setFormData((prev) => ({ ...prev, tenVaiTro: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100">
-              {ROLE_OPTIONS.slice(1).map((role) => <option key={role}>{role}</option>)}
+              {CREATE_ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
             </select>
           </label>
         </div>
-        <label className="mt-4 flex items-center gap-2.5 text-sm text-slate-600">
-          <input checked={formData.haiYeuTo} onChange={(e) => setFormData((prev) => ({ ...prev, haiYeuTo: e.target.checked }))} type="checkbox" className="h-4 w-4 accent-blue-600" />
-          Yêu cầu bật xác thực hai lớp khi đăng nhập lần đầu
-        </label>
         <div className="mt-7 flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">Hủy</button>
-          <button type="button" onClick={() => onCreate(formData)} className="flex-1 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">Tạo & gửi lời mời</button>
+          <button type="button" onClick={() => onCreate(formData)} className="flex-1 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">Tạo tài khoản</button>
         </div>
       </div>
     </div>
