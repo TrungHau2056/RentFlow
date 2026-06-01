@@ -407,6 +407,77 @@ function PriorityAlert({ title, description, count, color, icon }) {
   )
 }
 
+function RejectModal({ onClose, onReject, loading }) {
+  const [lyDo, setLyDo] = useState('')
+  const [ghiChu, setGhiChu] = useState('')
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!lyDo.trim()) return
+    onReject({ lyDoTuChoi: lyDo, ghiChu })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 p-5">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Từ chối hợp đồng</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Nhập lý do từ chối hợp đồng này</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 transition-colors">
+            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <label>
+            <span className="block text-xs font-semibold text-slate-600 mb-1.5">Lý do từ chối *</span>
+            <textarea
+              value={lyDo}
+              onChange={(e) => setLyDo(e.target.value)}
+              placeholder="Mô tả lý do từ chối hợp đồng..."
+              rows={4}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100 resize-none"
+              required
+            />
+          </label>
+
+          <label>
+            <span className="block text-xs font-semibold text-slate-600 mb-1.5">Ghi chú thêm (không bắt buộc)</span>
+            <textarea
+              value={ghiChu}
+              onChange={(e) => setGhiChu(e.target.value)}
+              placeholder="Các ghi chú pháp lý khác..."
+              rows={2}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100 resize-none"
+            />
+          </label>
+
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function EmptyState() {
   return (
     <div className="py-20">
@@ -434,6 +505,8 @@ export default function LegalPage() {
   const [filterLoai, setFilterLoai] = useState('Tất cả')
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
+  const [rejectModalOpen, setRejectModalOpen] = useState(false)
+  const [rejectData, setRejectData] = useState(null)
 
   const fetchContracts = useCallback(async () => {
     setLoading(true)
@@ -476,25 +549,30 @@ export default function LegalPage() {
     }
   }, [fetchContracts, requests])
 
-  const handleReject = useCallback(async (id) => {
+  const handleReject = useCallback(async (data) => {
     setActionLoading(true)
     try {
-      const request = requests.find(r => r.id === id)
-      const lyDo = prompt('Nhập lý do từ chối:')
-      if (lyDo === null) { setActionLoading(false); return }
+      const request = requests.find(r => r.id === rejectData?.id)
       if (request?.loaiHopDong === 'ky_gui') {
-        await contractService.approveKyGuiContract(id, false, lyDo)
+        await contractService.approveKyGuiContract(rejectData.id, false, data.lyDoTuChoi)
       } else {
-        await contractService.updateThueContractStatus(id, 'TU_CHOI')
+        await contractService.updateThueContractStatus(rejectData.id, 'TU_CHOI')
       }
       setSelectedId(null)
+      setRejectModalOpen(false)
+      setRejectData(null)
       fetchContracts()
     } catch (err) {
       alert(err.response?.data?.message || 'Từ chối thất bại')
     } finally {
       setActionLoading(false)
     }
-  }, [fetchContracts, requests])
+  }, [fetchContracts, requests, rejectData])
+
+  const openRejectModal = useCallback((id) => {
+    setRejectData({ id })
+    setRejectModalOpen(true)
+  }, [])
 
   const handleSubmit = useCallback(async (id) => {
     setActionLoading(true)
@@ -747,10 +825,18 @@ export default function LegalPage() {
 
           {selectedRequest && (
             <div className="w-105 shrink-0 hidden xl:block">
-              <LegalDetail request={selectedRequest} onClose={() => setSelectedId(null)} onApprove={handleApprove} onReject={handleReject} onSubmit={handleSubmit} actionLoading={actionLoading} />
+              <LegalDetail request={selectedRequest} onClose={() => setSelectedId(null)} onApprove={handleApprove} onReject={openRejectModal} onSubmit={handleSubmit} actionLoading={actionLoading} />
             </div>
           )}
         </div>
+      )}
+
+      {rejectModalOpen && (
+        <RejectModal
+          onClose={() => { setRejectModalOpen(false); setRejectData(null) }}
+          onReject={handleReject}
+          loading={actionLoading}
+        />
       )}
     </div>
   )

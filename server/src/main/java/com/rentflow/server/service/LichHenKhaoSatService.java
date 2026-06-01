@@ -72,9 +72,6 @@ public class LichHenKhaoSatService {
                 : securityUtils.getCurrentUser().getNhanVienSet().stream().findFirst()
                         .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
 
-        bds.setTrangThai(TrangThaiBatDongSan.CHO_XAC_NHAN.name());
-        batDongSanRepository.save(bds);
-
         LichHenKhaoSat lh = LichHenKhaoSat.builder()
                 .batDongSan(bds)
                 .chuNha(chuNha)

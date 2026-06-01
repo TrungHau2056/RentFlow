@@ -12,6 +12,7 @@ import AdminBatDongSanPage from './pages/AdminBatDongSanPage'
 import AdminLichKhaoSatPage from './pages/AdminLichKhaoSatPage'
 import AdminHopDongKyGuiPage from './pages/AdminHopDongKyGuiPage'
 import AdminHopDongThuePage from './pages/AdminHopDongThuePage'
+import TaoHopDongThuePage from './pages/TaoHopDongThuePage'
 import ChiTietHopDongKyGuiPage from './pages/ChiTietHopDongKyGuiPage'
 import CustomersPage from './pages/CustomersPage'
 import ChiTietKhachHangPage from './pages/ChiTietKhachHangPage'
@@ -35,6 +36,8 @@ import HoaHongPage from './pages/HoaHongPage'
 import ThongBaoPage from './pages/ThongBaoPage'
 import BaoCaoThongKePage from './pages/BaoCaoThongKePage'
 import AccountManagementPage from './pages/AccountManagementPage'
+import CaiDatPage from './pages/CaiDatPage'
+import HoSoCaNhanPage from './pages/HoSoCaNhanPage'
 import AdminLayout from './layouts/AdminLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import TenantLayout from './layouts/TenantLayout'
@@ -95,6 +98,7 @@ function App() {
         <Route path="lich-khao-sat" element={<LichKhaoSatPage />} />
         <Route path="thong-bao" element={<ThongBaoPage />} />
         <Route path="hop-dong-ky-gui/:id" element={<ChiTietHopDongKyGuiPage />} />
+        <Route path="ho-so" element={<HoSoCaNhanPage />} />
       </Route>
 
       {/* Admin routes — shared sidebar via AdminLayout */}
@@ -104,6 +108,7 @@ function App() {
         <Route path="bat-dong-san" element={<AdminBatDongSanPage />} />
         <Route path="hop-dong-ky-gui" element={<AdminHopDongKyGuiPage />} />
         <Route path="hop-dong-thue" element={<AdminHopDongThuePage />} />
+        <Route path="hop-dong-thue/tao-moi" element={<TaoHopDongThuePage />} />
         <Route path="lich-khao-sat" element={<AdminLichKhaoSatPage />} />
         <Route path="lich-khao-sat/tao/:batDongSanId" element={<AdminLichKhaoSatPage />} />
         <Route path="lich-xem-nha" element={<LichXemNhaPage />} />
@@ -117,6 +122,7 @@ function App() {
         <Route path="customers" element={<Navigate to="/admin/khach-hang" replace />} />
         <Route path="customers/:id" element={<ChiTietKhachHangPage />} />
         <Route path="hop-dong-ky-gui/:id" element={<ChiTietHopDongKyGuiPage />} />
+        <Route path="cai-dat" element={<CaiDatPage />} />
       </Route>
 
       {/* Catch-all */}

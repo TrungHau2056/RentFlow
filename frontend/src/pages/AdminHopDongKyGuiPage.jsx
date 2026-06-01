@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import contractService from '../services/contractService'
 import hopDongKyGuiService from '../services/hopDongKyGuiService'
+import { normalizeInternalRole, ROLE_GROUPS } from '../config/roles'
+import api from '../services/api'
 
 const STATUS_CONFIG = {
   cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
@@ -250,7 +252,7 @@ function ContractRow({ contract, isSelected, onSelect }) {
   )
 }
 
-function ContractDetail({ contract, onClose }) {
+function ContractDetail({ contract, onClose, onAction }) {
   if (!contract) return null
   const status = STATUS_CONFIG[contract.trangThai] || { color: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: contract.trangThai }
   const legalStatus = LEGAL_STATUS_CONFIG[contract.trangThaiPhapLy] || { color: 'bg-slate-100 text-slate-500', dot: 'bg-slate-400', label: contract.trangThaiPhapLy }
@@ -446,13 +448,19 @@ function ContractDetail({ contract, onClose }) {
           <div className="space-y-2">
             {(contract.trangThai === 'cho_duyet' || contract.trangThaiPhapLy === 'can_sua') && (
               <div className="flex gap-2">
-                <button className="flex-1 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5">
+                <button
+                  onClick={() => onAction?.('approve', contract.id)}
+                  className="flex-1 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Duyệt hợp đồng
                 </button>
-                <button className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5">
+                <button
+                  onClick={() => onAction?.('reject', contract.id)}
+                  className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -461,29 +469,52 @@ function ContractDetail({ contract, onClose }) {
               </div>
             )}
             {contract.trangThai === 'cho_ky' && (
-              <button className="w-full py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5">
+              <button
+                onClick={() => onAction?.('kyKet', contract.id)}
+                className="w-full py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
-                Gửi cho chủ nhà ký
+                Ký kết hợp đồng
+              </button>
+            )}
+            {contract.trangThai === 'cho_duyet' && (
+              <button
+                onClick={() => onAction?.('guiPheDuyet', contract.id)}
+                className="w-full py-2.5 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Gửi duyệt pháp lý
               </button>
             )}
             <div className="flex gap-2">
-              <button className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
+              <button
+                onClick={() => onAction?.('edit', contract.id)}
+                className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 Chỉnh sửa
               </button>
-              <button className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
+              <button
+                onClick={() => onAction?.('delete', contract.id)}
+                className="flex-1 py-2.5 rounded-lg border border-red-200 text-red-700 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                Xuất PDF
+                Xóa
               </button>
             </div>
             {contract.trangThai === 'dang_hieu_luc' && (
-              <button className="w-full py-2.5 rounded-lg border border-amber-300 text-amber-700 text-sm font-medium hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5">
+              <button
+                onClick={() => onAction?.('extend', contract.id)}
+                className="w-full py-2.5 rounded-lg border border-amber-300 text-amber-700 text-sm font-medium hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -528,6 +559,258 @@ function EmptyState() {
   )
 }
 
+function CreateContractModal({ onClose, onCreate, chuNhaList, batDongSanList }) {
+  const [step, setStep] = useState(0)
+  const [formData, setFormData] = useState({
+    chuNhaId: '',
+    batDongSanId: '',
+    nhanVienId: '',
+    ngayBatDau: '',
+    ngayKetThuc: '',
+    tienDamBao: '',
+    coDieuKhoanPhatSinh: false,
+    dieuKhoanPhatSinh: '',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const validateStep = (stepNum) => {
+    if (stepNum === 0) {
+      if (!formData.chuNhaId || !formData.batDongSanId || !formData.ngayBatDau || !formData.ngayKetThuc || !formData.tienDamBao) {
+        setError('Vui lòng điền đầy đủ thông tin bắt buộc')
+        return false
+      }
+    }
+    setError('')
+    return true
+  }
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(step + 1)
+    }
+  }
+
+  const prevStep = () => {
+    setStep(step - 1)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const payload = {
+        chuNhaId: Number(formData.chuNhaId),
+        batDongSanId: Number(formData.batDongSanId),
+        nhanVienId: Number(formData.nhanVienId) || 1,
+        ngayBatDau: formData.ngayBatDau,
+        ngayKetThuc: formData.ngayKetThuc,
+        tienDamBao: Number(formData.tienDamBao),
+      }
+      await hopDongKyGuiService.tao(payload)
+      onCreate()
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tạo hợp đồng')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 p-5">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Tạo hợp đồng ký gửi</h2>
+            <p className="text-xs text-slate-500 mt-0.5">{step === 0 ? 'Soạn thảo hợp đồng ký gửi mới' : 'Kiểm tra điều khoản phát sinh'}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 transition-colors">
+            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-5 py-4">
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${step >= 0 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>1</div>
+            <div className={`flex-1 h-0.5 ${step >= 1 ? 'bg-blue-500' : 'bg-slate-200'}`} />
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>2</div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          {step === 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              <label className="col-span-2">
+                <span className="block text-xs font-semibold text-slate-600 mb-1.5">Chủ nhà *</span>
+                <select
+                  value={formData.chuNhaId}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, chuNhaId: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  required
+                >
+                  <option value="">-- Chọn chủ nhà --</option>
+                  {(chuNhaList || []).map((cn) => (
+                    <option key={cn.id} value={cn.id}>{cn.hoTen}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="col-span-2">
+                <span className="block text-xs font-semibold text-slate-600 mb-1.5">Bất động sản *</span>
+                <select
+                  value={formData.batDongSanId}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, batDongSanId: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  required
+                >
+                  <option value="">-- Chọn bất động sản --</option>
+                  {(batDongSanList || []).map((bds) => (
+                    <option key={bds.id} value={bds.id}>{bds.diaChi}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span className="block text-xs font-semibold text-slate-600 mb-1.5">Ngày bắt đầu *</span>
+                <input
+                  type="date"
+                  value={formData.ngayBatDau}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, ngayBatDau: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  required
+                />
+              </label>
+
+              <label>
+                <span className="block text-xs font-semibold text-slate-600 mb-1.5">Ngày kết thúc *</span>
+                <input
+                  type="date"
+                  value={formData.ngayKetThuc}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, ngayKetThuc: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  required
+                />
+              </label>
+
+              <label>
+                <span className="block text-xs font-semibold text-slate-600 mb-1.5">Tiền đảm bảo (VNĐ) *</span>
+                <input
+                  type="number"
+                  value={formData.tienDamBao}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, tienDamBao: e.target.value }))}
+                  placeholder="10000000"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  required
+                />
+              </label>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Có điều khoản phát sinh?</p>
+                <p className="text-xs text-slate-500 mt-0.5">Kiểm tra xem hợp đồng có điều khoản đặc biệt nào cần lưu ý không</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, coDieuKhoanPhatSinh: false }))}
+                  className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
+                    !formData.coDieuKhoanPhatSinh
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <svg className="w-5 h-5 mx-auto mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Không có
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, coDieuKhoanPhatSinh: true }))}
+                  className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
+                    formData.coDieuKhoanPhatSinh
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <svg className="w-5 h-5 mx-auto mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Có điều khoản
+                </button>
+              </div>
+
+              {formData.coDieuKhoanPhatSinh && (
+                <label className="block">
+                  <span className="block text-xs font-semibold text-slate-600 mb-1.5">Mô tả điều khoản phát sinh</span>
+                  <textarea
+                    value={formData.dieuKhoanPhatSinh}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, dieuKhoanPhatSinh: e.target.value }))}
+                    placeholder="Mô tả chi tiết các điều khoản đặc biệt cần lưu ý..."
+                    rows={4}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+                  />
+                </label>
+              )}
+
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-semibold text-amber-700 flex items-start gap-2">
+                  <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Lưu ý: Nếu có điều khoản phát sinh, hợp đồng sẽ được đánh dấu để bộ phận pháp lý xem xét kỹ hơn.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            {step === 1 && (
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Quay lại
+              </button>
+            )}
+            {step === 0 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                Tiếp tục
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Đang tạo...' : 'Tạo hợp đồng'}
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminHopDongKyGuiPage() {
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -538,6 +821,17 @@ export default function AdminHopDongKyGuiPage() {
   const [filterChuNha, setFilterChuNha] = useState('Tất cả')
   const [sortBy, setSortBy] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [chuNhaList, setChuNhaList] = useState([])
+  const [batDongSanList, setBatDongSanList] = useState([])
+  const [actionLoading, setActionLoading] = useState(null)
+  const [notice, setNotice] = useState('')
+
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  const roleGroup = normalizeInternalRole(userInfo?.role)
+  const isAdmin = roleGroup === ROLE_GROUPS.ADMIN
+  const isNhanVienDaiLy = roleGroup === ROLE_GROUPS.AGENCY
+  const isPhapLuat = roleGroup === ROLE_GROUPS.LEGAL
 
   const fetchContracts = async () => {
     setLoading(true)
@@ -553,7 +847,29 @@ export default function AdminHopDongKyGuiPage() {
     }
   }
 
-  useEffect(() => { fetchContracts() }, [])
+  const fetchChuNhaList = async () => {
+    try {
+      const res = await api.get('/api/chu-nha')
+      setChuNhaList(res.data?.data || [])
+    } catch {
+      setChuNhaList([])
+    }
+  }
+
+  const fetchBatDongSanList = async () => {
+    try {
+      const res = await api.get('/api/bat-dong-san')
+      setBatDongSanList(res.data?.data || [])
+    } catch {
+      setBatDongSanList([])
+    }
+  }
+
+  useEffect(() => {
+    fetchContracts()
+    fetchChuNhaList()
+    fetchBatDongSanList()
+  }, [])
 
   const chuNhaOptions = useMemo(() => {
     const names = contracts.map(c => c.chuNha).filter(Boolean)
@@ -616,6 +932,72 @@ export default function AdminHopDongKyGuiPage() {
 
   const selectedContract = selectedId ? contracts.find(c => c.id === selectedId) : null
 
+  const handleAction = async (action, id) => {
+    setActionLoading(action)
+    try {
+      switch (action) {
+        case 'approve': {
+          if (!window.confirm('Xác nhận duyệt hợp đồng này?')) return
+          await contractService.approveKyGuiContract(id, true)
+          setNotice('Đã duyệt hợp đồng thành công')
+          break
+        }
+        case 'reject': {
+          const lyDo = prompt('Nhập lý do từ chối:')
+          if (lyDo === null) return
+          await contractService.approveKyGuiContract(id, false, lyDo || 'Không có lý do')
+          setNotice('Đã từ chối hợp đồng')
+          break
+        }
+        case 'guiPheDuyet': {
+          if (!window.confirm('Gửi hợp đồng này đến bộ phận pháp lý để duyệt?')) return
+          await hopDongKyGuiService.guiPheDuyet(id)
+          setNotice('Đã gửi duyệt pháp lý')
+          break
+        }
+        case 'kyKet': {
+          if (!window.confirm('Xác nhận ký kết hợp đồng này?')) return
+          await hopDongKyGuiService.kyKet(id)
+          setNotice('Đã ký kết hợp đồng')
+          break
+        }
+        case 'delete': {
+          const contract = contracts.find(c => c.id === id)
+          if (contract?.trangThai !== 'cho_duyet') {
+            alert('Chỉ có thể xóa hợp đồng ở trạng thái "Chờ duyệt"')
+            return
+          }
+          if (!window.confirm('Xác nhận xóa hợp đồng này?')) return
+          await hopDongKyGuiService.xoa(id)
+          setNotice('Đã xóa hợp đồng')
+          if (selectedId === id) setSelectedId(null)
+          break
+        }
+        case 'edit':
+          setNotice('Chức năng chỉnh sửa đang phát triển')
+          return
+        case 'extend':
+          setNotice('Chức năng gia hạn đang phát triển')
+          return
+        default:
+          return
+      }
+      fetchContracts()
+    } catch (err) {
+      setNotice(err.response?.data?.message || 'Thao tác thất bại')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleCreate = () => {
+    setCreateModalOpen(false)
+    setNotice('Đã tạo hợp đồng thành công')
+    fetchContracts()
+    fetchChuNhaList()
+    fetchBatDongSanList()
+  }
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
@@ -651,7 +1033,34 @@ export default function AdminHopDongKyGuiPage() {
           <h1 className="text-2xl font-bold text-slate-800">Quản lý hợp đồng ký gửi</h1>
           <p className="text-slate-500 text-sm mt-1">Theo dõi và xử lý hợp đồng ký gửi bất động sản</p>
         </div>
+        {(isAdmin || isNhanVienDaiLy) && (
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Tạo hợp đồng
+          </button>
+        )}
       </div>
+
+      {notice && (
+        <div className="mb-5 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          <span className="flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {notice}
+          </span>
+          <button onClick={() => setNotice('')} className="text-blue-500 hover:text-blue-700">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-5 gap-4 mb-6">
         <KPICard icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>} label="Tổng hợp đồng" value={kpiData.total} color="text-blue-600" bgColor="bg-blue-50" sparkData={[5, 8, 6, 10, 9, 12, 10]} sparkColor="#2563eb" />
@@ -732,11 +1141,20 @@ export default function AdminHopDongKyGuiPage() {
             </div>
           </div>
           {selectedContract && (
-            <div className="w-[420px] shrink-0 hidden xl:block">
-              <ContractDetail contract={selectedContract} onClose={() => setSelectedId(null)} />
+            <div className="w-105 shrink-0 hidden xl:block">
+              <ContractDetail contract={selectedContract} onClose={() => setSelectedId(null)} onAction={handleAction} />
             </div>
           )}
         </div>
+      )}
+
+      {createModalOpen && (
+        <CreateContractModal
+          onClose={() => setCreateModalOpen(false)}
+          onCreate={handleCreate}
+          chuNhaList={chuNhaList}
+          batDongSanList={batDongSanList}
+        />
       )}
     </div>
   )

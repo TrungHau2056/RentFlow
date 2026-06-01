@@ -1,15 +1,43 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import hopDongKyGuiService from '../services/hopDongKyGuiService'
 
-const TRANG_THAI_HOP_DONG = {
-  NHAP: { label: 'Nháp', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
-  CHO_PHE_DUYET: { label: 'Chờ phê duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
-  DA_PHE_DUYET: { label: 'Đã phê duyệt', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
-  TU_CHOI: { label: 'Từ chối', color: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400' },
-  DA_KY: { label: 'Đã ký', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
-  HOAN_THANH: { label: 'Hoàn thành', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-400' },
-  DA_HUY: { label: 'Đã hủy', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+const STATUS_CONFIG = {
+  cho_duyet: { label: 'Chờ duyệt', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+  cho_ky: { label: 'Chờ ký', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
+  dang_hieu_luc: { label: 'Đang hiệu lực', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
+  da_ket_thuc: { label: 'Đã kết thúc', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+  tam_dung: { label: 'Tạm dừng', color: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400' },
+}
+
+const DEPOSIT_STATUS = {
+  cho_duyet: { label: 'Chờ duyệt', color: 'text-amber-600', icon: 'clock' },
+  dang_giu: { label: 'Đang giữ', color: 'text-blue-600', icon: 'shield' },
+  da_khau_tru: { label: 'Đã khấu trừ', color: 'text-orange-600', icon: 'minus' },
+  da_hoan_tra: { label: 'Đã hoàn trả', color: 'text-emerald-600', icon: 'check' },
+}
+
+const WORKFLOW_STEPS = [
+  { key: 'tiep_nhan', label: 'Tiếp nhận' },
+  { key: 'khao_sat', label: 'Khảo sát' },
+  { key: 'phap_luat', label: 'Pháp lý duyệt' },
+  { key: 'cho_ky', label: 'Chờ ký' },
+  { key: 'hieu_luc', label: 'Hiệu lực' },
+]
+
+const STATUS_MAP = {
+  NHAP: 'cho_duyet',
+  CHO_PHE_DUYET: 'cho_duyet',
+  DA_PHE_DUYET: 'cho_ky',
+  TU_CHOI: 'tam_dung',
+  DA_KY: 'dang_hieu_luc',
+  HOAN_THANH: 'da_ket_thuc',
+  DA_HUY: 'da_ket_thuc',
+}
+
+const WORKFLOW_MAP = {
+  NHAP: 1, CHO_PHE_DUYET: 2, DA_PHE_DUYET: 3,
+  TU_CHOI: 2, DA_KY: 5, HOAN_THANH: 5, DA_HUY: 5,
 }
 
 function formatVND(amount) {
@@ -19,7 +47,45 @@ function formatVND(amount) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function calcThoiHan(ngayBatDau, ngayKetThuc) {
+  if (!ngayBatDau || !ngayKetThuc) return null
+  const start = new Date(ngayBatDau)
+  const end = new Date(ngayKetThuc)
+  return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
+}
+
+function mapContract(item) {
+  const rawStatus = item.trangThai || ''
+  const status = STATUS_MAP[rawStatus] || 'cho_duyet'
+  const thoiHan = calcThoiHan(item.ngayBatDau, item.ngayKetThuc)
+
+  return {
+    id: item.id,
+    maHopDong: `HĐKG-${item.id}`,
+    tenBDS: item.diaChiBatDongSan || `BĐS #${item.batDongSanId}`,
+    bdsId: item.batDongSanId,
+    ngayKy: item.ngayKy || '',
+    ngayBatDau: item.ngayBatDau || item.ngayKy,
+    ngayKetThuc: item.ngayKetThuc,
+    thoiHan: thoiHan ? `${thoiHan} tháng` : '—',
+    tienDamBao: item.tienDamBao || 0,
+    status: status,
+    tienDamBaoTrangThai: rawStatus === 'DA_KY' || rawStatus === 'HOAN_THANH' ? 'dang_giu' : 'cho_duyet',
+    workflowStep: WORKFLOW_MAP[rawStatus] || 1,
+    diaChiBDS: item.diaChiBatDongSan || '',
+    loaiBDS: '',
+    dienTich: '',
+    giaThueDeXuat: item.giaThue ? `${formatVND(item.giaThue)}/tháng` : '—',
+    phiKyGui: '5%/năm',
+    daiDienDaiLy: item.tenNhanVien || '—',
+    moiGioi: '',
+    dieuKhoanPhatSinh: '',
+    dieuKienChamDut: '',
+    lichSu: [],
+  }
 }
 
 function KPICard({ icon, label, value, color, bgColor, trend }) {
@@ -123,6 +189,11 @@ function ContractDetail({ contract, onClose }) {
 
       <div className="p-5 space-y-5 max-h-[calc(100vh-220px)] overflow-y-auto">
         <div>
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Tiến trình pháp lý</h4>
+          <WorkflowTimeline currentStep={contract.workflowStep} />
+        </div>
+
+        <div>
           <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Thông tin bất động sản</h4>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 rounded-lg p-3">
@@ -131,11 +202,11 @@ function ContractDetail({ contract, onClose }) {
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-on-surface-variant">Loại</p>
-              <p className="text-sm font-medium text-on-surface">{contract.loaiBatDongSan || '—'}</p>
+              <p className="text-sm font-medium text-on-surface">{contract.loaiBDS || '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-on-surface-variant">Giá thuê</p>
-              <p className="text-sm font-medium text-blue-600">{formatVND(contract.giaThue)}</p>
+              <p className="text-xs text-on-surface-variant">Diện tích</p>
+              <p className="text-sm font-medium text-on-surface">{contract.dienTich || '—'}</p>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs text-on-surface-variant">Tiền đảm bảo</p>
@@ -163,17 +234,32 @@ function ContractDetail({ contract, onClose }) {
         </div>
 
         <div>
-          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Nhân viên phụ trách</h4>
-          <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Đại diện</h4>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs text-on-surface-variant">Đại lý</p>
+                <p className="text-sm font-medium text-on-surface">{contract.daiDienDaiLy}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-on-surface-variant">Môi giới</p>
-              <p className="text-sm font-medium text-on-surface">{contract.tenNhanVien || '—'}</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Tiền đảm bảo</h4>
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-lg font-bold text-blue-700">{formatVND(contract.tienDamBao)}</span>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${DEPOSIT_STATUS[contract.tienDamBaoTrangThai]?.color} bg-white`}>
+                {DEPOSIT_STATUS[contract.tienDamBaoTrangThai]?.label}
+              </span>
             </div>
+            <DepositTimeline status={contract.tienDamBaoTrangThai} />
           </div>
         </div>
 
@@ -220,24 +306,29 @@ function EmptyState() {
 export default function HopDongKyGuiPage() {
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        setLoading(true)
-        const res = await hopDongKyGuiService.theoChuNhaHienTai()
-        setContracts(res.data || [])
-      } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Không thể tải dữ liệu')
-      } finally {
-        setLoading(false)
-      }
-    })()
+  const fetchContracts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await hopDongKyGuiService.danhSach()
+      const mapped = (res?.data || []).map(mapContract)
+      setContracts(mapped)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải danh sách hợp đồng')
+      setContracts([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    fetchContracts()
+  }, [fetchContracts])
 
   const filtered = useMemo(() => {
     let result = [...contracts]
@@ -251,34 +342,41 @@ export default function HopDongKyGuiPage() {
     }
     if (filterStatus !== 'all') result = result.filter(c => c.trangThai === filterStatus)
     return result
-  }, [contracts, searchQuery, filterStatus])
+  }, [searchQuery, filterStatus, contracts])
 
   const kpiData = useMemo(() => ({
     total: contracts.length,
-    active: contracts.filter(c => c.trangThai === 'DA_KY' || c.trangThai === 'HOAN_THANH').length,
-    pending: contracts.filter(c => c.trangThai === 'CHO_PHE_DUYET' || c.trangThai === 'DA_PHE_DUYET').length,
-    draft: contracts.filter(c => c.trangThai === 'NHAP').length,
+    active: contracts.filter(c => c.status === 'dang_hieu_luc').length,
+    pending: contracts.filter(c => ['cho_duyet', 'cho_ky'].includes(c.status)).length,
+    ended: contracts.filter(c => ['da_ket_thuc', 'tam_dung'].includes(c.status)).length,
   }), [contracts])
 
   const selectedContract = selectedId ? contracts.find(c => c.id === selectedId) : null
 
   if (loading) {
     return (
-      <div className="max-w-[1600px] mx-auto py-20 text-center">
-        <svg className="w-12 h-12 mx-auto text-blue-500 animate-spin" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        <p className="mt-4 text-on-surface-variant">Đang tải dữ liệu...</p>
+      <div className="max-w-[1600px] mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 text-sm">Đang tải dữ liệu...</p>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="max-w-[1600px] mx-auto py-20 text-center">
-        <p className="text-red-600 font-medium">{error}</p>
-        <button onClick={() => window.location.reload()} className="mt-4 text-blue-600 underline">Thử lại</button>
+      <div className="max-w-[1600px] mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-md">
+          <svg className="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p className="text-red-700 font-medium mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+          <button onClick={fetchContracts} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+            Thử lại
+          </button>
+        </div>
       </div>
     )
   }
@@ -394,7 +492,7 @@ export default function HopDongKyGuiPage() {
           </div>
 
           {selectedContract && (
-            <div className="w-[420px] shrink-0 hidden xl:block">
+            <div className="w-105 shrink-0 hidden xl:block">
               <ContractDetail contract={selectedContract} onClose={() => setSelectedId(null)} />
             </div>
           )}

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import lichHenXemNhaService from '../services/lichHenXemNhaService'
 import nhanVienService from '../services/nhanVienService'
 
@@ -449,14 +449,22 @@ function ResultModal({ schedule, onClose, onSave, loading }) {
   const [ketQua, setKetQua] = useState('')
   const [nhanXet, setNhanXet] = useState('')
   const [ghiChuMG, setGhiChuMG] = useState('')
+  const [saving, setSaving] = useState(false)
 
   if (!schedule) return null
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!ketQua) return
-    onSave(schedule.id, ketQua, nhanXet, ghiChuMG)
+    setSaving(true)
+    try {
+      await onSave(schedule.id, ketQua, nhanXet, ghiChuMG)
+      onClose()
+    } catch {
+      setSaving(false)
+    }
   }
 
+  const isDongYThue = ketQua === 'dong_y_thue'
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -499,11 +507,12 @@ function ResultModal({ schedule, onClose, onSave, loading }) {
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Kết quả xem nhà *</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { key: 'QUAN_TAM', label: 'Quan tâm', color: 'border-emerald-300 bg-emerald-50 text-emerald-700', activeColor: 'border-emerald-500 bg-emerald-100 text-emerald-800 ring-2 ring-emerald-300' },
-                { key: 'KHONG_QUAN_TAM', label: 'Không quan tâm', color: 'border-red-300 bg-red-50 text-red-700', activeColor: 'border-red-500 bg-red-100 text-red-800 ring-2 ring-red-300' },
-                { key: 'CHO_QUYET_DINH', label: 'Chờ quyết định', color: 'border-amber-300 bg-amber-50 text-amber-700', activeColor: 'border-amber-500 bg-amber-100 text-amber-800 ring-2 ring-amber-300' },
+                { key: 'quan_tam', label: 'Quan tâm', color: 'border-emerald-300 bg-emerald-50 text-emerald-700', activeColor: 'border-emerald-500 bg-emerald-100 text-emerald-800 ring-2 ring-emerald-300' },
+                { key: 'khong_quan_tam', label: 'Không quan tâm', color: 'border-red-300 bg-red-50 text-red-700', activeColor: 'border-red-500 bg-red-100 text-red-800 ring-2 ring-red-300' },
+                { key: 'cho_quyet_dinh', label: 'Chờ quyết định', color: 'border-amber-300 bg-amber-50 text-amber-700', activeColor: 'border-amber-500 bg-amber-100 text-amber-800 ring-2 ring-amber-300' },
+                { key: 'dong_y_thue', label: 'Đồng ý thuê', color: 'border-blue-300 bg-blue-50 text-blue-700', activeColor: 'border-blue-500 bg-blue-100 text-blue-800 ring-2 ring-blue-300' },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -542,6 +551,24 @@ function ResultModal({ schedule, onClose, onSave, loading }) {
 
           <p className="text-xs text-slate-400 italic">Kết quả sẽ tự động lưu vào lịch sử làm việc khách hàng.</p>
 
+          {/* Tạo hợp đồng thuê banner */}
+          {isDongYThue && (
+            <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-800">Khách hàng đồng ý thuê!</p>
+                  <p className="text-xs text-blue-600 mt-1">Tạo hợp đồng thuê để hoàn tất quá trình cho thuê bất động sản.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Buttons */}
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
@@ -550,17 +577,30 @@ function ResultModal({ schedule, onClose, onSave, loading }) {
             >
               Hủy
             </button>
-            <button
-              onClick={handleSave}
-              disabled={!ketQua || loading}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                ketQua && !loading
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              {loading ? 'Đang lưu...' : 'Lưu kết quả'}
-            </button>
+            {isDongYThue ? (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                {saving ? 'Đang lưu...' : 'Lưu & Tạo hợp đồng'}
+              </button>
+            ) : (
+              <button
+                onClick={handleSave}
+                disabled={!ketQua}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  ketQua
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                {saving ? 'Đang lưu...' : 'Lưu kết quả'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -570,6 +610,7 @@ function ResultModal({ schedule, onClose, onSave, loading }) {
 
 // ── Main page ────────────────────────────────────────────────────────
 export default function LichXemNhaPage() {
+  const navigate = useNavigate()
   const [viewMode, setViewMode] = useState('list')
   const [selectedId, setSelectedId] = useState(null)
   const [search, setSearch] = useState('')
@@ -587,6 +628,27 @@ export default function LichXemNhaPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
+
+  const handleSaveResult = async (id, ketQuaVal, nhanXet, ghiChuMG) => {
+    setActionLoading(true)
+    try {
+      const phanHoi = `Kết quả: ${ketQuaVal}${nhanXet ? `\nKhách hàng: ${nhanXet}` : ''}${ghiChuMG ? `\nMôi giới: ${ghiChuMG}` : ''}`
+      await Promise.all([
+        lichHenXemNhaService.capNhat(id, { ketQua: ketQuaVal, phanHoi, noiDungTraoDoi: phanHoi }),
+        lichHenXemNhaService.capNhatTrangThai(id, 'DA_HOAN_THANH'),
+      ])
+      setResultModal(null)
+      if (ketQuaVal === 'dong_y_thue') {
+        navigate(`/admin/hop-dong-thue/tao-moi?lichXemId=${id}`)
+      } else {
+        fetchSchedules()
+      }
+    } catch (err) {
+      console.error('Failed to save result:', err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   const fetchSchedules = useCallback(async () => {
     setLoading(true)
@@ -639,21 +701,6 @@ export default function LichXemNhaPage() {
     lichHenXemNhaService.assignBroker(id, nhanVienId)
       .then(() => fetchSchedules())
       .catch(() => alert('Không thể chỉ định môi giới. Vui lòng thử lại.'))
-      .finally(() => setActionLoading(false))
-  }
-
-  const handleSaveResult = (id, ketQuaVal, nhanXet, ghiChuMG) => {
-    setActionLoading(true)
-    const phanHoi = `Kết quả: ${ketQuaVal}${nhanXet ? `\nKhách hàng: ${nhanXet}` : ''}${ghiChuMG ? `\nMôi giới: ${ghiChuMG}` : ''}`
-    Promise.all([
-      lichHenXemNhaService.capNhat(id, { ketQua: ketQuaVal, phanHoi, noiDungTraoDoi: phanHoi }),
-      lichHenXemNhaService.capNhatTrangThai(id, 'DA_HOAN_THANH'),
-    ])
-      .then(() => {
-        setResultModal(null)
-        fetchSchedules()
-      })
-      .catch(() => {})
       .finally(() => setActionLoading(false))
   }
 

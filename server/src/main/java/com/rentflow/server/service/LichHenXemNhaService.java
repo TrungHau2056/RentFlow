@@ -15,6 +15,7 @@ import com.rentflow.server.repository.LichHenXemNhaRepository;
 import com.rentflow.server.repository.NhanVienRepository;
 import com.rentflow.server.util.SecurityUtils;
 import com.rentflow.server.util.enums.ErrorCode;
+import com.rentflow.server.util.enums.TrangThaiBatDongSan;
 import com.rentflow.server.util.enums.TrangThaiLichHen;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -156,6 +157,13 @@ public class LichHenXemNhaService {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
         entity.setTrangThai(trangThai);
+
+        if (TrangThaiLichHen.DA_HUY.name().equals(trangThai)) {
+            BatDongSan bds = entity.getBatDongSan();
+            bds.setTrangThai(TrangThaiBatDongSan.CHO_DUYET.name());
+            batDongSanRepository.save(bds);
+        }
+
         return toResponseDTO(lichHenXemNhaRepository.save(entity));
     }
 

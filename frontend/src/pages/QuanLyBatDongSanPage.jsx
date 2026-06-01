@@ -5,7 +5,6 @@ import chuNhaService from '../services/chuNhaService'
 
 const STATUS_CONFIG = {
   cho_tiep_nhan: { label: 'Chờ tiếp nhận', color: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' },
-  cho_xac_nhan: { label: 'Chờ xác nhận', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
   cho_danh_gia: { label: 'Chờ đánh giá', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
   cho_khao_sat: { label: 'Chờ khảo sát', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
   cho_ky_hop_dong: { label: 'Chờ ký hợp đồng', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
@@ -16,7 +15,6 @@ const STATUS_CONFIG = {
 
 const BE_STATUS_MAP = {
   CHO_DUYET: 'cho_tiep_nhan',
-  CHO_XAC_NHAN: 'cho_xac_nhan',
   CHO_DANH_GIA: 'cho_danh_gia',
   DA_KHAO_SAT: 'cho_khao_sat',
   DANG_SOAN_HOP_DONG: 'cho_ky_hop_dong',
@@ -30,7 +28,6 @@ const BE_STATUS_MAP = {
 
 const WORKFLOW_STEPS = [
   { key: 'cho_tiep_nhan', label: 'Tiếp nhận' },
-  { key: 'cho_xac_nhan', label: 'Xác nhận' },
   { key: 'cho_danh_gia', label: 'Đánh giá' },
   { key: 'cho_khao_sat', label: 'Khảo sát' },
   { key: 'cho_ky_hop_dong', label: 'Ký HĐ' },
@@ -61,7 +58,7 @@ const SORT_OPTIONS = [
 ]
 
 function getWorkflowStep(status) {
-  const map = { cho_tiep_nhan: 1, cho_khao_sat: 2, cho_ky_hop_dong: 3, dang_hien_thi: 4, da_cho_thue: 5, cham_dut: 6 }
+  const map = { cho_tiep_nhan: 1, cho_danh_gia: 2, cho_khao_sat: 3, cho_ky_hop_dong: 4, dang_hien_thi: 5, da_cho_thue: 6, cham_dut: 7 }
   return map[status] || 1
 }
 
@@ -451,7 +448,7 @@ export default function QuanLyBatDongSanPage() {
 
   const kpiData = useMemo(() => ({
     total: properties.length,
-    processing: properties.filter(p => ['cho_tiep_nhan', 'cho_khao_sat', 'cho_ky_hop_dong'].includes(p.status)).length,
+    processing: properties.filter(p => ['cho_tiep_nhan', 'cho_danh_gia', 'cho_khao_sat', 'cho_ky_hop_dong'].includes(p.status)).length,
     displaying: properties.filter(p => p.status === 'dang_hien_thi').length,
     rented: properties.filter(p => p.status === 'da_cho_thue').length,
   }), [properties])

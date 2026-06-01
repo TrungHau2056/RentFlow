@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import lichHenKhaoSatService from '../services/lichHenKhaoSatService'
 import batDongSanService from '../services/batDongSanService'
@@ -26,6 +26,8 @@ const STATUS_CONFIG = {
   },
 }
 
+const WORKFLOW_STEPS = ['Tiếp nhận', 'Xác nhận lịch', 'Khảo sát', 'Ghi kết quả', 'Hoàn tất']
+
 function formatDate(dateStr) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -34,13 +36,6 @@ function formatDate(dateStr) {
 function formatTime(dateStr) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDateTimeLocal(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function StatusBadge({ status }) {
@@ -68,19 +63,276 @@ function KpiCard({ label, value, note, accent }) {
   )
 }
 
-function CreateSurveyModal({ batDongSanId, property, onClose, onCreated }) {
+function ActionButton({ label, variant = 'secondary', children, onClick, disabled }) {
+  const className = variant === 'primary'
+    ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+    : variant === 'danger'
+      ? 'border-rose-200 bg-white text-rose-700 hover:bg-rose-50'
+      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    >
+      {children}
+      {label}
+    </button>
+  )
+}
+
+function WorkflowTimeline({ currentStep }) {
+  return (
+    <div className="space-y-0">
+      {WORKFLOW_STEPS.map((step, index) => {
+        const done = index + 1 < currentStep
+        const active = index + 1 === currentStep
+
+        return (
+          <div key={step} className="relative flex gap-3 pb-5">
+            {index < WORKFLOW_STEPS.length - 1 && (
+              <span className="absolute left-[11px] top-7 h-full w-px bg-slate-200" />
+            )}
+            <span className={`relative mt-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+              done ? 'bg-emerald-600 text-white' : active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
+            }`}>
+              {done ? '✓' : index + 1}
+            </span>
+            <div>
+              <p className={`text-sm font-semibold ${active ? 'text-blue-700' : 'text-slate-900'}`}>{step}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {done ? 'Đã hoàn tất' : active ? 'Đang xử lý' : 'Chưa thực hiện'}
+              </p>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function SurveyResultForm({ survey, onSubmit, saving }) {
+  const [rating, setRating] = useState(survey.result?.rating || 'Tốt')
+  const [condition, setCondition] = useState(survey.result?.condition || '')
+  const [furniture, setFurniture] = useState(survey.result?.furniture || '')
+  const [ghiChu, setGhiChu] = useState(survey.result?.note || '')
+
+  const handleSubmit = () => {
+    if (!onSubmit) return
+    const dat = rating === 'Tốt'
+    const ketQuaKhaoSat = [rating, condition, furniture].filter(Boolean).join('. ')
+    onSubmit({ ketQuaKhaoSat, dat, ghiChu })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm font-semibold text-slate-900">Đánh giá</p>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {['Tốt', 'Cần chỉnh sửa', 'Không đạt'].map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setRating(option)}
+              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                rating === option
+                  ? 'border-blue-600 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <label className="block">
+        <span className="text-sm font-semibold text-slate-900">Hiện trạng nhà</span>
+        <textarea
+          value={condition}
+          onChange={(e) => setCondition(e.target.value)}
+          rows={3}
+          placeholder="Mô tả kết cấu, tường, sàn, điện nước, vệ sinh..."
+          className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+
+      <label className="block">
+        <span className="text-sm font-semibold text-slate-900">Nội thất</span>
+        <textarea
+          value={furniture}
+          onChange={(e) => setFurniture(e.target.value)}
+          rows={3}
+          placeholder="Tình trạng nội thất, thiết bị bàn giao, hạng mục cần bổ sung..."
+          className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center">
+          <span className="text-sm font-semibold text-slate-700">Upload hình ảnh</span>
+          <input type="file" multiple accept="image/*" className="mt-3 w-full text-xs text-slate-500" />
+        </label>
+        <label className="block rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center">
+          <span className="text-sm font-semibold text-slate-700">File đính kèm</span>
+          <input type="file" multiple className="mt-3 w-full text-xs text-slate-500" />
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="text-sm font-semibold text-slate-900">Ghi chú khảo sát</span>
+        <textarea
+          value={ghiChu}
+          onChange={(e) => setGhiChu(e.target.value)}
+          rows={3}
+          placeholder="Ghi chú nội bộ, đề xuất xử lý, điều kiện chuyển hợp đồng..."
+          className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+
+      <div className="flex flex-wrap gap-2">
+        <ActionButton label={saving ? 'Đang lưu...' : 'Lưu kết quả'} variant="primary" onClick={handleSubmit} disabled={saving} />
+        <ActionButton label="Chuyển sang tạo hợp đồng ký gửi" />
+      </div>
+    </div>
+  )
+}
+
+function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange }) {
+  const resultFormRef = useRef(null)
+  const [actionLoading, setActionLoading] = useState(null)
+
+  if (!survey) return null
+
+  const handleConfirm = async () => {
+    setActionLoading('confirm')
+    try {
+      await onStatusChange(survey.id, 'DA_XAC_NHAN')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleCancel = async () => {
+    setActionLoading('cancel')
+    try {
+      await onStatusChange(survey.id, 'DA_HUY')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const scrollToResult = () => {
+    resultFormRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Đóng chi tiết lịch khảo sát"
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-slate-950/35"
+      />
+      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-3xl flex-col bg-white shadow-2xl sm:w-180">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{survey.id}</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900">{survey.diaChiBatDongSan || survey.property}</h2>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusBadge status={survey.trangThai || survey.status} />
+                <span className="text-xs text-slate-500">{formatDate(survey.thoiGian || survey.date)} · {formatTime(survey.thoiGian || survey.date)}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label="Đóng"
+              onClick={onClose}
+              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(survey.trangThai || survey.status) === 'CHO_XAC_NHAN' && (
+              <ActionButton label={actionLoading === 'confirm' ? 'Đang xử lý...' : 'Xác nhận lịch'} variant="primary" onClick={handleConfirm} disabled={!!actionLoading} />
+            )}
+            {(survey.trangThai || survey.status) !== 'DA_HUY' && (survey.trangThai || survey.status) !== 'DA_HOAN_THANH' && (
+              <ActionButton label={actionLoading === 'cancel' ? 'Đang xử lý...' : 'Hủy lịch'} variant="danger" onClick={handleCancel} disabled={!!actionLoading} />
+            )}
+            {(survey.trangThai || survey.status) === 'DA_XAC_NHAN' && (
+              <ActionButton label="Cập nhật kết quả" onClick={scrollToResult} />
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-5">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_240px]">
+            <div className="space-y-6">
+              <section>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Thông tin lịch khảo sát</h3>
+                <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {[
+                    ['Chủ nhà', survey.tenChuNha || survey.owner],
+                    ['Bất động sản', survey.diaChiBatDongSan || survey.property],
+                    ['Người phụ trách', survey.tenNhanVien || survey.inspector],
+                    ['SĐT chủ nhà', survey.sdtChuNha || survey.phone],
+                    ['Khu vực', survey.khuVuc || survey.district],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+                      <dd className="mt-1 text-sm font-semibold text-slate-900">{value || '—'}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {survey.ghiChu && (
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-xs font-semibold text-amber-700">Ghi chú</p>
+                    <p className="mt-1 text-sm text-slate-700">{survey.ghiChu || survey.note}</p>
+                  </div>
+                )}
+              </section>
+
+              <section ref={resultFormRef}>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Kết quả khảo sát</h3>
+                <div className="mt-3 rounded-lg border border-slate-200 p-4">
+                  <SurveyResultForm survey={survey} onSubmit={(data) => onSaveResult(survey.id, data)} saving={saving} />
+                </div>
+              </section>
+            </div>
+
+            <section>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Workflow Timeline</h3>
+              <div className="mt-3 rounded-lg border border-slate-200 p-4">
+                <WorkflowTimeline currentStep={survey.workflowStep || 1} />
+              </div>
+            </section>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+}
+
+function CreateSurveyDrawer({ onClose, onCreated, property, batDongSanId }) {
   const navigate = useNavigate()
+  const [selectedBdsId, setSelectedBdsId] = useState('')
   const [thoiGian, setThoiGian] = useState('')
-  const [selectedBdsId, setSelectedBdsId] = useState(batDongSanId || '')
-  const [propertyList, setPropertyList] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [propertyList, setPropertyList] = useState([])
 
   useEffect(() => {
-    if (!batDongSanId) {
-      batDongSanService.danhSach().then((res) => setPropertyList(res.data || [])).catch(() => {})
-    }
-  }, [batDongSanId])
+    batDongSanService.danhSach()
+      .then((res) => setPropertyList(res.data || []))
+      .catch(() => {})
+  }, [])
 
   const handleSubmit = async () => {
     const bdsId = property ? Number(batDongSanId) : Number(selectedBdsId)
@@ -110,27 +362,34 @@ function CreateSurveyModal({ batDongSanId, property, onClose, onCreated }) {
 
   return (
     <>
-      <button type="button" aria-label="Đóng" onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/35" />
-      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-2xl">
-        <div className="border-b border-slate-200 px-5 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Tạo lịch khảo sát</h2>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      <button
+        type="button"
+        aria-label="Đóng tạo lịch khảo sát"
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-slate-950/35"
+      />
+      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-white shadow-2xl">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">Tạo lịch khảo sát</h2>
+            <button
+              type="button"
+              aria-label="Đóng"
+              onClick={onClose}
+              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           {property ? (
             <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Bất động sản</p>
-              <p className="text-sm font-bold text-slate-900">{property.diaChi}</p>
-              <div className="flex items-center gap-2 mt-1 text-xs text-blue-600">
-                <span>{property.loaiNha}</span>
-                <span>·</span>
-                <span>{property.dienTich ? `${property.dienTich}m²` : ''}</span>
-              </div>
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Bất động sản đã chọn</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">{property.diaChi || property.ten}</p>
             </div>
           ) : (
             <div>
@@ -201,10 +460,12 @@ export default function AdminLichKhaoSatPage() {
   const [surveys, setSurveys] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [createProperty, setCreateProperty] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [createProperty, setCreateProperty] = useState(null)
 
-  const fetchSurveys = useCallback(async () => {
+  const fetchSurveys = async () => {
     setLoading(true)
     setError(null)
     try {
@@ -215,11 +476,35 @@ export default function AdminLichKhaoSatPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
   useEffect(() => {
     fetchSurveys()
-  }, [fetchSurveys])
+  }, [])
+
+  const handleSaveResult = async (surveyId, data) => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await lichHenKhaoSatService.ghiKetQua(surveyId, data)
+      await fetchSurveys()
+      setSelectedSurvey(null)
+    } catch (err) {
+      setSaveError(err.response?.data?.message || err.message || 'Lỗi lưu kết quả')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleStatusChange = async (surveyId, trangThai) => {
+    try {
+      await lichHenKhaoSatService.capNhatTrangThai(surveyId, trangThai)
+      await fetchSurveys()
+      setSelectedSurvey(null)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Lỗi cập nhật trạng thái')
+    }
+  }
 
   useEffect(() => {
     if (batDongSanId) {
@@ -330,12 +615,18 @@ export default function AdminLichKhaoSatPage() {
         </section>
       </div>
 
+      {saveError && (
+        <div className="mx-auto max-w-7xl rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {saveError}
+        </div>
+      )}
+      <SurveyDrawer survey={selectedSurvey} onClose={() => setSelectedSurvey(null)} onSaveResult={handleSaveResult} saving={saving} onStatusChange={handleStatusChange} />
       {showCreate && (
-        <CreateSurveyModal
-          batDongSanId={batDongSanId}
-          property={createProperty}
-          onClose={() => { setShowCreate(false); navigate('/admin/lich-khao-sat') }}
+        <CreateSurveyDrawer
+          onClose={() => { setShowCreate(false); setCreateProperty(null) }}
           onCreated={handleCreated}
+          property={createProperty}
+          batDongSanId={batDongSanId}
         />
       )}
     </main>

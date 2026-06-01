@@ -6,7 +6,6 @@ import lichHenKhaoSatService from '../services/lichHenKhaoSatService'
 
 const STATUS_STYLES = {
   CHO_DUYET: 'bg-amber-100 text-amber-700 border-amber-200',
-  CHO_XAC_NHAN: 'bg-amber-100 text-amber-700 border-amber-200',
   CHO_DANH_GIA: 'bg-blue-100 text-blue-700 border-blue-200',
   DA_KHAO_SAT: 'bg-blue-100 text-blue-700 border-blue-200',
   DANG_SOAN_HOP_DONG: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -20,7 +19,6 @@ const STATUS_STYLES = {
 
 const STATUS_LABELS = {
   CHO_DUYET: 'Chờ duyệt',
-  CHO_XAC_NHAN: 'Chờ xác nhận',
   CHO_DANH_GIA: 'Chờ đánh giá',
   DA_KHAO_SAT: 'Đã khảo sát',
   DANG_SOAN_HOP_DONG: 'Đang soạn hợp đồng',
