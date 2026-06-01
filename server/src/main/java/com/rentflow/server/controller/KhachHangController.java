@@ -24,8 +24,8 @@ public class KhachHangController {
     private final KhachHangService khachHangService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
-    @Operation(summary = "Danh sách khách hàng", description = "Lấy tất cả khách hàng")
+    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT', 'MOI_GIOI')")
+    @Operation(summary = "Danh sách khách hàng", description = "Lấy tất cả khách hàng (MOI_GIOI chỉ xem được khách hàng được phân công)")
     public ApiSuccessResponse<List<KhachHangResponseDTO>> getAll() {
         return ApiSuccessResponse.<List<KhachHangResponseDTO>>builder()
                 .status(HttpStatus.OK.value())
@@ -34,8 +34,19 @@ public class KhachHangController {
                 .build();
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('KHACH_HANG')")
+    @Operation(summary = "Thông tin khách hàng hiện tại", description = "Lấy thông tin khách hàng đang đăng nhập")
+    public ApiSuccessResponse<KhachHangResponseDTO> getCurrentKhachHang() {
+        return ApiSuccessResponse.<KhachHangResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy thông tin khách hàng thành công")
+                .data(khachHangService.getCurrentKhachHang())
+                .build();
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT', 'KHACH_HANG')")
+    @PreAuthorize("hasAnyRole('NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT', 'KHACH_HANG', 'MOI_GIOI')")
     @Operation(summary = "Chi tiết khách hàng", description = "Lấy thông tin khách hàng theo ID")
     public ApiSuccessResponse<KhachHangResponseDTO> getById(@PathVariable Long id) {
         return ApiSuccessResponse.<KhachHangResponseDTO>builder()
@@ -46,7 +57,7 @@ public class KhachHangController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('KHACH_HANG', 'NHAN_VIEN_DAI_LY')")
+    @PreAuthorize("hasAnyRole('KHACH_HANG', 'NHAN_VIEN_DAI_LY', 'MOI_GIOI')")
     @Operation(summary = "Cập nhật khách hàng", description = "Cập nhật thông tin khách hàng")
     public ApiSuccessResponse<KhachHangResponseDTO> update(
             @PathVariable Long id,
@@ -59,7 +70,7 @@ public class KhachHangController {
     }
 
     @PutMapping("/{id}/nhu-cau")
-    @PreAuthorize("hasRole('KHACH_HANG')")
+    @PreAuthorize("hasAnyRole('KHACH_HANG', 'NHAN_VIEN_DAI_LY', 'MOI_GIOI')")
     @Operation(summary = "Cập nhật nhu cầu", description = "Cập nhật nhu cầu tìm nhà của khách hàng")
     public ApiSuccessResponse<KhachHangResponseDTO> updateNhuCau(
             @PathVariable Long id,

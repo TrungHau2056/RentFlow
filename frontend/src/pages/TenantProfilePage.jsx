@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import khachHangService from '../services/khachHangService'
 
 const DISTRICTS = [
   'Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Hai Bà Trưng', 'Tây Hồ',
@@ -289,11 +290,13 @@ function PriceSlider({ min, max, value, onChange }) {
   )
 }
 
-function SuccessToast({ message, onClose }) {
+function SuccessToast({ message, onClose, type = 'success' }) {
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-emerald-600 px-5 py-4 text-white shadow-2xl animate-in slide-in-from-bottom-4">
+    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl px-5 py-4 text-white shadow-2xl animate-in slide-in-from-bottom-4 ${
+      type === 'error' ? 'bg-red-600' : 'bg-emerald-600'
+    }`}>
       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-        <ProfileIcon icon="check" className="h-5 w-5" />
+        <ProfileIcon icon={type === 'error' ? 'x' : 'check'} className="h-5 w-5" />
       </div>
       <p className="text-sm font-medium">{message}</p>
       <button type="button" onClick={onClose} className="ml-2 rounded-lg p-1 hover:bg-white/20">
@@ -393,6 +396,11 @@ export default function TenantProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showToast, setShowToast] = useState(false)
+  const [showError, setShowError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [savingNhuCau, setSavingNhuCau] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
 
   const [formData, setFormData] = useState({
     hoTen: user.hoTen,
@@ -403,11 +411,72 @@ export default function TenantProfilePage() {
     diaChi: user.diaChi,
   })
 
-  const handleSave = () => {
-    setUser({ ...user, ...formData })
-    setIsEditing(false)
-    setShowToast(true)
-    setTimeout(() => setShowToast(false), 3000)
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const res = await khachHangService.me()
+      const data = res.data
+      setUser(prev => ({
+        ...prev,
+        id: data.id,
+        hoTen: data.hoTen || prev.hoTen,
+        email: data.email || prev.email,
+        soDienThoai: data.soDienThoai || prev.soDienThoai,
+      }))
+      if (data.nhuCauThue) {
+        try {
+          const parsed = JSON.parse(data.nhuCauThue)
+          setPreferences(prev => ({ ...prev, ...parsed }))
+        } catch {
+          // ignore, leave defaults
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load tenant info:', err)
+      setShowError(true)
+      setErrorMessage('Không thể tải thông tin người dùng. Vui lòng thử lại sau.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        hoTen: user.hoTen,
+        email: user.email,
+        soDienThoai: user.soDienThoai,
+        ngaySinh: user.ngaySinh,
+        gioiTinh: user.gioiTinh,
+        diaChi: user.diaChi,
+      })
+    }
+  }, [user])
+
+  const handleSave = async () => {
+    try {
+      setSavingProfile(true)
+      await khachHangService.capNhat(user.id, {
+        hoTen: formData.hoTen,
+        soDienThoai: formData.soDienThoai,
+        email: formData.email,
+      })
+      setUser(prev => ({ ...prev, ...formData }))
+      setIsEditing(false)
+      setShowToast(true)
+      setShowError(false)
+      setTimeout(() => setShowToast(false), 3000)
+    } catch (err) {
+      console.error('Failed to save profile:', err)
+      setShowError(true)
+      setErrorMessage('Không thể lưu thông tin. Vui lòng thử lại sau.')
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
   const handleCancel = () => {
@@ -422,16 +491,42 @@ export default function TenantProfilePage() {
     setIsEditing(false)
   }
 
+  const handleSaveNhuCau = async () => {
+    try {
+      setSavingNhuCau(true)
+      await khachHangService.capNhatNhuCau(user.id, {
+        nhuCauThue: JSON.stringify(preferences),
+      })
+      setShowToast(true)
+      setShowError(false)
+      setTimeout(() => setShowToast(false), 3000)
+    } catch (err) {
+      console.error('Failed to save preferences:', err)
+      setShowError(true)
+      setErrorMessage('Không thể lưu sở thích. Vui lòng thử lại sau.')
+    } finally {
+      setSavingNhuCau(false)
+    }
+  }
+
   const handlePasswordSave = () => {
     setShowPasswordModal(false)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 3000)
   }
 
-  const initials = user.hoTen.split(' ').slice(-2).map(p => p[0]).join('').toUpperCase()
+  const initials = user?.hoTen?.split(' ')?.slice(-2)?.map(p => p[0])?.join('')?.toUpperCase() || '??'
 
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            <p className="text-sm text-slate-500">Đang tải thông tin...</p>
+          </div>
+        </div>
+      ) : (<>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Hồ sơ cá nhân</h1>
@@ -612,9 +707,10 @@ export default function TenantProfilePage() {
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5"
+                  disabled={savingProfile}
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Lưu thay đổi
+                  {savingProfile ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
                 <button
                   type="button"
@@ -737,24 +833,18 @@ export default function TenantProfilePage() {
             <div className="mt-6 flex gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  setPreferences(MOCK_PREFERENCES)
-                  setShowToast(true)
-                  setTimeout(() => setShowToast(false), 3000)
-                }}
+                onClick={() => setPreferences(MOCK_PREFERENCES)}
                 className="rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Đặt lại
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowToast(true)
-                  setTimeout(() => setShowToast(false), 3000)
-                }}
-                className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5"
+                onClick={handleSaveNhuCau}
+                disabled={savingNhuCau}
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Lưu sở thích
+                {savingNhuCau ? 'Đang lưu...' : 'Lưu sở thích'}
               </button>
             </div>
           </div>
@@ -897,6 +987,15 @@ export default function TenantProfilePage() {
           message="Đã lưu thay đổi thành công"
           onClose={() => setShowToast(false)}
         />
+      )}
+      {showError && (
+        <SuccessToast
+          type="error"
+          message={errorMessage}
+          onClose={() => setShowError(false)}
+        />
+      )}
+      </>
       )}
     </div>
   )

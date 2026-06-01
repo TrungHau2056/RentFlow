@@ -537,26 +537,34 @@ function CustomerDrawer({ customer, activeTab, setActiveTab, onClose, onEditDema
   )
 }
 
-const mapCustomer = (c) => ({
-  id: c.id || '',
-  name: c.hoTen || '',
-  phone: c.soDienThoai || '',
-  email: c.email || '',
-  demand: c.nhuCau || c.demand || '',
-  propertyType: c.loaiBatDongSan || c.propertyType || '',
-  area: c.khuVuc || c.area || '',
-  budget: c.nganSach || c.budget || '',
-  broker: c.moiGioiPhuTrach || c.broker || '',
-  status: c.trangThai || c.status || 'lead_moi',
-  source: c.nguonLead || c.source || '',
-  cccd: c.cccd || '',
-  address: c.diaChi || c.address || '',
-  lastContact: c.lanLienHeCuoi || c.lastContact || '',
-  priority: c.doUuTien || c.priority || '',
-  viewingSchedules: c.lichXemNha || c.viewingSchedules || [],
-  activities: c.lichSuHoatDong || c.activities || [],
-  contracts: c.hopDongThue || c.contracts || [],
-})
+const mapCustomer = (c) => {
+  let parsed = {}
+  if (c.nhuCauThue) {
+    try { parsed = JSON.parse(c.nhuCauThue) } catch {}
+  }
+  return {
+    id: c.id || '',
+    name: c.hoTen || '',
+    phone: c.soDienThoai || '',
+    email: c.email || '',
+    demand: c.nhuCauThue || '',
+    propertyType: (parsed.propertyTypes || []).join(', ') || (parsed.loaiBatDongSan || []).join(', '),
+    area: (parsed.districts || []).join(', ') || (parsed.khuVuc || []).join(', '),
+    budget: parsed.minPrice && parsed.maxPrice
+      ? `${parsed.minPrice} - ${parsed.maxPrice} triệu`
+      : parsed.nganSach || '',
+    broker: c.moiGioiPhuTrach || c.broker || '',
+    status: c.trangThai || c.status || 'lead_moi',
+    source: c.nguonLead || c.source || '',
+    cccd: c.cccd || '',
+    address: c.diaChi || c.address || '',
+    lastContact: c.lanLienHeCuoi || c.lastContact || '',
+    priority: c.doUuTien || parsed.doUuTien || c.priority || '',
+    viewingSchedules: c.lichXemNha || c.viewingSchedules || [],
+    activities: c.lichSuHoatDong || c.activities || [],
+    contracts: c.hopDongThue || c.contracts || [],
+  }
+}
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([])
@@ -611,16 +619,6 @@ export default function CustomersPage() {
     { label: 'Đã ký hợp đồng', value: customers.filter((customer) => customer.status === 'da_ky_hop_dong').length, note: 'Chuyển thành khách thuê', accent: 'bg-emerald-100' },
   ], [customers])
 
-  const recentActivities = useMemo(
-    () => customers.flatMap((customer) => (
-      customer.activities.slice(0, 1).map((activity) => ({
-        ...activity,
-        title: `${customer.name}: ${activity.title}`,
-      }))
-    )).slice(0, 5),
-    [customers],
-  )
-
   function openDrawer(customer, tab = 'profile') {
     setSelectedCustomer(customer)
     setActiveTab(tab)
@@ -630,7 +628,15 @@ export default function CustomersPage() {
     setEditDemandLoading(true)
     try {
       const rawId = selectedCustomer.id
-      await khachHangService.capNhatNhuCau(rawId, formData)
+      await khachHangService.capNhatNhuCau(rawId, {
+        nhuCauThue: JSON.stringify({
+          loaiBatDongSan: formData.loaiBatDongSan,
+          khuVuc: formData.khuVuc,
+          nganSach: formData.nganSach,
+          doUuTien: formData.doUuTien,
+          moTa: formData.moTa,
+        }),
+      })
       await fetchCustomers()
       const updated = await khachHangService.chiTiet(rawId)
       setSelectedCustomer(mapCustomer(updated?.data || updated))
@@ -732,7 +738,7 @@ export default function CustomersPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section>
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -789,7 +795,23 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-700">{customer.phone}</td>
                       <td className="px-4 py-4 text-sm text-slate-600">{customer.email}</td>
-                      <td className="px-4 py-4 text-sm font-semibold text-slate-900">{customer.demand}</td>
+                      <td className="px-4 py-4">
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedCustomer(customer); setEditDemandOpen(true) }}
+                          className="group text-left"
+                        >
+                          {customer.propertyType || customer.area || customer.budget ? (
+                            <span className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 underline decoration-transparent group-hover:decoration-blue-600 decoration-1 underline-offset-2">
+                              {[customer.propertyType, customer.area, customer.budget].filter(Boolean).join(' · ')}
+                            </span>
+                          ) : (
+                            <span className="text-sm italic text-slate-400 group-hover:text-blue-400 transition-colors">
+                              {customer.demand || 'Chưa có nhu cầu'}
+                            </span>
+                          )}
+                        </button>
+                      </td>
                       <td className="px-4 py-4 text-sm text-slate-700">{customer.area}</td>
                       <td className="px-4 py-4 text-sm font-semibold text-slate-900">{customer.budget}</td>
                       <td className="px-4 py-4 text-sm text-slate-700">{customer.broker}</td>
@@ -804,18 +826,6 @@ export default function CustomersPage() {
               </table>
             </div>
           </div>
-
-          <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">CRM Activity Timeline</h2>
-                <p className="text-sm text-slate-500">Gọi điện, nhắn tin, xem nhà, đàm phán, ký hợp đồng</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <ActivityTimeline activities={recentActivities} compact />
-            </div>
-          </aside>
         </section>
       </div>
 

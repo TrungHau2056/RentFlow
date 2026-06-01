@@ -32,7 +32,7 @@ public class KhachHang {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "nhu_cau_thue")
+    @Column(name = "nhu_cau_thue", columnDefinition = "TEXT")
     private String nhuCauThue;
 
     @Column(name = "tieu_chi_tim_nha", columnDefinition = "TEXT")

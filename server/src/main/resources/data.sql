@@ -95,8 +95,8 @@ SELECT 'khachhang@gmail.com', '123456', 'ACTIVE', vt.id
 FROM vai_tro vt WHERE vt.ten_vai_tro = 'KHACH_HANG'
     AND NOT EXISTS (SELECT 1 FROM tai_khoan WHERE username = 'khachhang@gmail.com');
 
-INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai, email, nhu_cau_thue)
-SELECT tk.id, 'Nguyen Van Khach Hang', '0900000004', 'khachhang@gmail.com', 'Can thue nha o'
+INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai, email)
+SELECT tk.id, 'Nguyen Van Khach Hang', '0900000004', 'khachhang@gmail.com'
 FROM tai_khoan tk WHERE tk.username = 'khachhang@gmail.com'
     AND NOT EXISTS (SELECT 1 FROM khach_hang WHERE email = 'khachhang@gmail.com');
 
@@ -109,8 +109,8 @@ SELECT 'nguyenvanA@gmail.com', '123456', 'ACTIVE', vt.id
 FROM vai_tro vt WHERE vt.ten_vai_tro = 'KHACH_HANG'
     AND NOT EXISTS (SELECT 1 FROM tai_khoan WHERE username = 'nguyenvanA@gmail.com');
 
-INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai, email, nhu_cau_thue)
-SELECT tk.id, 'Nguyen Van A', '0900000021', 'nguyenvanA@gmail.com', 'Can tim can ho chung cu'
+INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai, email)
+SELECT tk.id, 'Nguyen Van A', '0900000021', 'nguyenvanA@gmail.com'
 FROM tai_khoan tk WHERE tk.username = 'nguyenvanA@gmail.com'
     AND NOT EXISTS (SELECT 1 FROM khach_hang WHERE email = 'nguyenvanA@gmail.com');
 

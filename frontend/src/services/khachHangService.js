@@ -6,6 +6,11 @@ const khachHangService = {
     return response.data;
   },
 
+  async me() {
+    const response = await api.get('/api/khach-hang/me');
+    return response.data;
+  },
+
   async chiTiet(id) {
     const response = await api.get(`/api/khach-hang/${id}`);
     return response.data;
