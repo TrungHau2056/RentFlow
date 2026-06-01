@@ -35,4 +35,13 @@ public class HieuSuatMoiGioiResponseDTO {
 
     @Schema(description = "Tổng đã thanh toán (VNĐ)", example = "2000000")
     private BigDecimal tongDaThanhToan;
+
+    @Schema(description = "Số giao dịch thực hiện", example = "5")
+    private long soGiaoDichThucHien;
+
+    @Schema(description = "Tỷ lệ chốt (%)", example = "60.0")
+    private double tyLeChot;
+
+    @Schema(description = "Xếp hạng", example = "1")
+    private int hang;
 }

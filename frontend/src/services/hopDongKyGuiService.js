@@ -50,6 +50,48 @@ const hopDongKyGuiService = {
     const response = await api.delete(`/api/hop-dong-ky-gui/${id}`);
     return response.data;
   },
+
+  // === Extended endpoints (may fallback if backend not ready) ===
+
+  /** Yêu cầu sửa hợp đồng (gửi lại pháp lý sau khi sửa) */
+  async yeuCauSua(id, data = {}) {
+    // Fallback: use pheDuyet with duyet=false + lyDo if dedicated endpoint missing
+    try {
+      const response = await api.patch(`/api/hop-dong-ky-gui/${id}/yeu-cau-sua`, data);
+      return response.data;
+    } catch {
+      // Fallback: use pheDuyet with explanatory note
+      const response = await api.patch(`/api/hop-dong-ky-gui/${id}/phe-duyet`, {
+        duyet: false,
+        lyDoTuChoi: data.lyDo || 'Yêu cầu sửa: ' + (data.ghiChu || ''),
+      });
+      return response.data;
+    }
+  },
+
+  /** Ký phía chủ nhà */
+  async kyChuNha(id) {
+    try {
+      const response = await api.patch(`/api/hop-dong-ky-gui/${id}/ky-chu-nha`);
+      return response.data;
+    } catch {
+      // Fallback: use kyKet (combined signing)
+      const response = await api.patch(`/api/hop-dong-ky-gui/${id}/ky-ket`);
+      return response.data;
+    }
+  },
+
+  /** Ký phía đại lý */
+  async kyDaiLy(id) {
+    try {
+      const response = await api.patch(`/api/hop-dong-ky-gui/${id}/ky-dai-ly`);
+      return response.data;
+    } catch {
+      // Fallback: use kyKet (combined signing)
+      const response = await api.patch(`/api/hop-dong-ky-gui/${id}/ky-ket`);
+      return response.data;
+    }
+  },
 };
 
 export default hopDongKyGuiService;

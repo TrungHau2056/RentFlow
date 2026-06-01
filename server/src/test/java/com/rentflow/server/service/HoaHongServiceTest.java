@@ -68,7 +68,11 @@ class HoaHongServiceTest {
             return HoaHong.builder()
                     .id(1L).hopDongThue(h.getHopDongThue())
                     .nhanVienMoiGioi(h.getNhanVienMoiGioi())
-                    .soTien(h.getSoTien()).ngayTinh(h.getNgayTinh())
+                    .soTien(h.getSoTien())
+                    .tyLeHoaHong(h.getTyLeHoaHong())
+                    .soTienKhauTru(h.getSoTienKhauTru())
+                    .soTienThucNhan(h.getSoTienThucNhan())
+                    .ngayTinh(h.getNgayTinh())
                     .trangThaiThanhToan(h.getTrangThaiThanhToan())
                     .build();
         });
@@ -107,7 +111,11 @@ class HoaHongServiceTest {
             return HoaHong.builder()
                     .id(1L).hopDongThue(h.getHopDongThue())
                     .nhanVienMoiGioi(h.getNhanVienMoiGioi())
-                    .soTien(h.getSoTien()).ngayTinh(h.getNgayTinh())
+                    .soTien(h.getSoTien())
+                    .tyLeHoaHong(h.getTyLeHoaHong())
+                    .soTienKhauTru(h.getSoTienKhauTru())
+                    .soTienThucNhan(h.getSoTienThucNhan())
+                    .ngayTinh(h.getNgayTinh())
                     .trangThaiThanhToan(h.getTrangThaiThanhToan())
                     .build();
         });

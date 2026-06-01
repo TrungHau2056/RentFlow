@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,16 @@ public class HopDongKyGuiTaiChinhService {
                         TrangThaiHopDongKyGui.DANG_HOAT_DONG.name()))
                 .filter(hd -> !giaoDichRepo.existsByHopDongKyGuiIdAndLoaiGiaoDich(
                         hd.getId(), LoaiGiaoDich.HOAN_TRA_DAM_BAO.name()))
+                .filter(hd -> tinhSoDuDamBao(hd).compareTo(BigDecimal.ZERO) > 0)
+                .map(this::toEligibleDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<HopDongKyGuiEligibleResponseDTO> layHopDongChoGhiNhanThu() {
+        return hopDongKyGuiRepo.findChoGhiNhanThu(
+                        TrangThaiHopDongKyGui.DANG_HOAT_DONG.name(),
+                        LoaiGiaoDich.TIEN_DAM_BAO.name())
+                .stream()
                 .map(this::toEligibleDTO)
                 .collect(Collectors.toList());
     }
@@ -67,21 +78,24 @@ public class HopDongKyGuiTaiChinhService {
             throw new AppException(ErrorCode.HOP_DONG_CHUA_DU_DIEU_KIEN);
         }
 
-        if (giaoDichRepo.existsByHopDongKyGuiIdAndLoaiGiaoDich(
-                hopDong.getId(), LoaiGiaoDich.HOAN_TRA_DAM_BAO.name())) {
+        if (giaoDichRepo.existsByHopDongKyGuiIdAndLoaiGiaoDichAndTrangThai(
+                hopDong.getId(), LoaiGiaoDich.HOAN_TRA_DAM_BAO.name(), TrangThaiGiaoDich.HOAN_THANH.name())) {
             throw new AppException(ErrorCode.DA_HOAN_TRA);
         }
 
-        hopDong.setTrangThai(TrangThaiHopDongKyGui.DA_KET_THUC.name());
-        hopDongKyGuiRepo.save(hopDong);
+        BigDecimal soDuDamBao = tinhSoDuDamBao(hopDong);
+        if (soDuDamBao.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorCode.SO_DU_DAM_BAO_KHONG_DU);
+        }
 
         GiaoDichTaiChinh giaoDich = GiaoDichTaiChinh.builder()
                 .nhanVienKeToan(ketoan)
                 .hopDongKyGui(hopDong)
                 .loaiGiaoDich(LoaiGiaoDich.HOAN_TRA_DAM_BAO.name())
-                .soTien(config.getTienDamBao())
+                .soTien(soDuDamBao)
                 .ngayGiaoDich(LocalDateTime.now())
-                .trangThai(TrangThaiGiaoDich.HOAN_THANH.name())
+                .ghiChu(dto.getLyDoChAmDut())
+                .trangThai(TrangThaiGiaoDich.CHO_XU_LY.name())
                 .build();
 
         giaoDich = giaoDichRepo.save(giaoDich);
@@ -98,7 +112,24 @@ public class HopDongKyGuiTaiChinhService {
                 .batDongSanDiaChi(hd.getBatDongSan() != null ? hd.getBatDongSan().getDiaChi() : null)
                 .ngayBatDau(hd.getNgayBatDau())
                 .soThangDaQua(soThang)
-                .tienDamBaoChuaChi(config.getTienDamBao())
+                .tienDamBaoChuaChi(tinhSoDuDamBao(hd))
                 .build();
+    }
+
+    private BigDecimal tinhSoDuDamBao(HopDongKyGui hopDong) {
+        BigDecimal tienDamBao = giaoDichService.resolveTienDamBao(hopDong);
+        if (tienDamBao == null) {
+            tienDamBao = hopDong.getTienDamBao() != null ? hopDong.getTienDamBao() : config.getTienDamBao();
+        }
+        if (tienDamBao == null) {
+            tienDamBao = BigDecimal.ZERO;
+        }
+        BigDecimal daKhauTru = nullSafe(giaoDichService.sumGiaoDichHoanThanh(hopDong.getId(), LoaiGiaoDich.KHAU_TRU_DAM_BAO));
+        BigDecimal daHoanTra = nullSafe(giaoDichService.sumGiaoDichHoanThanh(hopDong.getId(), LoaiGiaoDich.HOAN_TRA_DAM_BAO));
+        return tienDamBao.subtract(daKhauTru).subtract(daHoanTra);
+    }
+
+    private BigDecimal nullSafe(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 }

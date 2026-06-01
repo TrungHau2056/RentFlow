@@ -128,32 +128,76 @@ export default function BaoCaoThongKePage() {
   const [apiDoanhThu, setApiDoanhThu] = useState(null)
   const [apiHieuSuat, setApiHieuSuat] = useState([])
 
+  // ── New state for extended reports ──
+  const [reportType, setReportType] = useState('tong-hop')
+  const [filterKhuVuc, setFilterKhuVuc] = useState('')
+  const [filterLoaiHinh, setFilterLoaiHinh] = useState('')
+  const [apiHopDong, setApiHopDong] = useState(null)
+  const [lichSuBaoCao, setLichSuBaoCao] = useState([])
+  const [viewMode, setViewMode] = useState('bao-cao')
+  const [saving, setSaving] = useState(false)
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
     const now = new Date()
     let thang = now.getMonth() + 1
     let nam = now.getFullYear()
+
+    // Map dateRange to thang/nam
     if (dateRange === 'lastMonth') {
       thang = thang === 1 ? 12 : thang - 1
       nam = thang === 12 ? nam - 1 : nam
+    } else if (dateRange === 'thisQuarter') {
+      thang = Math.floor((thang - 1) / 3) * 3 + 1
+    } else if (dateRange === 'lastQuarter') {
+      thang = thang - 3
+      if (thang <= 0) { thang += 12; nam -= 1 }
+      thang = Math.floor((thang - 1) / 3) * 3 + 1
     }
+    // thisYear & all: keep current thang, nam; backend will use these
+
     try {
-      const [bdsRes, dtRes, hsRes] = await Promise.all([
-        baoCaoService.thongKeBatDongSan(thang, nam).catch(() => null),
-        baoCaoService.doanhThuHoaHong(thang, nam).catch(() => null),
-        baoCaoService.hieuSuatMoiGioi(thang, nam).catch(() => null),
-      ])
+      let apiError = null
+      const fetchBds = baoCaoService.thongKeBatDongSan(thang, nam).catch(err => {
+        apiError = err; return null
+      })
+      const fetchDt = baoCaoService.doanhThuHoaHong(thang, nam).catch(err => {
+        apiError = err; return null
+      })
+      const fetchHs = baoCaoService.hieuSuatMoiGioi(thang, nam).catch(err => {
+        apiError = err; return null
+      })
+
+      const [bdsRes, dtRes, hsRes] = await Promise.all([fetchBds, fetchDt, fetchHs])
       if (bdsRes?.data) setApiBdsThongKe(bdsRes.data)
       if (dtRes?.data) setApiDoanhThu(dtRes.data)
       if (hsRes?.data && Array.isArray(hsRes.data)) setApiHieuSuat(hsRes.data)
+
+      // Fetch hợp đồng
+      if (reportType === 'hop-dong' || reportType === 'tong-hop') {
+        const hdRes = await baoCaoService.baoCaoHopDong(thang, nam).catch(err => {
+          apiError = err; return null
+        })
+        if (hdRes?.data) setApiHopDong(hdRes.data)
+      }
+
+      // Fetch lịch sử (independent)
+      if (viewMode === 'lich-su') {
+        const lsRes = await baoCaoService.lichSuBaoCao().catch(err => {
+          apiError = err; return null
+        })
+        if (lsRes?.data && Array.isArray(lsRes.data)) setLichSuBaoCao(lsRes.data)
+      }
+
+      if (apiError) setError('Không thể tải một số dữ liệu báo cáo')
     } catch (err) {
       console.error('Failed to fetch report data:', err)
       setError('Không thể tải dữ liệu báo cáo')
     } finally {
       setLoading(false)
     }
-  }, [dateRange])
+  }, [dateRange, reportType, viewMode])
 
   useEffect(() => {
     fetchData()
@@ -190,10 +234,10 @@ export default function BaoCaoThongKePage() {
         name: hs.hoTen,
         avatar: null,
         contracts: Number(hs.soHopDongDaChot),
-        revenue: Number(hs.tongHoaHongNhan) * 20,
         commission: Number(hs.tongHoaHongNhan),
-        rate: 70,
-        clients: Number(hs.soHopDongDaChot) * 3,
+        amountPaid: Number(hs.tongDaThanhToan),
+        rate: Number(hs.tyLeChot) || 0,
+        rank: Number(hs.hang) || 0,
       }))
     }
     return []
@@ -225,14 +269,28 @@ export default function BaoCaoThongKePage() {
     })
     rows.push([''])
 
+    // Hợp đồng section
+    if (apiHopDong) {
+      rows.push(['BÁO CÁO HỢP ĐỒNG', 'Số lượng', '', '', ''])
+      rows.push(['Tổng HĐ ký gửi', String(apiHopDong.tongHopDongKyGui ?? 0)])
+      rows.push(['HĐ ký gửi còn hiệu lực', String(apiHopDong.hopDongKyGuiConHieuLuc ?? 0)])
+      rows.push(['HĐ ký gửi hết hạn', String(apiHopDong.hopDongKyGuiHetHan ?? 0)])
+      rows.push(['Tổng HĐ thuê', String(apiHopDong.tongHopDongThue ?? 0)])
+      rows.push(['HĐ thuê mới', String(apiHopDong.hopDongThueMoi ?? 0)])
+      rows.push(['HĐ thuê đang hoạt động', String(apiHopDong.hopDongThueDangHoatDong ?? 0)])
+      rows.push(['HĐ thuê kết thúc', String(apiHopDong.hopDongThueKetThuc ?? 0)])
+      rows.push([''])
+    }
+
     if (hieuSuat.length > 0) {
-      rows.push(['HIỆU SUẤT MÔI GIỚI', 'Hợp đồng', 'Doanh thu', 'Hoa hồng', ''])
+      rows.push(['HIỆU SUẤT MÔI GIỚI', 'Hợp đồng', 'Đã thanh toán', 'Hoa hồng', 'Tỷ lệ chốt'])
       hieuSuat.forEach(hs => {
         rows.push([
           hs.hoTen,
           String(hs.soHopDongDaChot),
-          formatFullVND(Number(hs.tongHoaHongNhan) * 20),
+          formatFullVND(Number(hs.tongDaThanhToan)),
           formatFullVND(Number(hs.tongHoaHongNhan)),
+          (Number(hs.tyLeChot) || 0) + '%',
         ])
       })
     }
@@ -240,12 +298,40 @@ export default function BaoCaoThongKePage() {
     const now = new Date()
     const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
     exportToCSV(rows, `bao-cao-thong-ke-${ts}.csv`)
-  }, [apiBdsThongKe, apiHieuSuat, totalRevenue, totalCommission, activeProperties, propertyStatus])
+  }, [apiBdsThongKe, apiHieuSuat, apiHopDong, totalRevenue, totalCommission, activeProperties, propertyStatus])
 
   // ── Export PDF (same as print) ───────────────────────────────
   const handleExportPDF = useCallback(() => {
     window.print()
   }, [])
+
+  // ── Lưu báo cáo ─────────────────────────────────────────────
+  const handleLuuBaoCao = useCallback(async () => {
+    const now = new Date()
+    const thang = now.getMonth() + 1
+    const nam = now.getFullYear()
+    setSaving(true)
+    try {
+      const data = {
+        loaiBaoCao: reportType.toUpperCase(),
+        noiDung: JSON.stringify({
+          batDongSan: apiBdsThongKe,
+          doanhThu: apiDoanhThu,
+          hieuSuat: apiHieuSuat,
+          hopDong: apiHopDong,
+        }),
+        thang,
+        nam,
+      }
+      await baoCaoService.luuBaoCao(data)
+      alert('Đã lưu báo cáo thành công!')
+    } catch (err) {
+      console.error('Failed to save report:', err)
+      alert('Không thể lưu báo cáo. Vui lòng thử lại.')
+    } finally {
+      setSaving(false)
+    }
+  }, [reportType, apiBdsThongKe, apiDoanhThu, apiHieuSuat, apiHopDong])
 
   // ── Send email (copy to clipboard) ───────────────────────────
   const handleSendEmail = useCallback(() => {
@@ -290,6 +376,19 @@ export default function BaoCaoThongKePage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setViewMode(viewMode === 'bao-cao' ? 'lich-su' : 'bao-cao')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'lich-su'
+                  ? 'bg-primary-container text-white'
+                  : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
+              }`}
+            >
+              <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {viewMode === 'lich-su' ? 'Báo cáo' : 'Lịch sử'}
+            </button>
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
@@ -327,6 +426,12 @@ export default function BaoCaoThongKePage() {
                     Xuất Excel
                   </button>
                   <div className="border-t border-outline-variant my-1" />
+                  <button onClick={handleLuuBaoCao} disabled={saving} className="w-full px-4 py-2 text-sm text-left text-on-surface hover:bg-surface-container-low flex items-center gap-2 disabled:opacity-50">
+                    <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    {saving ? 'Đang lưu...' : 'Lưu báo cáo'}
+                  </button>
                   <button onClick={handleSendEmail} className="w-full px-4 py-2 text-sm text-left text-on-surface hover:bg-surface-container-low flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -348,6 +453,111 @@ export default function BaoCaoThongKePage() {
             Kỳ: {dateRange === 'thisMonth' ? 'Tháng này' : dateRange === 'lastMonth' ? 'Tháng trước' : dateRange === 'thisQuarter' ? 'Quý này' : dateRange === 'lastQuarter' ? 'Quý trước' : dateRange === 'thisYear' ? 'Năm nay' : 'Tất cả'}
           </p>
         </div>
+
+        {/* Tab Navigation */}
+        {viewMode === 'bao-cao' && (
+          <div className="flex items-center gap-1 bg-surface-container-low rounded-lg p-1 no-print">
+            {[
+              { key: 'tong-hop', label: 'Tổng hợp' },
+              { key: 'bat-dong-san', label: 'BĐS' },
+              { key: 'hop-dong', label: 'Hợp đồng' },
+              { key: 'doanh-thu', label: 'Doanh thu' },
+              { key: 'hieu-suat', label: 'Hiệu suất' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setReportType(tab.key)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  reportType === tab.key
+                    ? 'bg-white text-on-surface shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* History View */}
+        {viewMode === 'lich-su' && (
+          <div className="bg-white rounded-xl border border-outline-variant p-6 no-print">
+            <h3 className="text-base font-semibold text-on-surface mb-4">Lịch sử báo cáo đã lưu</h3>
+            {lichSuBaoCao.length === 0 ? (
+              <p className="text-sm text-on-surface-variant text-center py-8">Chưa có báo cáo nào được lưu</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-outline-variant">
+                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">STT</th>
+                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Loại báo cáo</th>
+                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Kỳ</th>
+                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Ngày tạo</th>
+                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {lichSuBaoCao.map((bc, idx) => (
+                      <tr key={bc.id} className="hover:bg-surface-container-low transition-colors">
+                        <td className="py-3 text-sm text-on-surface">{idx + 1}</td>
+                        <td className="py-3 text-sm font-medium text-on-surface">{bc.loaiBaoCao}</td>
+                        <td className="py-3 text-sm text-on-surface">Tháng {bc.thang}/{bc.nam}</td>
+                        <td className="py-3 text-sm text-on-surface">{new Date(bc.ngayTao).toLocaleDateString('vi-VN')}</td>
+                        <td className="py-3">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await baoCaoService.chiTietBaoCao(bc.id)
+                                if (res?.data) {
+                                  alert('Nội dung báo cáo:\n' + JSON.stringify(res.data, null, 2))
+                                }
+                              } catch {
+                                alert('Không thể tải chi tiết báo cáo.')
+                              }
+                            }}
+                            className="text-sm text-primary-container hover:underline"
+                          >
+                            Xem
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Filter: Khu vực, Loại hình (only for BĐS tab) */}
+        {viewMode === 'bao-cao' && reportType === 'bat-dong-san' && (
+          <div className="flex items-center gap-3 no-print flex-wrap">
+            <select
+              value={filterKhuVuc}
+              onChange={(e) => setFilterKhuVuc(e.target.value)}
+              className="px-3 py-2 border border-outline-variant rounded-lg text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary-container/20"
+            >
+              <option value="">Tất cả khu vực</option>
+              <option value="Quận 1">Quận 1</option>
+              <option value="Quận 2">Quận 2</option>
+              <option value="Quận 3">Quận 3</option>
+              <option value="Quận 7">Quận 7</option>
+              <option value="Quận Bình Thạnh">Bình Thạnh</option>
+            </select>
+            <select
+              value={filterLoaiHinh}
+              onChange={(e) => setFilterLoaiHinh(e.target.value)}
+              className="px-3 py-2 border border-outline-variant rounded-lg text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary-container/20"
+            >
+              <option value="">Tất cả loại hình</option>
+              <option value="Căn hộ">Căn hộ</option>
+              <option value="Nhà phố">Nhà phố</option>
+              <option value="Biệt thự">Biệt thự</option>
+              <option value="Đất nền">Đất nền</option>
+            </select>
+          </div>
+        )}
 
         {/* KPI Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print-grid-4">
@@ -377,7 +587,41 @@ export default function BaoCaoThongKePage() {
           />
         </div>
 
-        {/* Property Status */}
+        {/* Báo cáo hợp đồng section */}
+        {viewMode === 'bao-cao' && (reportType === 'hop-dong' || reportType === 'tong-hop') && apiHopDong && (
+          <div>
+            <h3 className="text-base font-semibold text-on-surface mb-4">Báo cáo hợp đồng</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <KPICard
+                icon={<svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+                label="Tổng HĐ ký gửi"
+                value={apiHopDong.tongHopDongKyGui ?? 0}
+                bgColor="bg-blue-50"
+              />
+              <KPICard
+                icon={<svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                label="HĐ ký gửi còn hiệu lực"
+                value={apiHopDong.hopDongKyGuiConHieuLuc ?? 0}
+                bgColor="bg-emerald-50"
+              />
+              <KPICard
+                icon={<svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>}
+                label="Tổng HĐ thuê"
+                value={apiHopDong.tongHopDongThue ?? 0}
+                bgColor="bg-indigo-50"
+              />
+              <KPICard
+                icon={<svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+                label="HĐ thuê đang hoạt động"
+                value={apiHopDong.hopDongThueDangHoatDong ?? 0}
+                bgColor="bg-orange-50"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Property Status — only show for tong-hop or bat-dong-san */}
+        {(reportType === 'tong-hop' || reportType === 'bat-dong-san') && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-outline-variant p-6">
             <h3 className="text-base font-semibold text-on-surface mb-4">Bất động sản theo trạng thái</h3>
@@ -405,7 +649,7 @@ export default function BaoCaoThongKePage() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-base font-semibold text-on-surface">Hiệu suất môi giới</h3>
-                <p className="text-sm text-on-surface-variant mt-0.5">Top môi giới theo doanh thu và tỷ lệ chốt</p>
+                <p className="text-sm text-on-surface-variant mt-0.5">Top môi giới theo hợp đồng và tỷ lệ chốt</p>
               </div>
             </div>
 
@@ -419,7 +663,8 @@ export default function BaoCaoThongKePage() {
                       <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Hạng</th>
                       <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Môi giới</th>
                       <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Hợp đồng</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Doanh thu</th>
+                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Tỷ lệ chốt</th>
+                      <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Đã thanh toán</th>
                       <th className="pb-3 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Hoa hồng</th>
                     </tr>
                   </thead>
@@ -429,7 +674,7 @@ export default function BaoCaoThongKePage() {
                         <td className="py-3">
                           <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                             i === 0 ? 'bg-amber-100 text-amber-700' : i === 1 ? 'bg-slate-200 text-slate-600' : i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400'
-                          }`}>{i + 1}</span>
+                          }`}>{broker.rank || (i + 1)}</span>
                         </td>
                         <td className="py-3">
                           <div className="flex items-center gap-3">
@@ -440,7 +685,20 @@ export default function BaoCaoThongKePage() {
                           </div>
                         </td>
                         <td className="py-3 text-sm text-on-surface font-medium">{broker.contracts}</td>
-                        <td className="py-3 text-sm text-on-surface">{formatVND(broker.revenue)}</td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-slate-100 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full transition-all ${
+                                  broker.rate >= 80 ? 'bg-emerald-500' : broker.rate >= 50 ? 'bg-amber-500' : 'bg-blue-500'
+                                }`}
+                                style={{ width: `${Math.min(broker.rate, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-on-surface w-10 text-right">{broker.rate}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-sm text-on-surface">{formatVND(broker.amountPaid)}</td>
                         <td className="py-3 text-sm text-on-surface">{formatVND(broker.commission)}</td>
                       </tr>
                     ))}
@@ -450,6 +708,7 @@ export default function BaoCaoThongKePage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Report Generation */}
         <div className="bg-white rounded-xl border border-outline-variant p-6 no-print">

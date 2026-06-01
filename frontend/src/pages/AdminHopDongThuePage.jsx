@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import contractService from '../services/contractService'
 
 const STATUS_CONFIG = {
@@ -42,16 +41,6 @@ const WORKFLOW_MAP = {
   TU_CHOI: 1, DA_KY: 4, HOAN_THANH: 6, DA_HUY: 6,
 }
 
-// Step 7.2 - Điều kiện kiểm tra trước khi lập hợp đồng
-const DIEU_KIEN_LAP_HOP_DONG = [
-  { key: 'khachHang', label: 'Thông tin khách thuê đầy đủ', required: true },
-  { key: 'chuNha', label: 'Thông tin chủ nhà đầy đủ', required: true },
-  { key: 'batDongSan', label: 'Bất động sản còn hiệu lực', required: true },
-  { key: 'giaThue', label: 'Giá thuê đã được thống nhất', required: true },
-  { key: 'tienCoc', label: 'Tiền cọc đã thỏa thuận', required: false },
-  { key: 'lichSuXemNha', label: 'Đã có lịch sử xem nhà', required: false },
-]
-
 function formatVND(value) {
   if (value == null) return '0'
   return new Intl.NumberFormat('vi-VN').format(value)
@@ -84,22 +73,28 @@ function mapContract(item) {
 
   return {
     id: item.id,
+    rawTrangThai: rawStatus,
+    khachHangId: item.khachHangId,
+    batDongSanId: item.batDongSanId,
+    nhanVienMoiGioiId: item.nhanVienMoiGioiId,
     ma: `HĐT-${item.id}`,
     khachThue: item.tenKhachHang || '',
-    sdtKhachThue: '',
-    emailKhachThue: '',
-    chuNha: '',
-    sdtChuNha: '',
+    sdtKhachThue: item.sdtKhachHang || '',
+    emailKhachThue: item.emailKhachHang || '',
+    chuNha: item.tenChuNha || '',
+    sdtChuNha: item.sdtChuNha || '',
     batDongSan: item.diaChiBatDongSan || `BĐS #${item.batDongSanId}`,
     diaChiBDS: item.diaChiBatDongSan || '',
-    loaiBDS: '',
+    loaiBDS: item.loaiBatDongSan || '',
+    dienTich: item.dienTichBatDongSan || '',
+    soPhongNgu: item.soPhongNgu || '',
     giaThue: item.tienThue || 0,
     tienCoc: item.tienCoc || 0,
     ngayBatDau: item.ngayBatDau || '',
     ngayKetThuc: item.ngayKetThuc || '',
     thoiHan: thoiHan || 0,
     moiGioi: item.tenNhanVienMoiGioi || '',
-    sdtMoiGioi: '',
+    sdtMoiGioi: item.sdtNhanVienMoiGioi || '',
     trangThai: derivedStatus,
     workflowStep: WORKFLOW_MAP[rawStatus] || 3,
     lichSuThanhToan: [],
@@ -356,7 +351,7 @@ function ContractDetail({ contract, onClose, onCheckDieuKien, onGhiNhanKyKet, on
               </button>
             </>
           )}
-          {contract.trangThai === 'dang_hieu_luc' && (
+          {(contract.rawTrangThai === 'NHAP' || contract.rawTrangThai === 'DA_PHE_DUYET') && (
             <>
               <button
                 onClick={() => onGhiNhanKyKet && onGhiNhanKyKet(contract)}
@@ -369,18 +364,15 @@ function ContractDetail({ contract, onClose, onCheckDieuKien, onGhiNhanKyKet, on
                   Ghi nhận ký kết
                 </span>
               </button>
-              <button
-                onClick={() => onCapNhatTrangThai && onCapNhatTrangThai(contract)}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Cập nhật trạng thái BĐS
-                </span>
-              </button>
             </>
+          )}
+          {contract.rawTrangThai === 'DA_KY' && (
+            <button
+              onClick={() => onCapNhatTrangThai && onCapNhatTrangThai(contract)}
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            >
+              Cập nhật trạng thái hợp đồng
+            </button>
           )}
         </div>
       </div>
@@ -390,20 +382,33 @@ function ContractDetail({ contract, onClose, onCheckDieuKien, onGhiNhanKyKet, on
 
 // ── Step 7.2: Modal kiểm tra điều kiện lập hợp đồng ──────────────────
 function DieuKienModal({ contract, onClose, onConfirm }) {
-  const [dieuKien, setDieuKien] = useState({
-    khachHang: true,
-    chuNha: true,
-    batDongSan: true,
-    giaThue: !!contract?.giaThue,
-    tienCoc: !!contract?.tienCoc,
-    lichSuXemNha: true,
-  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [eligibility, setEligibility] = useState(null)
+  const failedConditions = eligibility?.failedConditions || []
+  const tatCaDat = !!eligibility?.eligible
 
-  const tatCaDat = Object.values(dieuKien).every(v => v)
-
-  const toggleDieuKien = (key) => {
-    setDieuKien(prev => ({ ...prev, [key]: !prev[key] }))
-  }
+  useEffect(() => {
+    let cancelled = false
+    async function checkEligibility() {
+      setLoading(true)
+      setError('')
+      try {
+        const res = await contractService.kiemTraDieuKienThue({
+          khachHangId: contract?.khachHangId,
+          batDongSanId: contract?.batDongSanId,
+          nhanVienMoiGioiId: contract?.nhanVienMoiGioiId,
+        })
+        if (!cancelled) setEligibility(res?.data || null)
+      } catch (err) {
+        if (!cancelled) setError(err.response?.data?.message || 'Không thể kiểm tra điều kiện lập hợp đồng')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    checkEligibility()
+    return () => { cancelled = true }
+  }, [contract])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -424,31 +429,31 @@ function DieuKienModal({ contract, onClose, onConfirm }) {
         </div>
 
         <div className="p-6 space-y-3">
-          {DIEU_KIEN_LAP_HOP_DONG.map((dk) => (
-            <div
-              key={dk.key}
-              onClick={() => toggleDieuKien(dk.key)}
-              className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
-                dieuKien[dk.key]
-                  ? 'bg-emerald-50 border-emerald-200'
-                  : 'bg-slate-50 border-slate-200'
-              }`}
-            >
+          {loading && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+              Đang kiểm tra điều kiện từ backend...
+            </div>
+          )}
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+          {!loading && !error && failedConditions.length === 0 && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
+              Backend xác nhận tất cả điều kiện lập/ký hợp đồng đều đạt.
+            </div>
+          )}
+          {!loading && !error && failedConditions.map((condition) => (
+            <div key={condition} className="flex items-center justify-between p-4 rounded-xl border bg-red-50 border-red-200">
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded flex items-center justify-center ${
-                  dieuKien[dk.key] ? 'bg-emerald-500' : 'bg-slate-300'
-                }`}>
+                <div className="w-5 h-5 rounded flex items-center justify-center bg-red-500">
                   <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
-                <span className={`text-sm font-medium ${dieuKien[dk.key] ? 'text-emerald-800' : 'text-slate-500'}`}>
-                  {dk.label}
-                </span>
+                <span className="text-sm font-medium text-red-800">{condition}</span>
               </div>
-              {dk.required && (
-                <span className="text-xs text-red-500 font-medium">*</span>
-              )}
             </div>
           ))}
 
@@ -474,7 +479,7 @@ function DieuKienModal({ contract, onClose, onConfirm }) {
                 <p className={`text-xs mt-0.5 ${tatCaDat ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {tatCaDat
                     ? 'Có thể tiến hành lập hợp đồng thuê.'
-                    : 'Vui lòng kiểm tra và xác nhận các điều kiện chưa đạt (có dấu *).'}
+                    : 'Vui lòng xử lý các điều kiện backend trả về trước khi tiếp tục.'}
                 </p>
               </div>
             </div>
@@ -490,7 +495,7 @@ function DieuKienModal({ contract, onClose, onConfirm }) {
           </button>
           <button
             onClick={() => onConfirm(tatCaDat)}
-            disabled={!tatCaDat}
+            disabled={!tatCaDat || loading}
             className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
               tatCaDat
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -656,9 +661,9 @@ function KyKetModal({ contract, onClose, onSave }) {
   )
 }
 
-// ── Step 7.5: Modal cập nhật trạng thái BĐS ──────────────────────────
+// ── Step 7.5: Modal cập nhật trạng thái hợp đồng ─────────────────────
 function CapNhatTrangThaiBDSSModal({ contract, onClose, onSave }) {
-  const [trangThai, setTrangThai] = useState('dang_thue')
+  const [trangThai, setTrangThai] = useState('HOAN_THANH')
   const [ghiChu, setGhiChu] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -670,7 +675,7 @@ function CapNhatTrangThaiBDSSModal({ contract, onClose, onSave }) {
       }
       onClose()
     } catch (err) {
-      console.error('Failed to update property status:', err)
+      console.error('Failed to update contract status:', err)
     } finally {
       setSaving(false)
     }
@@ -684,7 +689,7 @@ function CapNhatTrangThaiBDSSModal({ contract, onClose, onSave }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-amber-200 text-xs">Step 7.5 - Cập nhật trạng thái</p>
-              <h3 className="text-white font-bold text-lg">Cập nhật trạng thái BĐS</h3>
+              <h3 className="text-white font-bold text-lg">Cập nhật trạng thái hợp đồng</h3>
             </div>
             <button onClick={onClose} className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -696,18 +701,17 @@ function CapNhatTrangThaiBDSSModal({ contract, onClose, onSave }) {
 
         <div className="p-6 space-y-4">
           <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-            <p className="text-xs text-slate-400 mb-1">Bất động sản</p>
-            <p className="font-medium text-slate-800 truncate">{contract?.batDongSan || '—'}</p>
-            <p className="text-xs text-slate-500 mt-1">{contract?.diaChiBDS || '—'}</p>
+            <p className="text-xs text-slate-400 mb-1">Hợp đồng</p>
+            <p className="font-medium text-slate-800 truncate">{contract?.ma || '—'}</p>
+            <p className="text-xs text-slate-500 mt-1">{contract?.batDongSan || '—'}</p>
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Trạng thái mới</label>
             <div className="space-y-2">
               {[
-                { value: 'dang_thue', label: 'Đang cho thuê', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-                { value: 'da_ban', label: 'Đã bán', color: 'bg-blue-50 border-blue-200 text-blue-700' },
-                { value: 'ngung_cho_thue', label: 'Ngừng cho thuê', color: 'bg-slate-50 border-slate-200 text-slate-600' },
+                { value: 'HOAN_THANH', label: 'Hoàn thành / kết thúc hợp đồng', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                { value: 'DA_HUY', label: 'Hủy hợp đồng', color: 'bg-red-50 border-red-200 text-red-700' },
               ].map((opt) => (
                 <div
                   key={opt.value}
@@ -728,7 +732,7 @@ function CapNhatTrangThaiBDSSModal({ contract, onClose, onSave }) {
               value={ghiChu}
               onChange={(e) => setGhiChu(e.target.value)}
               rows={2}
-              placeholder="Ghi chú về thay đổi trạng thái..."
+              placeholder="Ghi chú về thay đổi trạng thái hợp đồng..."
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             />
           </div>
@@ -786,7 +790,6 @@ function EmptyState() {
 }
 
 export default function AdminHopDongThuePage() {
-  const navigate = useNavigate()
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -810,26 +813,47 @@ export default function AdminHopDongThuePage() {
 
   const handleConfirmDieuKien = (tatCaDat) => {
     if (tatCaDat) {
+      setKyKetModal(dieuKienModal)
       setDieuKienModal(null)
-      navigate(`/admin/hop-dong-thue/tao-moi?contractId=${dieuKienModal?.id}`)
     }
   }
 
   // Handler cho step 7.4
-  const handleGhiNhanKyKet = async ({ contractId, ngayKy, nguoiKyBenA, nguoiKyBenB, fileHopDong, ghiChu }) => {
-    console.log('Ghi nhận ký kết:', { contractId, ngayKy, nguoiKyBenA, nguoiKyBenB, fileHopDong, ghiChu })
-    // TODO: Gọi API cập nhật hợp đồng
-    fetchContracts()
+  const handleGhiNhanKyKet = async (payload) => {
+    if (payload?.id && !payload?.contractId) {
+      setKyKetModal(payload)
+      return
+    }
+    try {
+      await contractService.kyHopDongThue(payload.contractId, { ngayKy: payload.ngayKy })
+      await fetchContracts()
+      setKyKetModal(null)
+      setSelectedId(payload.contractId)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể ghi nhận ký kết hợp đồng')
+      throw err
+    }
   }
 
   // Handler cho step 7.5
-  const handleCapNhatTrangThaiBDS = async ({ batDongSanId, trangThai, ghiChu }) => {
-    console.log('Cập nhật trạng thái BĐS:', { batDongSanId, trangThai, ghiChu })
-    // TODO: Gọi API cập nhật trạng thái BĐS
-    fetchContracts()
+  const handleCapNhatTrangThaiBDS = async (payload) => {
+    if (payload?.id && !payload?.contractId) {
+      setCapNhatTrangThaiModal(payload)
+      return
+    }
+    try {
+      await contractService.updateThueContractStatus(payload.contractId, payload.trangThai)
+      await fetchContracts()
+      setCapNhatTrangThaiModal(null)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể cập nhật trạng thái hợp đồng')
+      throw err
+    }
   }
 
   const fetchContracts = async () => {
+    setLoading(true)
+    setError(null)
     try {
       const res = await contractService.getThueContracts()
       setContracts((res?.data || []).map(mapContract))

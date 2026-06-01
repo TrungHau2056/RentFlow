@@ -26,8 +26,13 @@ const hopDongThueService = {
     return response.data;
   },
 
-  async ky(id) {
-    const response = await api.put(`/api/hop-dong-thue/${id}/ky`);
+  async kiemTraDieuKien(params) {
+    const response = await api.get('/api/hop-dong-thue/eligible', { params });
+    return response.data;
+  },
+
+  async ky(id, data = {}) {
+    const response = await api.put(`/api/hop-dong-thue/${id}/ky`, data);
     return response.data;
   },
 

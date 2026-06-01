@@ -29,4 +29,21 @@ public interface HopDongKyGuiRepository extends JpaRepository<HopDongKyGui, Long
             @Param("trangThai") String trangThai,
             @Param("ngayNguong") LocalDate ngayNguong
     );
+
+    @Query("SELECT COUNT(h) FROM HopDongKyGui h WHERE h.trangThai = :trangThai AND h.ngayKetThuc < :ngayHienTai")
+    long countByTrangThaiAndHetHan(@Param("trangThai") String trangThai, @Param("ngayHienTai") LocalDate ngayHienTai);
+
+    @Query("""
+        SELECT h FROM HopDongKyGui h
+        WHERE h.trangThai = :trangThai
+        AND NOT EXISTS (
+            SELECT 1 FROM GiaoDichTaiChinh g
+            WHERE g.hopDongKyGui = h
+            AND g.loaiGiaoDich = :loaiGiaoDich
+        )
+        """)
+    List<HopDongKyGui> findChoGhiNhanThu(
+            @Param("trangThai") String trangThai,
+            @Param("loaiGiaoDich") String loaiGiaoDich
+    );
 }

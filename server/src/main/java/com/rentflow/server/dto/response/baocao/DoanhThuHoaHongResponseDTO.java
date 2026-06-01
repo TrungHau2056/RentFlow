@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Builder
 @Getter
@@ -32,4 +33,16 @@ public class DoanhThuHoaHongResponseDTO {
 
     @Schema(description = "Tổng khấu trừ (VNĐ)", example = "0")
     private BigDecimal tongKhauTru;
+
+    @Schema(description = "Doanh thu theo tháng (12 tháng)")
+    private List<DoanhThuThangDTO> doanhThuThang;
+
+    @Schema(description = "Doanh thu theo quý (4 quý)")
+    private List<DoanhThuQuyDTO> doanhThuQuy;
+
+    @Schema(description = "Hoa hồng theo nhân viên")
+    private List<HoaHongNhanVienDTO> hoaHongTheoNhanVien;
+
+    @Schema(description = "Tỷ lệ hoa hồng (%)", example = "15.5")
+    private BigDecimal tyLeHoaHong;
 }

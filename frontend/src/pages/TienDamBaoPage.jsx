@@ -6,6 +6,7 @@ const STATUS_CONFIG = {
   dang_giu: { label: 'Đang giữ', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
   da_khau_tru: { label: 'Đã khấu trừ', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
   da_hoan_tra: { label: 'Đã hoàn trả', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+  cho_duyet: { label: 'Chờ duyệt', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-400' },
   cho_xu_ly_hoan_tra: { label: 'Chờ xử lý hoàn trả', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
 }
 
@@ -23,6 +24,17 @@ function formatVND(amount) {
 function formatDate(dateStr) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 function KPICard({ icon, label, value, color, bgColor, isCurrency }) {
@@ -191,7 +203,7 @@ function DepositRow({ deposit, isSelected, onSelect }) {
   )
 }
 
-function DepositDetail({ deposit, onClose, nowTime }) {
+function DepositDetail({ deposit, onClose, nowTime, onApprove, actionLoading }) {
   if (!deposit) return null
   const status = STATUS_CONFIG[deposit.status]
   const isOver6Months = !deposit.ngayChoThue && deposit.status === 'dang_giu' &&
@@ -332,6 +344,15 @@ function DepositDetail({ deposit, onClose, nowTime }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </button>
+          {deposit.canApprove && (
+            <button
+              onClick={() => onApprove(deposit.id)}
+              disabled={actionLoading === deposit.id}
+              className="py-2.5 px-4 rounded-lg bg-emerald-600 disabled:bg-emerald-300 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
+            >
+              Duyệt
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -366,22 +387,24 @@ function EmptyState() {
 }
 
 function mapGiaoDichToDeposit(gd) {
-  const trangThaiMap = {
-    HOAN_THANH: 'da_hoan_tra',
-    CHO_XU_LY: 'dang_giu',
-    DA_HUY: 'da_khau_tru',
-  }
+  const status = gd.trangThai === 'CHO_XU_LY'
+    ? 'cho_duyet'
+    : gd.loaiGiaoDich === 'HOAN_TRA_DAM_BAO'
+      ? 'da_hoan_tra'
+      : gd.loaiGiaoDich === 'KHAU_TRU_DAM_BAO'
+        ? 'da_khau_tru'
+        : 'dang_giu'
   return {
     id: gd.id,
     maPhieu: `GD-${String(gd.id).padStart(5, '0')}`,
-    tenBDS: gd.hopDongKyGuiId ? `HĐ ký gửi #${gd.hopDongKyGuiId}` : `HĐ thuê #${gd.hopDongThueId}`,
+    tenBDS: gd.batDongSanDiaChi || (gd.hopDongKyGuiId ? `HĐ ký gửi #${gd.hopDongKyGuiId}` : `HĐ thuê #${gd.hopDongThueId}`),
     hopDong: gd.hopDongKyGuiId ? `HDKG-${String(gd.hopDongKyGuiId).padStart(4, '0')}` : `HDT-${String(gd.hopDongThueId).padStart(4, '0')}`,
     ngayThu: gd.ngayGiaoDich ? gd.ngayGiaoDich.split('T')[0] : '',
-    soTien: Number(gd.soTien),
-    status: trangThaiMap[gd.trangThai] || 'dang_giu',
+    soTien: Number(gd.soTien || 0),
+    status,
     ngayCapNhat: gd.ngayGiaoDich ? gd.ngayGiaoDich.split('T')[0] : '',
-    diaChiBDS: '',
-    moiGioi: gd.nhanVienKeToanHoTen || '',
+    diaChiBDS: gd.batDongSanDiaChi || '',
+    moiGioi: gd.moiGioiHoTen || gd.nhanVienKeToanHoTen || '',
     ngayChoThue: null,
     lichSu: [
       {
@@ -392,6 +415,9 @@ function mapGiaoDichToDeposit(gd) {
       },
     ],
     refundWorkflow: null,
+    khauTru: Number(gd.soTienDaKhauTru || 0),
+    soTienConLai: Number(gd.soTienConLai || 0),
+    canApprove: gd.trangThai === 'CHO_XU_LY',
   }
 }
 
@@ -432,16 +458,21 @@ export default function TienDamBaoPage() {
   const [hoanTraHopDongId, setHoanTraHopDongId] = useState('')
   const [lyDoHoanTra, setLyDoHoanTra] = useState('')
   const [eligibleContracts, setEligibleContracts] = useState([])
+  const [choThuContracts, setChoThuContracts] = useState([])
   const [actionLoading, setActionLoading] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const [gdRes, elRes] = await Promise.all([
-        taiChinhService.layDanhSachGiaoDich().catch(() => null),
-        taiChinhService.quetHopDongDuDieuKienHoanTra().catch(() => null),
+      const [gdResult, elResult, choThuResult] = await Promise.allSettled([
+        taiChinhService.layDanhSachGiaoDich(),
+        taiChinhService.quetHopDongDuDieuKienHoanTra(),
+        taiChinhService.layHopDongKyGuiChoThu(),
       ])
+      const gdRes = gdResult.status === 'fulfilled' ? gdResult.value : null
+      const elRes = elResult.status === 'fulfilled' ? elResult.value : null
+      const choThuRes = choThuResult.status === 'fulfilled' ? choThuResult.value : null
       const items = []
       if (gdRes?.data && Array.isArray(gdRes.data)) {
         gdRes.data.forEach(gd => items.push(mapGiaoDichToDeposit(gd)))
@@ -450,13 +481,37 @@ export default function TienDamBaoPage() {
         elRes.data.forEach(el => items.push(mapEligibleToDeposit(el)))
         setEligibleContracts(elRes.data)
       }
+      if (choThuRes?.data && Array.isArray(choThuRes.data)) setChoThuContracts(choThuRes.data)
+      if (gdResult.status === 'rejected' || elResult.status === 'rejected' || choThuResult.status === 'rejected') {
+        setError('Một phần dữ liệu tài chính không tải được. Vui lòng thử lại nếu thiếu dữ liệu.')
+      }
       if (items.length > 0) {
         setDeposits(items)
       }
     } catch (err) {
       console.error('Failed to fetch deposits:', err)
+      setError('Không thể tải dữ liệu tiền đảm bảo')
     } finally {
       setLoading(false)
+    }
+  }, [])
+
+  const openGhiNhanModal = useCallback(async () => {
+    setShowGhiNhanModal(true)
+    setChoThuContracts([])
+    setGhiNhanHopDongId('')
+    setActionLoading(true)
+    setError(null)
+    try {
+      const res = await taiChinhService.layHopDongKyGuiChoThu()
+      const contracts = Array.isArray(res?.data) ? res.data : []
+      setChoThuContracts(contracts)
+      setGhiNhanHopDongId(contracts[0]?.hopDongKyGuiId ? String(contracts[0].hopDongKyGuiId) : '')
+    } catch (err) {
+      console.error('Failed to load receivable contracts:', err)
+      setError('Không thể tải hợp đồng chờ ghi nhận thu')
+    } finally {
+      setActionLoading(false)
     }
   }, [])
 
@@ -496,6 +551,30 @@ export default function TienDamBaoPage() {
       setActionLoading(false)
     }
   }, [hoanTraHopDongId, lyDoHoanTra, fetchData])
+
+  const handleApprove = useCallback(async (id) => {
+    setActionLoading(id)
+    try {
+      await taiChinhService.xacNhanGiaoDich(id)
+      await fetchData()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Duyệt giao dịch thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [fetchData])
+
+  const handleExport = useCallback(async () => {
+    setActionLoading('export')
+    try {
+      const blob = await taiChinhService.xuatGiaoDichCsv()
+      downloadBlob(blob, 'giao-dich-tai-chinh.csv')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Xuất CSV thất bại')
+    } finally {
+      setActionLoading(false)
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     let result = [...deposits]
@@ -544,13 +623,20 @@ export default function TienDamBaoPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowGhiNhanModal(true)}
+            onClick={openGhiNhanModal}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Ghi nhận thu
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={actionLoading === 'export'}
+            className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            Xuất CSV
           </button>
           <button
             onClick={async () => {
@@ -669,7 +755,7 @@ export default function TienDamBaoPage() {
           </div>
           {selectedDeposit && (
             <div className="w-[420px] shrink-0 hidden xl:block">
-              <DepositDetail deposit={selectedDeposit} nowTime={nowTime} onClose={() => setSelectedId(null)} />
+              <DepositDetail deposit={selectedDeposit} nowTime={nowTime} onClose={() => setSelectedId(null)} onApprove={handleApprove} actionLoading={actionLoading} />
             </div>
           )}
         </div>
@@ -682,17 +768,33 @@ export default function TienDamBaoPage() {
             <h3 className="text-lg font-bold text-on-surface mb-4">Ghi nhận thu tiền đảm bảo</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-on-surface-variant mb-1">ID Hợp đồng ký gửi</label>
-                <input
-                  type="number"
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">Hợp đồng ký gửi chờ thu</label>
+                <select
                   value={ghiNhanHopDongId}
                   onChange={(e) => setGhiNhanHopDongId(e.target.value)}
-                  placeholder="Nhập ID hợp đồng ký gửi"
+                  disabled={actionLoading === true}
                   className="w-full px-3 py-2 border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                  <option value="">-- Chọn hợp đồng --</option>
+                  {choThuContracts.map((el) => (
+                    <option key={el.hopDongKyGuiId} value={el.hopDongKyGuiId}>
+                      HDKG-{String(el.hopDongKyGuiId).padStart(4, '0')} - {el.batDongSanDiaChi || `BĐS #${el.batDongSanId}`} ({Number(el.tienDamBaoChuaChi || 0).toLocaleString()}đ)
+                    </option>
+                  ))}
+                </select>
               </div>
+              {actionLoading === true && (
+                <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600">
+                  Đang tải danh sách hợp đồng chờ ghi nhận thu...
+                </div>
+              )}
+              {!actionLoading && choThuContracts.length === 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
+                  Không có hợp đồng ký gửi nào chờ ghi nhận thu. Hợp đồng cần đang hoạt động và chưa có giao dịch tiền đảm bảo.
+                </div>
+              )}
               <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-700">
-                Số tiền: <strong>1.000.000 VNĐ</strong> (theo cấu hình hệ thống)
+                Số tiền lấy theo tiền đảm bảo trên hợp đồng ký gửi.
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
