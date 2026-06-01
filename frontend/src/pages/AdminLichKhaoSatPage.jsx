@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import lichHenKhaoSatService from '../services/lichHenKhaoSatService'
 import batDongSanService from '../services/batDongSanService'
 
@@ -25,6 +26,8 @@ const STATUS_CONFIG = {
   },
 }
 
+const WORKFLOW_STEPS = ['Tiếp nhận', 'Xác nhận lịch', 'Khảo sát', 'Ghi kết quả', 'Hoàn tất']
+
 function formatDate(dateStr) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -33,13 +36,6 @@ function formatDate(dateStr) {
 function formatTime(dateStr) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDateTimeLocal(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function StatusBadge({ status }) {
@@ -84,94 +80,6 @@ function ActionButton({ label, variant = 'secondary', children, onClick, disable
       {children}
       {label}
     </button>
-  )
-}
-
-  const handleSubmit = async () => {
-    const bdsId = property ? Number(batDongSanId) : Number(selectedBdsId)
-    if (!bdsId) {
-      setError('Vui lòng chọn bất động sản')
-      return
-    }
-    if (!thoiGian) {
-      setError('Vui lòng chọn thời gian khảo sát')
-      return
-    }
-    try {
-      setSubmitting(true)
-      setError('')
-      await lichHenKhaoSatService.tao({
-        batDongSanId: bdsId,
-        thoiGian: new Date(thoiGian).toISOString(),
-      })
-      onCreated()
-      navigate('/admin/lich-khao-sat')
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Tạo lịch thất bại')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  if (mode === 'week') {
-    return (
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-4 py-3">
-          <h2 className="text-base font-bold text-slate-900">Week View · {new Date(weekDates[0]).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} - {new Date(weekDates[6]).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</h2>
-          <p className="text-sm text-slate-500">Điều phối nhân viên khảo sát trong tuần</p>
-        </div>
-        <div className="grid min-w-[840px] grid-cols-7 divide-x divide-slate-100 overflow-x-auto">
-          {weekDates.map((date, index) => (
-            <div key={date} className="min-h-[320px] p-3">
-              <div className="mb-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{WEEK_DAYS[index]}</p>
-                <p className="text-sm font-semibold text-slate-900">{formatDate(date).slice(0, 5)}</p>
-              </div>
-              <div className="space-y-2">
-                {(surveysByDate[date] || []).map((survey) => (
-                  <CalendarEvent key={survey.id} survey={survey} onOpen={onOpen} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <div>
-          <h2 className="text-base font-bold text-slate-900">Month View · Tháng 6/2026</h2>
-          <p className="text-sm text-slate-500">Tổng quan lịch khảo sát theo tháng</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
-        {WEEK_DAYS.map((day) => (
-          <div key={day} className="px-3 py-2 text-center text-xs font-bold text-slate-500">{day}</div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7">
-        {MONTH_DAYS.map((day) => {
-          const date = `2026-06-${String(day).padStart(2, '0')}`
-          const daySurveysInMonth = surveysByDate[date] || []
-
-          return (
-            <div key={day} className="min-h-28 border-b border-r border-slate-100 p-2">
-              <p className="mb-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-slate-600">
-                {day}
-              </p>
-              <div className="space-y-1">
-                {daySurveysInMonth.slice(0, 2).map((survey) => (
-                  <CalendarEvent key={survey.id} survey={survey} onOpen={onOpen} />
-                ))}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
   )
 }
 
@@ -333,10 +241,10 @@ function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange })
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{survey.id}</p>
-              <h2 className="mt-1 text-lg font-bold text-slate-900">{survey.property}</h2>
+              <h2 className="mt-1 text-lg font-bold text-slate-900">{survey.diaChiBatDongSan || survey.property}</h2>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <StatusBadge status={survey.status} />
-                <span className="text-xs text-slate-500">{formatDate(survey.date)} · {survey.time}</span>
+                <StatusBadge status={survey.trangThai || survey.status} />
+                <span className="text-xs text-slate-500">{formatDate(survey.thoiGian || survey.date)} · {formatTime(survey.thoiGian || survey.date)}</span>
               </div>
             </div>
             <button
@@ -352,13 +260,13 @@ function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange })
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {survey.status === 'cho_xac_nhan' && (
+            {(survey.trangThai || survey.status) === 'CHO_XAC_NHAN' && (
               <ActionButton label={actionLoading === 'confirm' ? 'Đang xử lý...' : 'Xác nhận lịch'} variant="primary" onClick={handleConfirm} disabled={!!actionLoading} />
             )}
-            {survey.status !== 'da_huy' && survey.status !== 'hoan_thanh' && (
+            {(survey.trangThai || survey.status) !== 'DA_HUY' && (survey.trangThai || survey.status) !== 'DA_HOAN_THANH' && (
               <ActionButton label={actionLoading === 'cancel' ? 'Đang xử lý...' : 'Hủy lịch'} variant="danger" onClick={handleCancel} disabled={!!actionLoading} />
             )}
-            {survey.status === 'da_xac_nhan' && (
+            {(survey.trangThai || survey.status) === 'DA_XAC_NHAN' && (
               <ActionButton label="Cập nhật kết quả" onClick={scrollToResult} />
             )}
           </div>
@@ -371,23 +279,24 @@ function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange })
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Thông tin lịch khảo sát</h3>
                 <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {[
-                    ['Chủ nhà', survey.owner],
-                    ['Bất động sản', survey.property],
-                    ['Địa chỉ', survey.address],
-                    ['Người phụ trách', survey.inspector],
-                    ['SĐT chủ nhà', survey.phone],
-                    ['Khu vực', survey.district],
+                    ['Chủ nhà', survey.tenChuNha || survey.owner],
+                    ['Bất động sản', survey.diaChiBatDongSan || survey.property],
+                    ['Người phụ trách', survey.tenNhanVien || survey.inspector],
+                    ['SĐT chủ nhà', survey.sdtChuNha || survey.phone],
+                    ['Khu vực', survey.khuVuc || survey.district],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                       <dt className="text-xs font-medium text-slate-500">{label}</dt>
-                      <dd className="mt-1 text-sm font-semibold text-slate-900">{value}</dd>
+                      <dd className="mt-1 text-sm font-semibold text-slate-900">{value || '—'}</dd>
                     </div>
                   ))}
                 </dl>
-                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                  <p className="text-xs font-semibold text-amber-700">Ghi chú</p>
-                  <p className="mt-1 text-sm text-slate-700">{survey.note}</p>
-                </div>
+                {survey.ghiChu && (
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-xs font-semibold text-amber-700">Ghi chú</p>
+                    <p className="mt-1 text-sm text-slate-700">{survey.ghiChu || survey.note}</p>
+                  </div>
+                )}
               </section>
 
               <section ref={resultFormRef}>
@@ -401,8 +310,86 @@ function SurveyDrawer({ survey, onClose, onSaveResult, saving, onStatusChange })
             <section>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Workflow Timeline</h3>
               <div className="mt-3 rounded-lg border border-slate-200 p-4">
-                <WorkflowTimeline currentStep={survey.workflowStep} />
+                <WorkflowTimeline currentStep={survey.workflowStep || 1} />
               </div>
+            </section>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+}
+
+function CreateSurveyDrawer({ onClose, onCreated, property, batDongSanId }) {
+  const navigate = useNavigate()
+  const [selectedBdsId, setSelectedBdsId] = useState('')
+  const [thoiGian, setThoiGian] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [propertyList, setPropertyList] = useState([])
+
+  useEffect(() => {
+    batDongSanService.danhSach()
+      .then((res) => setPropertyList(res.data || []))
+      .catch(() => {})
+  }, [])
+
+  const handleSubmit = async () => {
+    const bdsId = property ? Number(batDongSanId) : Number(selectedBdsId)
+    if (!bdsId) {
+      setError('Vui lòng chọn bất động sản')
+      return
+    }
+    if (!thoiGian) {
+      setError('Vui lòng chọn thời gian khảo sát')
+      return
+    }
+    try {
+      setSubmitting(true)
+      setError('')
+      await lichHenKhaoSatService.tao({
+        batDongSanId: bdsId,
+        thoiGian: new Date(thoiGian).toISOString(),
+      })
+      onCreated()
+      navigate('/admin/lich-khao-sat')
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Tạo lịch thất bại')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Đóng tạo lịch khảo sát"
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-slate-950/35"
+      />
+      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-white shadow-2xl">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">Tạo lịch khảo sát</h2>
+            <button
+              type="button"
+              aria-label="Đóng"
+              onClick={onClose}
+              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          {property ? (
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Bất động sản đã chọn</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">{property.diaChi || property.ten}</p>
             </div>
           ) : (
             <div>
@@ -475,6 +462,8 @@ export default function AdminLichKhaoSatPage() {
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [createProperty, setCreateProperty] = useState(null)
 
   const fetchSurveys = async () => {
     setLoading(true)
@@ -490,7 +479,6 @@ export default function AdminLichKhaoSatPage() {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSurveys()
   }, [])
 
@@ -633,6 +621,14 @@ export default function AdminLichKhaoSatPage() {
         </div>
       )}
       <SurveyDrawer survey={selectedSurvey} onClose={() => setSelectedSurvey(null)} onSaveResult={handleSaveResult} saving={saving} onStatusChange={handleStatusChange} />
+      {showCreate && (
+        <CreateSurveyDrawer
+          onClose={() => { setShowCreate(false); setCreateProperty(null) }}
+          onCreated={handleCreated}
+          property={createProperty}
+          batDongSanId={batDongSanId}
+        />
+      )}
     </main>
   )
 }
