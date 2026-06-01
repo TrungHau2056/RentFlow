@@ -69,7 +69,7 @@ class GiaoDichTaiChinhServiceTest {
 
         assertThat(result)
                 .hasFieldOrPropertyWithValue("loaiGiaoDich", "TIEN_DAM_BAO")
-                .hasFieldOrPropertyWithValue("trangThai", "HOAN_THANH")
+                .hasFieldOrPropertyWithValue("trangThai", "CHO_XU_LY")
                 .satisfies(r -> assertThat(r.getSoTien()).isEqualByComparingTo("5000000"));
     }
 

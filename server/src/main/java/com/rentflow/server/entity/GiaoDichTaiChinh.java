@@ -39,6 +39,16 @@ public class GiaoDichTaiChinh {
     @Column(name = "ngay_giao_dich")
     private LocalDateTime ngayGiaoDich;
 
+    @Column(name = "ghi_chu")
+    private String ghiChu;
+
+    @Column(name = "ngay_xac_nhan")
+    private LocalDateTime ngayXacNhan;
+
+    @ManyToOne
+    @JoinColumn(name = "nguoi_xac_nhan_id")
+    private NhanVien nguoiXacNhan;
+
     @Column(name = "trang_thai")
     private String trangThai;
 }

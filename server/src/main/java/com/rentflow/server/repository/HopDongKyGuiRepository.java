@@ -29,4 +29,18 @@ public interface HopDongKyGuiRepository extends JpaRepository<HopDongKyGui, Long
             @Param("trangThai") String trangThai,
             @Param("ngayNguong") LocalDate ngayNguong
     );
+
+    @Query("""
+        SELECT h FROM HopDongKyGui h
+        WHERE h.trangThai = :trangThai
+        AND NOT EXISTS (
+            SELECT 1 FROM GiaoDichTaiChinh g
+            WHERE g.hopDongKyGui = h
+            AND g.loaiGiaoDich = :loaiGiaoDich
+        )
+        """)
+    List<HopDongKyGui> findChoGhiNhanThu(
+            @Param("trangThai") String trangThai,
+            @Param("loaiGiaoDich") String loaiGiaoDich
+    );
 }

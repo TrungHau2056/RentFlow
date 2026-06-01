@@ -40,4 +40,14 @@ public interface HopDongThueRepository extends JpaRepository<HopDongThue, Long> 
         @Param("thang") int thang,
         @Param("nam") int nam
     );
+
+    @Query("""
+        SELECT h FROM HopDongThue h
+        WHERE h.trangThai = :trangThai
+        AND NOT EXISTS (
+            SELECT 1 FROM HoaHong hh
+            WHERE hh.hopDongThue = h
+        )
+        """)
+    List<HopDongThue> findChoTinhHoaHong(@Param("trangThai") String trangThai);
 }

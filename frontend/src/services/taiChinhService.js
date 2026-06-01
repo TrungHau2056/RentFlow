@@ -12,6 +12,26 @@ const taiChinhService = {
     return response.data;
   },
 
+  async layHopDongKyGuiChoThu() {
+    const response = await api.get('/api/tai-chinh/hop-dong-ky-gui/cho-ghi-nhan-thu');
+    return response.data;
+  },
+
+  async layHopDongThueChoTinhHoaHong() {
+    const response = await api.get('/api/tai-chinh/hop-dong-thue/cho-tinh-hoa-hong');
+    return response.data;
+  },
+
+  async xacNhanGiaoDich(id) {
+    const response = await api.put(`/api/tai-chinh/giao-dich/${id}/xac-nhan`);
+    return response.data;
+  },
+
+  async xuatGiaoDichCsv() {
+    const response = await api.get('/api/tai-chinh/giao-dich/export', { responseType: 'blob' });
+    return response.data;
+  },
+
   async layChiTietGiaoDich(id) {
     const response = await api.get(`/api/tai-chinh/giao-dich/${id}`);
     return response.data;
@@ -24,6 +44,11 @@ const taiChinhService = {
 
   async layDanhSachHoaHong() {
     const response = await api.get('/api/tai-chinh/hoa-hong');
+    return response.data;
+  },
+
+  async xuatHoaHongCsv() {
+    const response = await api.get('/api/tai-chinh/hoa-hong/export', { responseType: 'blob' });
     return response.data;
   },
 

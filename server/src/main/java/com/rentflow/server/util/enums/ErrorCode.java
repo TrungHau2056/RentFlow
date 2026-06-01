@@ -39,6 +39,8 @@ TOKEN_INVALID(401,"your token was invalid",HttpStatus.UNAUTHORIZED),
     HOP_DONG_CHUA_DU_DIEU_KIEN(400, "Hợp đồng ký gửi chưa đủ điều kiện hoàn trả", HttpStatus.BAD_REQUEST),
     HOP_DONG_KHONG_HOP_LE(400, "Hợp đồng ký gửi không ở trạng thái hợp lệ", HttpStatus.BAD_REQUEST),
     DA_HOAN_TRA(400, "Đã xuất lệnh hoàn trả cho hợp đồng này", HttpStatus.BAD_REQUEST),
+    GIAO_DICH_KHONG_CHO_XU_LY(400, "Giao dịch không ở trạng thái chờ xử lý", HttpStatus.BAD_REQUEST),
+    SO_DU_DAM_BAO_KHONG_DU(400, "Không còn số dư tiền đảm bảo để xử lý", HttpStatus.BAD_REQUEST),
 
     TAI_KHOAN_NOT_FOUND(404, "Không tìm thấy tài khoản", HttpStatus.NOT_FOUND),
     USERNAME_DA_TON_TAI(400, "Username đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST),

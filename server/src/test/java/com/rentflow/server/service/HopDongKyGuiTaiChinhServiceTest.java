@@ -90,6 +90,7 @@ class HopDongKyGuiTaiChinhServiceTest {
                 .thenReturn(false);
         when(giaoDichRepo.existsByHopDongKyGuiIdAndLoaiGiaoDich(2L, "HOAN_TRA_DAM_BAO"))
                 .thenReturn(false);
+        when(config.getTienDamBao()).thenReturn(new BigDecimal("5000000"));
 
         List<HopDongKyGuiEligibleResponseDTO> result = service.quetHopDongDuDieuKienHoanTra();
 
@@ -136,7 +137,7 @@ class HopDongKyGuiTaiChinhServiceTest {
                 .thenReturn(false);
         when(giaoDichRepo.existsByHopDongKyGuiIdAndLoaiGiaoDich(1L, "HOAN_TRA_DAM_BAO"))
                 .thenReturn(false);
-        when(config.getTienDamBao()).thenReturn(new BigDecimal("5000000"));
+        when(giaoDichService.resolveTienDamBao(hopDong)).thenReturn(new BigDecimal("5000000"));
         when(giaoDichRepo.save(any())).thenReturn(savedGd);
         when(giaoDichService.toDTO(savedGd)).thenReturn(expectedDto);
 
@@ -145,7 +146,6 @@ class HopDongKyGuiTaiChinhServiceTest {
         assertThat(result)
                 .hasFieldOrPropertyWithValue("loaiGiaoDich", "HOAN_TRA_DAM_BAO")
                 .hasFieldOrPropertyWithValue("trangThai", "HOAN_THANH");
-        verify(hopDongKyGuiRepo).save(argThat(hd -> "DA_KET_THUC".equals(hd.getTrangThai())));
     }
 
     @Test
@@ -188,6 +188,9 @@ class HopDongKyGuiTaiChinhServiceTest {
         when(giaoDichRepo.existsByHopDongKyGuiIdAndLoaiGiaoDich(1L, "HOAN_TRA_DAM_BAO"))
                 .thenReturn(false)
                 .thenReturn(true);
+        when(giaoDichRepo.existsByHopDongKyGuiIdAndLoaiGiaoDichAndTrangThai(1L, "HOAN_TRA_DAM_BAO", "HOAN_THANH"))
+                .thenReturn(true);
+        when(giaoDichService.resolveTienDamBao(hopDong)).thenReturn(new BigDecimal("5000000"));
 
         assertThatThrownBy(() -> service.xuatLenhHoanTra(dto, "ke.toan"))
                 .isInstanceOf(AppException.class)
