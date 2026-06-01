@@ -444,7 +444,7 @@ function ContractDetail({ contract, onClose, onAction, actionLoading }) {
           <ContractActionPanel
             rawStatus={contract.rawStatus}
             roleGroup={roleGroup}
-            onAction={onAction}
+            onAction={(action) => onAction(action, contract.id)}
             options={{
               coDieuKhoanPhatSinh: contract.coDieuKhoanPhatSinh,
               chuKyChuNha: contract.chuKyChuNha,

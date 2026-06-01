@@ -65,7 +65,15 @@ public class HopDongKyGuiService {
                 .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
         ChuNha chuNha = chuNhaRepository.findById(dto.getChuNhaId())
                 .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
-        NhanVien nhanVien = nhanVienRepository.findById(dto.getNhanVienId())
+
+        Long nhanVienId = dto.getNhanVienId();
+        if (nhanVienId == null) {
+            TaiKhoan currentUser = securityUtils.getCurrentUser();
+            nhanVienId = currentUser.getNhanVienSet().stream().findFirst()
+                    .map(NhanVien::getId)
+                    .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
+        }
+        NhanVien nhanVien = nhanVienRepository.findById(nhanVienId)
                 .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
 
         HopDongKyGui hd = HopDongKyGui.builder()
@@ -77,6 +85,39 @@ public class HopDongKyGuiService {
                 .tienDamBao(dto.getTienDamBao())
                 .trangThai(TrangThaiHopDong.NHAP.name())
                 .build();
+        return toResponseDTO(hopDongKyGuiRepository.save(hd));
+    }
+
+    public HopDongKyGuiResponseDTO taoVaKy(HopDongKyGuiRequestDTO dto) {
+        BatDongSan bds = batDongSanRepository.findById(dto.getBatDongSanId())
+                .orElseThrow(() -> new AppException(ErrorCode.BAT_DONG_SAN_NOT_FOUND));
+        ChuNha chuNha = chuNhaRepository.findById(dto.getChuNhaId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHU_NHA_NOT_FOUND));
+
+        Long nhanVienId = dto.getNhanVienId();
+        if (nhanVienId == null) {
+            TaiKhoan currentUser = securityUtils.getCurrentUser();
+            nhanVienId = currentUser.getNhanVienSet().stream().findFirst()
+                    .map(NhanVien::getId)
+                    .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
+        }
+        NhanVien nhanVien = nhanVienRepository.findById(nhanVienId)
+                .orElseThrow(() -> new AppException(ErrorCode.NHAN_VIEN_NOT_FOUND));
+
+        HopDongKyGui hd = HopDongKyGui.builder()
+                .batDongSan(bds)
+                .chuNha(chuNha)
+                .nhanVien(nhanVien)
+                .ngayBatDau(dto.getNgayBatDau())
+                .ngayKetThuc(dto.getNgayKetThuc())
+                .tienDamBao(dto.getTienDamBao())
+                .trangThai(TrangThaiHopDong.DA_KY.name())
+                .ngayKy(LocalDate.now())
+                .build();
+
+        bds.setTrangThai(TrangThaiBatDongSan.SAN_SANG_CHO_THUE.name());
+        batDongSanRepository.save(bds);
+
         return toResponseDTO(hopDongKyGuiRepository.save(hd));
     }
 

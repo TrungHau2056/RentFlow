@@ -79,6 +79,17 @@ public class HopDongKyGuiController {
                 .build();
     }
 
+    @PostMapping("/tao-va-ky")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Tạo và ký hợp đồng", description = "Tạo hợp đồng ký gửi và ký ngay (không qua phê duyệt pháp lý)")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> taoVaKy(@RequestBody @Valid HopDongKyGuiRequestDTO dto) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.CREATED.value())
+                .message("Create and sign consignment contract successfully")
+                .data(hopDongKyGuiService.taoVaKy(dto))
+                .build();
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
     @Operation(summary = "Cập nhật hợp đồng ký gửi", description = "Cập nhật thông tin hợp đồng ký gửi")

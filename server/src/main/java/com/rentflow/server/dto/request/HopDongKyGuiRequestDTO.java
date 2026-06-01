@@ -1,5 +1,6 @@
 package com.rentflow.server.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Schema(description = "Yêu cầu tạo/cập nhật hợp đồng ký gửi")
 public class HopDongKyGuiRequestDTO {
     @Schema(description = "ID bất động sản", example = "1")

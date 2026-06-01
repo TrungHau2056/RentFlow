@@ -26,6 +26,11 @@ const hopDongKyGuiService = {
     return response.data;
   },
 
+  async taoVaKy(data) {
+    const response = await api.post('/api/hop-dong-ky-gui/tao-va-ky', data);
+    return response.data;
+  },
+
   async capNhat(id, data) {
     const response = await api.put(`/api/hop-dong-ky-gui/${id}`, data);
     return response.data;

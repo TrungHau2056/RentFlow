@@ -22,7 +22,6 @@ export default function CreateConsignmentContractModal({
   const [formData, setFormData] = useState({
     chuNhaId: '',
     batDongSanId: '',
-    nhanVienId: '',
     ngayBatDau: '',
     ngayKetThuc: '',
     tienDamBao: '',
@@ -31,6 +30,15 @@ export default function CreateConsignmentContractModal({
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  /* ---------- helpers ---------- */
+
+  const selectedOwner = chuNhaList.find((c) => String(c.id) === String(formData.chuNhaId))
+  const selectedBDS = batDongSanList.find((b) => String(b.id) === String(formData.batDongSanId))
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ'
+  }
 
   /* ---------- validation ---------- */
 
@@ -71,33 +79,53 @@ export default function CreateConsignmentContractModal({
     return true
   }
 
-  const nextStep = () => {
-    if (validateStep(0)) setStep(1)
+  const goNext = () => {
+    if (validateStep(step)) setStep((s) => s + 1)
   }
 
-  const prevStep = () => {
-    setStep(0)
+  const goBack = () => {
+    setStep((s) => s - 1)
     setError('')
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!validateStep(1)) return
+  const handleSubmit = async () => {
     setLoading(true)
     setError('')
 
     try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+      const rawId = userInfo?.id
+      const employeeId = rawId != null && rawId > 0 ? Number(rawId) : null
       const payload = {
         chuNhaId: Number(formData.chuNhaId),
         batDongSanId: Number(formData.batDongSanId),
-        nhanVienId: Number(formData.nhanVienId) || undefined,
+        nhanVienId: employeeId,
         ngayBatDau: formData.ngayBatDau,
         ngayKetThuc: formData.ngayKetThuc,
         tienDamBao: Number(formData.tienDamBao),
-        coDieuKhoanPhatSinh: formData.coDieuKhoanPhatSinh,
-        dieuKhoanPhatSinh: formData.coDieuKhoanPhatSinh ? formData.dieuKhoanPhatSinh : undefined,
       }
-      await hopDongKyGuiService.tao(payload)
+
+      if (formData.coDieuKhoanPhatSinh) {
+        // Có điều khoản phát sinh → tạo NHAP rồi gửi pháp lý duyệt
+        const res = await hopDongKyGuiService.tao(payload)
+        // BE dùng @ResponseStatus(HttpStatus.OK) nên lỗi cũng trả về 200
+        // → cần check status trong body thay vì HTTP status
+        if (res?.status !== 201) {
+          throw new Error(res?.message || 'Không thể tạo hợp đồng')
+        }
+        const contractId = res?.data?.id ?? res?.id
+        if (!contractId) {
+          throw new Error('Không lấy được ID hợp đồng từ phản hồi')
+        }
+        await hopDongKyGuiService.guiPheDuyet(contractId)
+      } else {
+        // Không có điều khoản → tạo và ký luôn
+        const res = await hopDongKyGuiService.taoVaKy(payload)
+        if (res?.status !== 201) {
+          throw new Error(res?.message || 'Không thể tạo hợp đồng')
+        }
+      }
+
       onCreate()
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể tạo hợp đồng')
@@ -136,7 +164,7 @@ export default function CreateConsignmentContractModal({
           <div>
             <h2 className="text-lg font-bold text-slate-900">Tạo hợp đồng ký gửi</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {step === 0 ? 'Soạn thảo hợp đồng ký gửi mới' : 'Kiểm tra điều khoản phát sinh'}
+              {step === 0 ? 'Soạn thảo hợp đồng ký gửi mới' : step === 1 ? 'Kiểm tra điều khoản phát sinh' : 'Xác nhận thông tin hợp đồng'}
             </p>
           </div>
           <button
@@ -167,11 +195,19 @@ export default function CreateConsignmentContractModal({
             >
               2
             </div>
+            <div className={`flex-1 h-0.5 ${step >= 2 ? 'bg-blue-500' : 'bg-slate-200'}`} />
+            <div
+              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                step >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
+              }`}
+            >
+              3
+            </div>
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <div className="p-5 space-y-4">
           {/* Error */}
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -356,28 +392,88 @@ export default function CreateConsignmentContractModal({
             </div>
           )}
 
+          {/* Step 2: Review & confirm */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Xác nhận thông tin hợp đồng</p>
+                <p className="text-xs text-slate-500 mt-0.5">Vui lòng kiểm tra lại thông tin trước khi tạo</p>
+              </div>
+
+              <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Chủ nhà</span>
+                  <span className="font-medium text-slate-800">{selectedOwner?.hoTen || '—'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Bất động sản</span>
+                  <span className="font-medium text-slate-800">{selectedBDS?.diaChi || selectedBDS?.tenBatDongSan || '—'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Ngày bắt đầu</span>
+                  <span className="font-medium text-slate-800">{formData.ngayBatDau || '—'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Ngày kết thúc</span>
+                  <span className="font-medium text-slate-800">{formData.ngayKetThuc || '—'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Tiền đảm bảo</span>
+                  <span className="font-medium text-slate-800">{formData.tienDamBao ? formatCurrency(formData.tienDamBao) : '—'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Điều khoản phát sinh</span>
+                  <span className="font-medium text-slate-800">{formData.coDieuKhoanPhatSinh ? 'Có' : 'Không'}</span>
+                </div>
+                {formData.coDieuKhoanPhatSinh && formData.dieuKhoanPhatSinh && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <p className="text-xs text-slate-500 mb-1">Mô tả:</p>
+                    <p className="text-sm text-slate-700 italic">{formData.dieuKhoanPhatSinh}</p>
+                  </div>
+                )}
+              </div>
+
+              {!formData.coDieuKhoanPhatSinh && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs font-medium text-emerald-700">
+                    ✅ Hợp đồng sẽ được tạo và ký ngay (không cần phê duyệt pháp lý)
+                  </p>
+                </div>
+              )}
+              {formData.coDieuKhoanPhatSinh && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-medium text-amber-700">
+                    ⏳ Hợp đồng sẽ được tạo và gửi cho bộ phận pháp luật phê duyệt
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Action buttons */}
           <div className="flex gap-3 pt-4 border-t border-slate-100">
-            {step === 1 && (
+            {step > 0 && (
               <button
                 type="button"
-                onClick={prevStep}
-                className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                onClick={goBack}
+                disabled={loading}
+                className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
               >
                 Quay lại
               </button>
             )}
-            {step === 0 ? (
+            {step < 2 ? (
               <button
                 type="button"
-                onClick={nextStep}
+                onClick={goNext}
                 className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
               >
                 Tiếp tục
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={loading}
                 className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -387,12 +483,12 @@ export default function CreateConsignmentContractModal({
                     Đang tạo...
                   </span>
                 ) : (
-                  'Tạo hợp đồng'
+                  'Xác nhận tạo hợp đồng'
                 )}
               </button>
             )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
