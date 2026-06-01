@@ -40,6 +40,23 @@ const contractService = {
   async kiemTraDieuKienThue(params) {
     return hopDongThueService.kiemTraDieuKien(params);
   },
+
+  // === Consignment-specific extended methods ===
+
+  async yeuCauSuaKyGui(id, data) {
+    const response = await api.patch(`/api/hop-dong-ky-gui/${id}/yeu-cau-sua`, data);
+    return response.data;
+  },
+
+  async kyChuNha(id) {
+    const response = await api.patch(`/api/hop-dong-ky-gui/${id}/ky-chu-nha`);
+    return response.data;
+  },
+
+  async kyDaiLy(id) {
+    const response = await api.patch(`/api/hop-dong-ky-gui/${id}/ky-dai-ly`);
+    return response.data;
+  },
 };
 
 export default contractService;
