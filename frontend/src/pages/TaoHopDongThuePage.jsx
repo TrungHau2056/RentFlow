@@ -165,7 +165,9 @@ export default function TaoHopDongThuePage() {
 
     setSaving(true)
     try {
+      const maHopDong = formData.maHopDong.trim() || crypto.randomUUID()
       const payload = {
+        maHopDong,
         khachHangId: Number(formData.khachHangId),
         batDongSanId: Number(formData.batDongSanId),
         nhanVienMoiGioiId: Number(formData.nhanVienMoiGioiId),
