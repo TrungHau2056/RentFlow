@@ -21,4 +21,11 @@ public interface BatDongSanRepository extends JpaRepository<BatDongSan, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM BatDongSan b WHERE b.id = :id")
     Optional<BatDongSan> findByIdForUpdate(@Param("id") Long id);
+
+    long countByTrangThai(String trangThai);
+
+    @Query("SELECT b.loaiNha, COUNT(b) FROM BatDongSan b GROUP BY b.loaiNha")
+    List<Object[]> countGroupByLoaiNha();
+
+
 }

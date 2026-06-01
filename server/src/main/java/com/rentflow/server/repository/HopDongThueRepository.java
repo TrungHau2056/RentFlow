@@ -24,6 +24,8 @@ public interface HopDongThueRepository extends JpaRepository<HopDongThue, Long> 
 
     List<HopDongThue> findByNhanVienMoiGioiId(Long nhanVienId);
 
+    long countByNhanVienMoiGioiId(Long nhanVienId);
+
     List<HopDongThue> findByKhachHangTaiKhoanId(Long taiKhoanId);
 
     @Query("""
@@ -41,14 +43,10 @@ public interface HopDongThueRepository extends JpaRepository<HopDongThue, Long> 
     @Query("""
         SELECT COUNT(h) FROM HopDongThue h
         WHERE h.ngayKetThuc BETWEEN :tuNgay AND :denNgay
-        AND MONTH(h.ngayKetThuc) = :thang
-        AND YEAR(h.ngayKetThuc) = :nam
         """)
     long countHopDongSapHetHan(
         @Param("tuNgay") LocalDate tuNgay,
-        @Param("denNgay") LocalDate denNgay,
-        @Param("thang") int thang,
-        @Param("nam") int nam
+        @Param("denNgay") LocalDate denNgay
     );
 
     @Query("""
@@ -72,4 +70,21 @@ public interface HopDongThueRepository extends JpaRepository<HopDongThue, Long> 
         )
         """)
     List<HopDongThue> findChoTinhHoaHong(@Param("trangThai") String trangThai);
+
+    @Query("SELECT COUNT(h) FROM HopDongThue h WHERE h.trangThai = :trangThai")
+    long countByTrangThai(@Param("trangThai") String trangThai);
+
+    @Query("SELECT COUNT(h) FROM HopDongThue h WHERE MONTH(h.ngayKy) = :thang AND YEAR(h.ngayKy) = :nam")
+    long countByThangNam(@Param("thang") int thang, @Param("nam") int nam);
+
+    @Query("""
+        SELECT COUNT(h) FROM HopDongThue h
+        WHERE h.trangThai = :trangThai
+        AND MONTH(h.ngayKy) = :thang AND YEAR(h.ngayKy) = :nam
+        """)
+    long countByTrangThaiAndThangNam(
+        @Param("trangThai") String trangThai,
+        @Param("thang") int thang,
+        @Param("nam") int nam
+    );
 }

@@ -48,7 +48,8 @@ TOKEN_INVALID(401,"your token was invalid",HttpStatus.UNAUTHORIZED),
     VAI_TRO_KHONG_HOP_LE(400, "Vai trò không thuộc danh sách nội bộ", HttpStatus.BAD_REQUEST),
     TRANG_THAI_KHONG_HOP_LE(400, "Giá trị trạng thái không hợp lệ", HttpStatus.BAD_REQUEST),
     KHACH_HANG_NOT_FOUND(404, "Không tìm thấy khách hàng", HttpStatus.NOT_FOUND),
-    EMAIL_DA_TON_TAI(400, "Email đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST)
+    EMAIL_DA_TON_TAI(400, "Email đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST),
+    BAO_CAO_NOT_FOUND(404, "Không tìm thấy báo cáo", HttpStatus.NOT_FOUND)
      ;
 
     private final int code;
