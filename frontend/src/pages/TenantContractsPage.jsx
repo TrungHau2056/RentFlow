@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import hopDongThueService from '../services/hopDongThueService'
 
 const CONTRACT_TABS = [
   { id: 'all', label: 'Tất cả' },
@@ -16,178 +17,6 @@ const STATUS_CONFIG = {
   pending: { label: 'Chờ ký', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500', badge: 'bg-gradient-to-r from-purple-500 to-purple-600' },
 }
 
-const MOCK_CONTRACTS = [
-  {
-    id: 'HD-2026-001',
-    code: 'HD-2026-001',
-    propertyId: 1,
-    propertyName: 'Căn hộ 2PN Vinhomes Metropolis',
-    propertyImage: null,
-    price: '18.000.000',
-    priceUnit: '/tháng',
-    address: 'Hoàn Kiếm, Hà Nội',
-    area: '75m²',
-    bedrooms: '2 PN',
-    startDate: '2026-01-15',
-    endDate: '2027-01-14',
-    depositAmount: '36.000.000',
-    paymentMethod: 'Chuyển khoản',
-    paymentCycle: 'Hàng tháng',
-    status: 'active',
-    landlordName: 'Nguyễn Văn Cường',
-    landlordPhone: '0901 234 567',
-    brokerName: 'Trần Thị Hương',
-    brokerPhone: '0912 345 678',
-    brokerAvatar: null,
-    terms: [
-      'Thanh toán tiền nhà vào ngày 5 hàng tháng',
-      'Tiền cọc tương đương 2 tháng tiền thuê',
-      'Không được nuôi thú cưng',
-      'Được phép sửa chữa nhỏ với sự đồng ý của chủ nhà',
-      'Hợp đồng có gia hạn tự động nếu không có thông báo trước 30 ngày',
-    ],
-    payments: [
-      { date: '2026-05-05', amount: '18.000.000', status: 'paid', note: 'Thanh toán tháng 5' },
-      { date: '2026-04-05', amount: '18.000.000', status: 'paid', note: 'Thanh toán tháng 4' },
-      { date: '2026-03-05', amount: '18.000.000', status: 'paid', note: 'Thanh toán tháng 3' },
-      { date: '2026-02-05', amount: '18.000.000', status: 'paid', note: 'Thanh toán tháng 2' },
-      { date: '2026-01-15', amount: '36.000.000', status: 'paid', note: 'Tiền cọc' },
-    ],
-    timeline: [
-      { stage: 'placed', label: 'Đặt lịch xem', date: '2025-12-10', completed: true },
-      { stage: 'negotiated', label: 'Đàm phán', date: '2025-12-20', completed: true },
-      { stage: 'signed', label: 'Ký hợp đồng', date: '2026-01-05', completed: true },
-      { stage: 'active', label: 'Đang thuê', date: '2026-01-15', completed: true },
-      { stage: 'ended', label: 'Kết thúc', date: '2027-01-14', completed: false },
-    ],
-    createdAt: '2026-01-05',
-  },
-  {
-    id: 'HD-2026-002',
-    code: 'HD-2026-002',
-    propertyId: 2,
-    propertyName: 'Căn hộ 3PN Trung Hòa',
-    propertyImage: null,
-    price: '25.000.000',
-    priceUnit: '/tháng',
-    address: 'Thanh Xuân, Hà Nội',
-    area: '90m²',
-    bedrooms: '3 PN',
-    startDate: '2026-03-01',
-    endDate: '2026-06-30',
-    depositAmount: '50.000.000',
-    paymentMethod: 'Chuyển khoản',
-    paymentCycle: 'Hàng tháng',
-    status: 'expiring',
-    landlordName: 'Lê Thị Mai',
-    landlordPhone: '0908 765 432',
-    brokerName: 'Nguyễn Minh Tuấn',
-    brokerPhone: '0901 234 567',
-    brokerAvatar: null,
-    terms: [
-      'Thanh toán tiền nhà vào ngày 1 hàng tháng',
-      'Tiền cọc tương đương 2 tháng tiền thuê',
-      'Được phép nuôi chó mèo nhỏ',
-      'Chủ nhà chịu trách nhiệm sửa chữa lớn',
-      'Ưu tiên gia hạn hợp đồng',
-    ],
-    payments: [
-      { date: '2026-05-01', amount: '25.000.000', status: 'paid', note: 'Thanh toán tháng 5' },
-      { date: '2026-04-01', amount: '25.000.000', status: 'paid', note: 'Thanh toán tháng 4' },
-      { date: '2026-03-01', amount: '25.000.000', status: 'paid', note: 'Thanh toán tháng 3' },
-      { date: '2026-03-01', amount: '50.000.000', status: 'paid', note: 'Tiền cọc' },
-    ],
-    timeline: [
-      { stage: 'placed', label: 'Đặt lịch xem', date: '2026-02-01', completed: true },
-      { stage: 'negotiated', label: 'Đàm phán', date: '2026-02-10', completed: true },
-      { stage: 'signed', label: 'Ký hợp đồng', date: '2026-02-20', completed: true },
-      { stage: 'active', label: 'Đang thuê', date: '2026-03-01', completed: true },
-      { stage: 'ended', label: 'Kết thúc', date: '2026-06-30', completed: false },
-    ],
-    createdAt: '2026-02-20',
-  },
-  {
-    id: 'HD-2025-089',
-    code: 'HD-2025-089',
-    propertyId: 3,
-    propertyName: 'Chung cư 3PN Keangnam Hanoi',
-    propertyImage: null,
-    price: '35.000.000',
-    priceUnit: '/tháng',
-    address: 'Tây Hồ, Hà Nội',
-    area: '140m²',
-    bedrooms: '3 PN',
-    startDate: '2025-06-01',
-    endDate: '2026-05-31',
-    depositAmount: '70.000.000',
-    paymentMethod: 'Chuyển khoản',
-    paymentCycle: 'Hàng tháng',
-    status: 'ended',
-    landlordName: 'Phạm Văn Hùng',
-    landlordPhone: '0918 654 321',
-    brokerName: 'Lê Quốc Hùng',
-    brokerPhone: '0978 654 321',
-    brokerAvatar: null,
-    terms: [
-      'Thanh toán tiền nhà vào ngày 10 hàng tháng',
-      'Tiền cọc tương đương 2 tháng tiền thuê',
-      'Không được hút thuốc trong nhà',
-      'Giữ gìn vệ sinh chung',
-    ],
-    payments: [
-      { date: '2026-05-10', amount: '35.000.000', status: 'paid', note: 'Thanh toán tháng 5' },
-      { date: '2026-04-10', amount: '35.000.000', status: 'paid', note: 'Thanh toán tháng 4' },
-      { date: '2026-03-10', amount: '35.000.000', status: 'paid', note: 'Thanh toán tháng 3' },
-    ],
-    timeline: [
-      { stage: 'placed', label: 'Đặt lịch xem', date: '2025-05-01', completed: true },
-      { stage: 'negotiated', label: 'Đàm phán', date: '2025-05-10', completed: true },
-      { stage: 'signed', label: 'Ký hợp đồng', date: '2025-05-20', completed: true },
-      { stage: 'active', label: 'Đang thuê', date: '2025-06-01', completed: true },
-      { stage: 'ended', label: 'Kết thúc', date: '2026-05-31', completed: true },
-    ],
-    createdAt: '2025-05-20',
-  },
-  {
-    id: 'HD-2026-003',
-    code: 'HD-2026-003',
-    propertyId: 4,
-    propertyName: 'Nhà phố 3 tầng Cầu Giấy',
-    propertyImage: null,
-    price: '30.000.000',
-    priceUnit: '/tháng',
-    address: 'Cầu Giấy, Hà Nội',
-    area: '120m²',
-    bedrooms: '4 PN',
-    startDate: '2026-06-15',
-    endDate: '2027-06-14',
-    depositAmount: '60.000.000',
-    paymentMethod: 'Chuyển khoản',
-    paymentCycle: 'Hàng tháng',
-    status: 'pending',
-    landlordName: 'Đỗ Thị Lan',
-    landlordPhone: '0909 876 543',
-    brokerName: 'Trần Thị Hương',
-    brokerPhone: '0912 345 678',
-    brokerAvatar: null,
-    terms: [
-      'Thanh toán tiền nhà vào ngày 15 hàng tháng',
-      'Tiền cọc tương đương 2 tháng tiền thuê',
-      'Bàn giao nhà vào ngày 01/06/2026',
-      'Chủ nhà sẽ sơn lại nhà trước khi bàn giao',
-    ],
-    payments: [],
-    timeline: [
-      { stage: 'placed', label: 'Đặt lịch xem', date: '2026-05-01', completed: true },
-      { stage: 'negotiated', label: 'Đàm phán', date: '2026-05-10', completed: true },
-      { stage: 'signed', label: 'Ký hợp đồng', date: null, completed: false },
-      { stage: 'active', label: 'Đang thuê', date: null, completed: false },
-      { stage: 'ended', label: 'Kết thúc', date: null, completed: false },
-    ],
-    createdAt: '2026-05-15',
-  },
-]
-
 const TIMELINE_CONFIG = {
   placed: { icon: 'calendar', label: 'Đặt lịch' },
   negotiated: { icon: 'chat', label: 'Đàm phán' },
@@ -197,7 +26,8 @@ const TIMELINE_CONFIG = {
 }
 
 function formatCurrency(amount) {
-  return `${parseInt(amount.replace(/\./g, '')).toLocaleString('vi-VN')}₫`
+  const numeric = typeof amount === 'number' ? amount : parseInt(String(amount || '0').replace(/\./g, ''))
+  return `${(numeric || 0).toLocaleString('vi-VN')}₫`
 }
 
 function formatDate(dateStr) {
@@ -223,7 +53,55 @@ function timeRemaining(endDate) {
   return `${months} tháng ${days % 30} ngày`
 }
 
-function ContractIcon({ type, className = "h-5 w-5" }) {
+function mapStatus(rawStatus, endDate) {
+  if (rawStatus === 'NHAP' || rawStatus === 'CHO_PHE_DUYET') return 'pending'
+  if (rawStatus === 'HOAN_THANH' || rawStatus === 'DA_HUY' || rawStatus === 'TU_CHOI') return 'ended'
+  if (rawStatus === 'DA_KY' || rawStatus === 'DA_PHE_DUYET') {
+    const diffDays = endDate ? Math.ceil((new Date(endDate) - new Date()) / 86400000) : null
+    return diffDays !== null && diffDays >= 0 && diffDays <= 30 ? 'expiring' : 'active'
+  }
+  return 'pending'
+}
+
+function mapApiContract(item) {
+  const status = mapStatus(item.trangThai, item.ngayKetThuc)
+  return {
+    id: item.id,
+    code: `HĐT-${String(item.id).padStart(4, '0')}`,
+    propertyId: item.batDongSanId,
+    propertyName: item.diaChiBatDongSan || `Bất động sản #${item.batDongSanId}`,
+    propertyImage: null,
+    price: Number(item.tienThue || 0),
+    priceUnit: '/tháng',
+    address: item.diaChiBatDongSan || '—',
+    area: item.dienTichBatDongSan ? `${item.dienTichBatDongSan}m²` : '—',
+    bedrooms: item.soPhongNgu ? `${item.soPhongNgu} PN` : '—',
+    startDate: item.ngayBatDau,
+    endDate: item.ngayKetThuc,
+    depositAmount: Number(item.tienCoc || 0).toLocaleString('vi-VN'),
+    paymentMethod: 'Theo hợp đồng',
+    paymentCycle: 'Theo kỳ hạn',
+    status,
+    rawStatus: item.trangThai,
+    landlordName: item.tenChuNha || '—',
+    landlordPhone: item.sdtChuNha || '',
+    brokerName: item.tenNhanVienMoiGioi || '—',
+    brokerPhone: item.sdtNhanVienMoiGioi || '',
+    brokerAvatar: null,
+    terms: ['Thông tin điều khoản chi tiết được quản lý bởi nhân viên đại lý.'],
+    payments: [],
+    timeline: [
+      { stage: 'placed', label: 'Đặt lịch xem', date: null, completed: true },
+      { stage: 'negotiated', label: 'Đàm phán', date: null, completed: true },
+      { stage: 'signed', label: 'Ký hợp đồng', date: item.ngayKy, completed: !!item.ngayKy },
+      { stage: 'active', label: 'Đang thuê', date: item.ngayBatDau, completed: status === 'active' || status === 'expiring' || status === 'ended' },
+      { stage: 'ended', label: 'Kết thúc', date: item.ngayKetThuc, completed: status === 'ended' },
+    ],
+    createdAt: item.ngayKy || item.ngayBatDau,
+  }
+}
+
+function ContractIcon({ type, icon, className = "h-5 w-5" }) {
   const icons = {
     calendar: (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -270,7 +148,7 @@ function ContractIcon({ type, className = "h-5 w-5" }) {
   }
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      {icons[type] || icons.bell}
+      {icons[type || icon] || icons.bell}
     </svg>
   )
 }
@@ -668,8 +546,26 @@ function EmptyState() {
 
 export default function TenantContractsPage() {
   const [activeTab, setActiveTab] = useState('all')
-  const [contracts] = useState(MOCK_CONTRACTS)
+  const [contracts, setContracts] = useState([])
   const [selectedContract, setSelectedContract] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const fetchContracts = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await hopDongThueService.cuaToi()
+      setContracts((res?.data || []).map(mapApiContract))
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải hợp đồng thuê')
+      setContracts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchContracts() }, [])
 
   const kpis = useMemo(() => ({
     total: contracts.length,
@@ -683,6 +579,19 @@ export default function TenantContractsPage() {
     if (activeTab === 'pending') return contracts.filter(c => c.status === 'pending')
     return contracts.filter(c => c.status === activeTab)
   }, [contracts, activeTab])
+
+  if (loading) {
+    return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Đang tải dữ liệu...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+        <p className="text-sm font-semibold text-red-700">{error}</p>
+        <button type="button" onClick={fetchContracts} className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Thử lại</button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

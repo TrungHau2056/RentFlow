@@ -1,4 +1,5 @@
 import api from './api';
+import hopDongThueService from './hopDongThueService';
 
 const contractService = {
   async getKyGuiContracts() {
@@ -7,8 +8,7 @@ const contractService = {
   },
 
   async getThueContracts() {
-    const response = await api.get('/api/hop-dong-thue');
-    return response.data;
+    return hopDongThueService.danhSach();
   },
 
   async approveKyGuiContract(id, duyet, lyDoTuChoi) {
@@ -30,13 +30,15 @@ const contractService = {
   },
 
   async updateThueContractStatus(id, trangThai) {
-    const response = await api.patch(`/api/hop-dong-thue/${id}/trang-thai`, { trangThai });
-    return response.data;
+    return hopDongThueService.capNhatTrangThai(id, trangThai);
   },
 
-  async kyHopDongThue(id) {
-    const response = await api.put(`/api/hop-dong-thue/${id}/ky`);
-    return response.data;
+  async kyHopDongThue(id, data = {}) {
+    return hopDongThueService.ky(id, data);
+  },
+
+  async kiemTraDieuKienThue(params) {
+    return hopDongThueService.kiemTraDieuKien(params);
   },
 };
 

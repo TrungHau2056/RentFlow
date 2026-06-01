@@ -16,6 +16,28 @@ public interface HopDongThueRepository extends JpaRepository<HopDongThue, Long> 
 
     List<HopDongThue> findByBatDongSanId(Long batDongSanId);
 
+    List<HopDongThue> findByTrangThai(String trangThai);
+
+    List<HopDongThue> findByKhachHangId(Long khachHangId);
+
+    List<HopDongThue> findByTrangThaiAndKhachHangId(String trangThai, Long khachHangId);
+
+    List<HopDongThue> findByNhanVienMoiGioiId(Long nhanVienId);
+
+    List<HopDongThue> findByKhachHangTaiKhoanId(Long taiKhoanId);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(h) > 0 THEN true ELSE false END FROM HopDongThue h
+        WHERE h.batDongSan.id = :batDongSanId
+        AND h.trangThai IN :trangThaiList
+        AND (h.ngayKetThuc IS NULL OR h.ngayKetThuc >= :today)
+        """)
+    boolean existsActiveByBatDongSan(
+        @Param("batDongSanId") Long batDongSanId,
+        @Param("trangThaiList") List<String> trangThaiList,
+        @Param("today") LocalDate today
+    );
+
     @Query("""
         SELECT COUNT(h) FROM HopDongThue h
         WHERE h.ngayKetThuc BETWEEN :tuNgay AND :denNgay

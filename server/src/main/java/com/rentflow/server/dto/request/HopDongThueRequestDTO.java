@@ -26,6 +26,9 @@ public class HopDongThueRequestDTO {
     @Schema(description = "ID nhân viên môi giới", example = "1")
     private Long nhanVienMoiGioiId;
 
+    @Schema(description = "ID lịch xem nhà dùng để lập hợp đồng", example = "1")
+    private Long lichHenXemNhaId;
+
     @Schema(description = "Ngày ký hợp đồng", example = "2026-06-15")
     private LocalDate ngayKy;
 

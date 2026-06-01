@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Link } from 'react-router-dom'
+import hopDongThueService from '../services/hopDongThueService'
+import lichHenXemNhaService from '../services/lichHenXemNhaService'
+import khachHangService from '../services/khachHangService'
+import batDongSanService from '../services/batDongSanService'
+import nhanVienService from '../services/nhanVienService'
 
 // Options cho các trường select
 const LOAI_HOP_DONG_OPTIONS = [
@@ -19,10 +24,8 @@ const PHUONG_THUC_THANH_TOAN_OPTIONS = [
 
 const TRANG_THAI_HOP_DONG_OPTIONS = [
   { value: '', label: 'Chọn trạng thái' },
-  { value: 'nhap', label: 'Nháp' },
-  { value: 'cho_phe_duyet', label: 'Chờ phê duyệt' },
-  { value: 'da_phe_duyet', label: 'Đã phê duyệt' },
-  { value: 'da_ky', label: 'Đã ký' },
+  { value: 'NHAP', label: 'Nháp' },
+  { value: 'CHO_PHE_DUYET', label: 'Chờ phê duyệt' },
 ]
 
 function formatVND(value) {
@@ -52,29 +55,71 @@ export default function TaoHopDongThuePage() {
     kyHanThanhToan: '1',
     ngayBatDau: '',
     ngayKetThuc: '',
-    trangThai: 'nhap',
+    trangThai: 'NHAP',
     dieuKhoan: '',
     ghiChu: '',
+    nhanVienMoiGioiId: '',
   })
 
   const [errors, setErrors] = useState({})
+  const [loadError, setLoadError] = useState('')
+  const [loadingOptions, setLoadingOptions] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [khachHangOptions, setKhachHangOptions] = useState([])
+  const [batDongSanOptions, setBatDongSanOptions] = useState([])
+  const [nhanVienOptions, setNhanVienOptions] = useState([])
 
-  // Load dữ liệu từ lịch xem nhà nếu có
   useEffect(() => {
-    if (lichXemId) {
-      // TODO: Gọi API để lấy thông tin từ lịch xem
-      // lichHenXemNhaService.chiTiet(lichXemId).then(res => {
-      //   setFormData(prev => ({
-      //     ...prev,
-      //     khachHangId: res.khachHangId,
-      //     batDongSanId: res.batDongSanId,
-      //   }))
-      // })
-      console.log('Loading from viewing schedule:', lichXemId)
+    let cancelled = false
+    async function loadInitialData() {
+      setLoadingOptions(true)
+      setLoadError('')
+      try {
+        const [khachHangRes, batDongSanRes, nhanVienRes] = await Promise.all([
+          khachHangService.danhSach(),
+          batDongSanService.danhSach(),
+          nhanVienService.danhSachMoiGioi(),
+        ])
+        if (cancelled) return
+        setKhachHangOptions(khachHangRes?.data || [])
+        setBatDongSanOptions(batDongSanRes?.data || [])
+        setNhanVienOptions(nhanVienRes?.data || [])
+
+        if (lichXemId) {
+          const lichRes = await lichHenXemNhaService.chiTiet(lichXemId)
+          if (cancelled) return
+          const lich = lichRes?.data
+          if (!lich) throw new Error('Không tìm thấy lịch xem nhà')
+          setFormData(prev => ({
+            ...prev,
+            khachHangId: lich.khachHangId ? String(lich.khachHangId) : prev.khachHangId,
+            batDongSanId: lich.batDongSanId ? String(lich.batDongSanId) : prev.batDongSanId,
+            chuNhaId: prev.chuNhaId,
+            nhanVienMoiGioiId: lich.nhanVienId ? String(lich.nhanVienId) : prev.nhanVienMoiGioiId,
+            tienThue: lich.giaBatDongSan ? String(Math.round(lich.giaBatDongSan)) : prev.tienThue,
+          }))
+        }
+      } catch (err) {
+        if (!cancelled) setLoadError(err.response?.data?.message || err.message || 'Không thể tải dữ liệu tạo hợp đồng')
+      } finally {
+        if (!cancelled) setLoadingOptions(false)
+      }
     }
+    loadInitialData()
+    return () => { cancelled = true }
   }, [lichXemId])
+
+  useEffect(() => {
+    const selected = batDongSanOptions.find(bds => String(bds.id) === String(formData.batDongSanId))
+    if (selected) {
+      setFormData(prev => ({
+        ...prev,
+        chuNhaId: selected.chuNhaId ? String(selected.chuNhaId) : prev.chuNhaId,
+        tienThue: prev.tienThue || (selected.giaThue ? String(Math.round(selected.giaThue)) : ''),
+      }))
+    }
+  }, [batDongSanOptions, formData.batDongSanId])
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -96,9 +141,10 @@ export default function TaoHopDongThuePage() {
     const newErrors = {}
     if (!formData.khachHangId) newErrors.khachHangId = 'Chưa chọn khách thuê'
     if (!formData.batDongSanId) newErrors.batDongSanId = 'Chưa chọn bất động sản'
-    if (!formData.chuNhaId) newErrors.chuNhaId = 'Chưa chọn chủ nhà'
+    if (!formData.nhanVienMoiGioiId) newErrors.nhanVienMoiGioiId = 'Chưa chọn nhân viên môi giới'
     if (!formData.tienThue) newErrors.tienThue = 'Chưa nhập tiền thuê'
-    if (!formData.tienCoc) newErrors.tienCoc = 'Chưa nhập tiền cọc'
+    if (formData.tienThue && parseVND(formData.tienThue) <= 0) newErrors.tienThue = 'Tiền thuê phải lớn hơn 0'
+    if (formData.tienCoc && parseVND(formData.tienCoc) < 0) newErrors.tienCoc = 'Tiền cọc không hợp lệ'
     if (!formData.ngayBatDau) newErrors.ngayBatDau = 'Chưa chọn ngày bắt đầu'
     if (!formData.ngayKetThuc) newErrors.ngayKetThuc = 'Chưa chọn ngày kết thúc'
 
@@ -119,12 +165,21 @@ export default function TaoHopDongThuePage() {
 
     setSaving(true)
     try {
-      // TODO: Gọi API tạo hợp đồng
-      // await hopDongThueService.tao(formData)
-      console.log('Creating contract:', formData)
+      const payload = {
+        khachHangId: Number(formData.khachHangId),
+        batDongSanId: Number(formData.batDongSanId),
+        nhanVienMoiGioiId: Number(formData.nhanVienMoiGioiId),
+        lichHenXemNhaId: lichXemId ? Number(lichXemId) : undefined,
+        ngayBatDau: formData.ngayBatDau,
+        ngayKetThuc: formData.ngayKetThuc,
+        tienThue: parseVND(formData.tienThue),
+        tienCoc: formData.tienCoc ? parseVND(formData.tienCoc) : 0,
+        trangThai: formData.trangThai || 'NHAP',
+      }
+      await hopDongThueService.tao(payload)
       navigate('/admin/hop-dong-thue')
     } catch (err) {
-      console.error('Failed to create contract:', err)
+      setErrors(prev => ({ ...prev, api: err.response?.data?.message || 'Không thể tạo hợp đồng thuê' }))
     } finally {
       setSaving(false)
     }
@@ -145,6 +200,9 @@ export default function TaoHopDongThuePage() {
 
   const thoiHan = tinhThoiHan()
   const tongGiaTri = parseVND(formData.tienThue) * thoiHan
+  const selectedKhachHang = khachHangOptions.find(kh => String(kh.id) === String(formData.khachHangId))
+  const selectedBatDongSan = batDongSanOptions.find(bds => String(bds.id) === String(formData.batDongSanId))
+  const selectedNhanVien = nhanVienOptions.find(nv => String(nv.id) === String(formData.nhanVienMoiGioiId))
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -162,6 +220,16 @@ export default function TaoHopDongThuePage() {
       </div>
 
       {/* Progress indicator */}
+      {loadError && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
+      {errors.api && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {errors.api}
+        </div>
+      )}
       <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
         <div className="flex items-center justify-between">
           {[
@@ -258,14 +326,13 @@ export default function TaoHopDongThuePage() {
               <select
                 value={formData.khachHangId}
                 onChange={(e) => handleChange('khachHangId', e.target.value)}
+                disabled={loadingOptions || !!lichXemId}
                 className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white ${
                   errors.khachHangId ? 'border-red-300' : 'border-slate-300'
                 }`}
               >
                 <option value="">Chọn khách thuê</option>
-                <option value="1">Nguyễn Văn A</option>
-                <option value="2">Trần Thị B</option>
-                <option value="3">Lê Văn C</option>
+                {khachHangOptions.map(kh => <option key={kh.id} value={kh.id}>{kh.hoTen || kh.tenKhachHang || `Khách #${kh.id}`}</option>)}
               </select>
               {errors.khachHangId && <p className="text-xs text-red-600 mt-1">{errors.khachHangId}</p>}
             </div>
@@ -274,13 +341,13 @@ export default function TaoHopDongThuePage() {
               <select
                 value={formData.chuNhaId}
                 onChange={(e) => handleChange('chuNhaId', e.target.value)}
+                disabled
                 className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white ${
                   errors.chuNhaId ? 'border-red-300' : 'border-slate-300'
                 }`}
               >
                 <option value="">Chọn chủ nhà</option>
-                <option value="1">Phạm Văn D</option>
-                <option value="2">Hoàng Thị E</option>
+                {selectedBatDongSan?.chuNhaId && <option value={selectedBatDongSan.chuNhaId}>{selectedBatDongSan.tenChuNha || `Chủ #${selectedBatDongSan.chuNhaId}`}</option>}
               </select>
               {errors.chuNhaId && <p className="text-xs text-red-600 mt-1">{errors.chuNhaId}</p>}
             </div>
@@ -289,16 +356,30 @@ export default function TaoHopDongThuePage() {
               <select
                 value={formData.batDongSanId}
                 onChange={(e) => handleChange('batDongSanId', e.target.value)}
+                disabled={loadingOptions || !!lichXemId}
                 className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white ${
                   errors.batDongSanId ? 'border-red-300' : 'border-slate-300'
                 }`}
               >
                 <option value="">Chọn bất động sản</option>
-                <option value="1">Căn hộ chung cư Royal City - 120m²</option>
-                <option value="2">Nhà mặt phố Nguyễn Huệ - 85m²</option>
-                <option value="3">Biệt thự Vinhomes Riverside - 350m²</option>
+                {batDongSanOptions.map(bds => <option key={bds.id} value={bds.id}>{bds.diaChi || `BĐS #${bds.id}`} {bds.dienTich ? `- ${bds.dienTich}m²` : ''}</option>)}
               </select>
               {errors.batDongSanId && <p className="text-xs text-red-600 mt-1">{errors.batDongSanId}</p>}
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Nhân viên môi giới *</label>
+              <select
+                value={formData.nhanVienMoiGioiId}
+                onChange={(e) => handleChange('nhanVienMoiGioiId', e.target.value)}
+                disabled={loadingOptions || !!lichXemId}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white ${
+                  errors.nhanVienMoiGioiId ? 'border-red-300' : 'border-slate-300'
+                }`}
+              >
+                <option value="">Chọn nhân viên môi giới</option>
+                {nhanVienOptions.map(nv => <option key={nv.id} value={nv.id}>{nv.hoTen || `Nhân viên #${nv.id}`}</option>)}
+              </select>
+              {errors.nhanVienMoiGioiId && <p className="text-xs text-red-600 mt-1">{errors.nhanVienMoiGioiId}</p>}
             </div>
           </div>
         </div>
@@ -511,19 +592,25 @@ export default function TaoHopDongThuePage() {
                   <div className="flex justify-between">
                     <span className="text-slate-500">Khách thuê:</span>
                     <span className="font-medium text-slate-800">
-                      {formData.khachHangId ? `Khách #${formData.khachHangId}` : '—'}
+                      {selectedKhachHang?.hoTen || selectedKhachHang?.tenKhachHang || (formData.khachHangId ? `Khách #${formData.khachHangId}` : '—')}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Chủ nhà:</span>
                     <span className="font-medium text-slate-800">
-                      {formData.chuNhaId ? `Chủ #${formData.chuNhaId}` : '—'}
+                      {selectedBatDongSan?.tenChuNha || (formData.chuNhaId ? `Chủ #${formData.chuNhaId}` : '—')}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Bất động sản:</span>
                     <span className="font-medium text-slate-800">
-                      {formData.batDongSanId ? `BĐS #${formData.batDongSanId}` : '—'}
+                      {selectedBatDongSan?.diaChi || (formData.batDongSanId ? `BĐS #${formData.batDongSanId}` : '—')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Môi giới:</span>
+                    <span className="font-medium text-slate-800">
+                      {selectedNhanVien?.hoTen || (formData.nhanVienMoiGioiId ? `Nhân viên #${formData.nhanVienMoiGioiId}` : '—')}
                     </span>
                   </div>
                 </div>
