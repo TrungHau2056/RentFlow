@@ -29,4 +29,10 @@ public class BaoCao {
 
     @Column(name = "noi_dung", columnDefinition = "TEXT")
     private String noiDung;
+
+    @Column(name = "thang")
+    private int thang;
+
+    @Column(name = "nam")
+    private int nam;
 }

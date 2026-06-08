@@ -1,6 +1,9 @@
 package com.rentflow.server.repository;
 
+import com.rentflow.server.entity.BatDongSan;
+import com.rentflow.server.entity.ChuNha;
 import com.rentflow.server.entity.HopDongKyGui;
+import com.rentflow.server.entity.NhanVien;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +15,9 @@ import java.util.Optional;
 
 @Repository
 public interface HopDongKyGuiRepository extends JpaRepository<HopDongKyGui, Long> {
-
+    List<HopDongKyGui> findByChuNha(ChuNha chuNha);
+    List<HopDongKyGui> findByNhanVien(NhanVien nhanVien);
+    List<HopDongKyGui> findByBatDongSan(BatDongSan batDongSan);
     List<HopDongKyGui> findByTrangThai(String trangThai);
 
     long countByTrangThai(String trangThai);
@@ -23,5 +28,22 @@ public interface HopDongKyGuiRepository extends JpaRepository<HopDongKyGui, Long
     List<HopDongKyGui> findHopDongHetHan(
             @Param("trangThai") String trangThai,
             @Param("ngayNguong") LocalDate ngayNguong
+    );
+
+    @Query("SELECT COUNT(h) FROM HopDongKyGui h WHERE h.trangThai = :trangThai AND h.ngayKetThuc < :ngayHienTai")
+    long countByTrangThaiAndHetHan(@Param("trangThai") String trangThai, @Param("ngayHienTai") LocalDate ngayHienTai);
+
+    @Query("""
+        SELECT h FROM HopDongKyGui h
+        WHERE h.trangThai = :trangThai
+        AND NOT EXISTS (
+            SELECT 1 FROM GiaoDichTaiChinh g
+            WHERE g.hopDongKyGui = h
+            AND g.loaiGiaoDich = :loaiGiaoDich
+        )
+        """)
+    List<HopDongKyGui> findChoGhiNhanThu(
+            @Param("trangThai") String trangThai,
+            @Param("loaiGiaoDich") String loaiGiaoDich
     );
 }

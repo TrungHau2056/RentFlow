@@ -22,7 +22,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         log.error("-----------------------------------authentication entry point start------------------------------------");
         response.setStatus(HttpStatus.OK.value());
-        response.setContentType("application/json");
+        response.setContentType("application/json;charset=utf-8");
         if (authException instanceof AuthException) {
             AuthException exception = (AuthException) authException;
             ApiErrorResponse apiErrorResponse = ApiErrorResponse.builder()

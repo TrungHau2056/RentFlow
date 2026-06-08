@@ -1,0 +1,65 @@
+package com.rentflow.server.dto.response;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Setter
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "Thông tin lịch hẹn xem nhà")
+public class LichHenXemNhaResponseDTO {
+    @Schema(description = "ID", example = "1")
+    private Long id;
+
+    @Schema(description = "ID khách hàng", example = "1")
+    private Long khachHangId;
+
+    @Schema(description = "Tên khách hàng", example = "Trần Văn B")
+    private String tenKhachHang;
+
+    @Schema(description = "SĐT khách hàng", example = "0909123456")
+    private String sdtKhachHang;
+
+    @Schema(description = "Email khách hàng", example = "tranvanb@email.com")
+    private String emailKhachHang;
+
+    @Schema(description = "ID bất động sản", example = "1")
+    private Long batDongSanId;
+
+    @Schema(description = "Địa chỉ bất động sản", example = "123 Nguyễn Huệ")
+    private String diaChiBatDongSan;
+
+    @Schema(description = "Loại bất động sản", example = "Căn hộ")
+    private String loaiBatDongSan;
+
+    @Schema(description = "Giá thuê bất động sản", example = "15000000")
+    private Double giaBatDongSan;
+
+    @Schema(description = "ID nhân viên", example = "1")
+    private Long nhanVienId;
+
+    @Schema(description = "Tên nhân viên", example = "Lê Thị C")
+    private String tenNhanVien;
+
+    @Schema(description = "SĐT nhân viên", example = "0918123456")
+    private String sdtNhanVien;
+
+    @Schema(description = "Thời gian hẹn", example = "2026-06-10T09:00:00")
+    private LocalDateTime thoiGian;
+
+    @Schema(description = "Trạng thái", example = "CHO_XAC_NHAN")
+    private String trangThai;
+
+    @Schema(description = "Phản hồi", example = "Khách hài lòng")
+    private String phanHoi;
+
+    @Schema(description = "Nội dung trao đổi", example = "Đã dẫn khách đi xem nhà")
+    private String noiDungTraoDoi;
+
+    @Schema(description = "Kết quả", example = "DAT_HEN")
+    private String ketQua;
+}

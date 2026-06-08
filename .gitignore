@@ -1,0 +1,9 @@
+UI/
+đặc tả API/
+
+frontend/node_modules/
+frontend/dist/
+
+CLAUDE.md
+
+.opencode

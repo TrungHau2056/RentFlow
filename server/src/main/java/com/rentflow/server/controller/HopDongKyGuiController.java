@@ -1,0 +1,149 @@
+package com.rentflow.server.controller;
+
+import com.rentflow.server.dto.request.HopDongKyGuiRequestDTO;
+import com.rentflow.server.dto.request.PheDuyetRequestDTO;
+import com.rentflow.server.dto.response.ApiSuccessResponse;
+import com.rentflow.server.dto.response.HopDongKyGuiResponseDTO;
+import com.rentflow.server.service.HopDongKyGuiService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/hop-dong-ky-gui")
+@Validated
+@RequiredArgsConstructor
+@Tag(name = "06. Hợp đồng ký gửi", description = "Quản lý hợp đồng ký gửi bất động sản")
+public class HopDongKyGuiController {
+    private final HopDongKyGuiService hopDongKyGuiService;
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT')")
+    @Operation(summary = "Danh sách hợp đồng ký gửi", description = "Lấy tất cả hợp đồng ký gửi")
+    public ApiSuccessResponse<List<HopDongKyGuiResponseDTO>> getAll() {
+        return ApiSuccessResponse.<List<HopDongKyGuiResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get all consignment contracts successfully")
+                .data(hopDongKyGuiService.getAll())
+                .build();
+    }
+
+    @GetMapping("/chu-nha/me")
+    @PreAuthorize("hasRole('CHU_NHA')")
+    @Operation(summary = "Hợp đồng theo chủ nhà hiện tại", description = "Lấy hợp đồng ký gửi của chủ nhà đang đăng nhập")
+    public ApiSuccessResponse<List<HopDongKyGuiResponseDTO>> getByCurrentChuNha() {
+        return ApiSuccessResponse.<List<HopDongKyGuiResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get consignment contracts for current owner successfully")
+                .data(hopDongKyGuiService.getByCurrentChuNha())
+                .build();
+    }
+
+    @GetMapping("/by-bat-dong-san/{batDongSanId}")
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'CHU_NHA')")
+    @Operation(summary = "Hợp đồng theo BĐS", description = "Lấy hợp đồng ký gửi theo bất động sản")
+    public ApiSuccessResponse<List<HopDongKyGuiResponseDTO>> getByBatDongSan(@PathVariable Long batDongSanId) {
+        return ApiSuccessResponse.<List<HopDongKyGuiResponseDTO>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get consignment contracts by property successfully")
+                .data(hopDongKyGuiService.getByBatDongSan(batDongSanId))
+                .build();
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN', 'NHAN_VIEN_DAI_LY', 'BO_PHAN_PHAP_LUAT', 'CHU_NHA')")
+    @Operation(summary = "Chi tiết hợp đồng ký gửi", description = "Lấy thông tin hợp đồng ký gửi theo ID")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> getById(@PathVariable Long id) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Get consignment contract successfully")
+                .data(hopDongKyGuiService.getById(id))
+                .build();
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Thêm hợp đồng ký gửi", description = "Tạo mới hợp đồng ký gửi")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> create(@RequestBody @Valid HopDongKyGuiRequestDTO dto) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.CREATED.value())
+                .message("Create consignment contract successfully")
+                .data(hopDongKyGuiService.create(dto))
+                .build();
+    }
+
+    @PostMapping("/tao-va-ky")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Tạo và ký hợp đồng", description = "Tạo hợp đồng ký gửi và ký ngay (không qua phê duyệt pháp lý)")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> taoVaKy(@RequestBody @Valid HopDongKyGuiRequestDTO dto) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.CREATED.value())
+                .message("Create and sign consignment contract successfully")
+                .data(hopDongKyGuiService.taoVaKy(dto))
+                .build();
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Cập nhật hợp đồng ký gửi", description = "Cập nhật thông tin hợp đồng ký gửi")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> update(@PathVariable Long id,
+                                                               @RequestBody @Valid HopDongKyGuiRequestDTO dto) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Update consignment contract successfully")
+                .data(hopDongKyGuiService.update(id, dto))
+                .build();
+    }
+
+    @PatchMapping("/{id}/gui-phe-duyet")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Gửi phê duyệt", description = "Gửi hợp đồng ký gửi cho bộ phận pháp luật phê duyệt")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> guiPheDuyet(@PathVariable Long id) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Submit consignment contract for approval successfully")
+                .data(hopDongKyGuiService.guiPheDuyet(id))
+                .build();
+    }
+
+    @PatchMapping("/{id}/phe-duyet")
+    @PreAuthorize("hasRole('BO_PHAN_PHAP_LUAT')")
+    @Operation(summary = "Phê duyệt hợp đồng", description = "Phê duyệt hoặc từ chối hợp đồng ký gửi (chỉ BO_PHAN_PHAP_LUAT)")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> pheDuyet(@PathVariable Long id,
+                                                                 @RequestBody @Valid PheDuyetRequestDTO dto) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Approve consignment contract successfully")
+                .data(hopDongKyGuiService.pheDuyet(id, dto))
+                .build();
+    }
+
+    @PatchMapping("/{id}/ky-ket")
+    @PreAuthorize("hasRole('NHAN_VIEN_DAI_LY')")
+    @Operation(summary = "Ký kết hợp đồng", description = "Ký kết hợp đồng ký gửi")
+    public ApiSuccessResponse<HopDongKyGuiResponseDTO> kyKet(@PathVariable Long id) {
+        return ApiSuccessResponse.<HopDongKyGuiResponseDTO>builder()
+                .status(HttpStatus.OK.value())
+                .message("Sign consignment contract successfully")
+                .data(hopDongKyGuiService.kyKet(id))
+                .build();
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+    @Operation(summary = "Xoá hợp đồng ký gửi", description = "Xoá hợp đồng ký gửi (chỉ QUAN_TRI_VIEN)")
+    public ApiSuccessResponse<Void> delete(@PathVariable Long id) {
+        hopDongKyGuiService.delete(id);
+        return ApiSuccessResponse.<Void>builder()
+                .status(HttpStatus.OK.value())
+                .message("Delete consignment contract successfully")
+                .build();
+    }
+}
