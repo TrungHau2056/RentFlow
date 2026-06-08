@@ -4,7 +4,7 @@ Hệ thống quản lý ký gửi và cho thuê bất động sản tại Hà N�
 
 ## Tổng quan
 
-RentFlow là nền tảng SaaS quản lý ký gửi và cho thuê bất động sản, gồm 3 cổng:
+RentFlow là nền tảng quản lý ký gửi và cho thuê bất động sản, gồm 3 cổng:
 
 - **Cổng khách hàng** — Duyệt BĐS, đặt lịch xem, quản lý hợp đồng thuê
 - **Cổng chủ nhà** — Đăng ký ký gửi, quản lý BĐS, hợp đồng, lịch khảo sát
@@ -21,31 +21,42 @@ RentFlow là nền tảng SaaS quản lý ký gửi và cho thuê bất động 
 | API Docs | SpringDoc OpenAPI 3.0 (Swagger UI) |
 | Font | Plus Jakarta Sans (hỗ trợ tiếng Việt) |
 
+## Yêu cầu
+
+- **Java 17** (JDK 17)
+- **Node.js** 18+
+- **Docker** (cho PostgreSQL)
+
 ## Quick Start
 
-### Frontend
+### 1. Khởi động PostgreSQL
+
+```bash
+docker compose up -d
+```
+
+### 2. Backend
+
+```bash
+cd server
+./mvnw spring-boot:run
+```
+
+Server chạy tại `http://localhost:8081`
+
+Swagger UI: `http://localhost:8081/swagger-ui.html`
+
+> **Lưu ý:** Nếu gặp lỗi `UnsupportedClassVersionError`, chạy `./mvnw clean` trước khi chạy lại.
+
+### 3. Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev      # Dev server tại http://localhost:5173
-npm run build    # Production build
-npm run lint     # ESLint check
+npm run dev
 ```
 
-### Backend
-
-```bash
-# 1. Khởi động PostgreSQL
-docker compose up -d
-
-# 2. Chạy server
-cd server
-./mvnw spring-boot:run
-
-# 3. Swagger UI
-# http://localhost:8080/swagger-ui.html
-```
+Dev server tại `http://localhost:5173`
 
 ## Cấu trúc dự án
 
@@ -53,63 +64,45 @@ cd server
 RentFlow/
 ├── frontend/
 │   └── src/
-│       ├── main.jsx              # Entry point, BrowserRouter
-│       ├── App.jsx               # Role-based routing
-│       ├── index.css             # Tailwind + @theme tokens
+│       ├── main.jsx               # Entry point, BrowserRouter
+│       ├── App.jsx                # Role-based routing
+│       ├── index.css              # Tailwind + @theme tokens
 │       ├── config/
-│       │   ├── roles.js          # Role aliases, allowed paths, normalizeInternalRole
-│       │   └── mockUsers.js      # 7 demo accounts (mỗi role 1 account)
+│       │   ├── roles.js           # Role aliases, allowed paths
+│       │   └── mockUsers.js       # 7 demo accounts
 │       ├── layouts/
-│       │   ├── AdminLayout.jsx   # Dark sidebar, sectioned menu, role filtering
+│       │   ├── AdminLayout.jsx    # Dark sidebar, sectioned menu
 │       │   ├── DashboardLayout.jsx # CHU_NHA sidebar
-│       │   ├── TenantLayout.jsx  # KHACH_HANG sidebar, w-72, mobile drawer
-│       │   └── AuthLayout.jsx    # Split-screen login/register
-│       ├── pages/                # ~50 trang JSX
+│       │   ├── TenantLayout.jsx   # KHACH_HANG sidebar
+│       │   └── AuthLayout.jsx     # Split-screen login/register
+│       ├── pages/                 # ~40 trang JSX
 │       ├── components/
-│       │   ├── Header.jsx        # Shared header with search, mobile menu
-│       │   ├── AuthModal.jsx     # Login/register modal
+│       │   ├── Header.jsx
+│       │   ├── AuthModal.jsx
 │       │   └── ProtectedRoute.jsx
-│       └── services/             # 14 API service files (axios wrapper)
+│       └── services/              # 15 API service files (axios wrapper)
 ├── server/
 │   └── src/main/java/com/rentflow/server/
-│       ├── ServerApplication.java            # Main class
-│       ├── config/                           # Security (JWT), CORS, OpenAPI, TaiChinh
+│       ├── ServerApplication.java
+│       ├── config/                # Security (JWT), CORS, OpenAPI
 │       │   └── security/
-│       │       ├── SecurityConfig.java       # JWT + OAuth2 resource server
+│       │       ├── SecurityConfig.java
 │       │       └── CustomJwtDecoder.java
-│       ├── controller/                       # 13 REST controllers
-│       │   ├── AuthController.java           # /api/auth/*
-│       │   ├── BatDongSanController.java     # /api/bat-dong-san/* (authenticated)
-│       │   ├── BatDongSanPublicController.java # /api/bat-dong-san/cong-khai/* (public)
-│       │   ├── ChuNhaController.java         # /api/chu-nha/*
-│       │   ├── KhachHangController.java      # /api/khach-hang/*
-│       │   ├── HopDongKyGuiController.java   # /api/hop-dong-ky-gui/*
-│       │   ├── HopDongThueController.java    # /api/hop-dong-thue/*
-│       │   ├── LichHenKhaoSatController.java # /api/lich-hen-khao-sat/*
-│       │   ├── LichHenXemNhaController.java  # /api/lich-hen-xem-nha/*
-│       │   ├── NhanVienMoiGioiController.java # /api/nhan-vien-moi-gioi/*
-│       │   ├── QuanTriController.java        # /api/quan-tri/*
-│       │   ├── TaiChinhController.java       # /api/tai-chinh/*
-│       │   └── BaoCaoController.java         # /api/bao-cao/*
-│       ├── service/                          # 15 service classes
-│       ├── repository/                       # 13 Spring Data JPA repositories
-│       ├── entity/                           # 13 JPA entities
+│       ├── controller/            # 13 REST controllers
+│       ├── service/               # 15 service classes
+│       ├── repository/            # 13 Spring Data JPA repositories
+│       ├── entity/                # 13 JPA entities
 │       ├── dto/
-│       │   ├── request/                      # 18 request DTOs
-│       │   └── response/                     # 15+ response DTOs (auth, baocao, quantri, taichinh)
-│       ├── exception/                        # AppException, AuthException, GlobalExceptionHandler
-│       └── util/
-│           ├── SecurityUtils.java
-│           └── enums/                        # TrangThai*, LoaiGiaoDich, ErrorCode, TokenType
-├── docker-compose.yml          # PostgreSQL 16 trên port 5435
-├── đặc tả API/                 # API specification docs
-├── UI/                         # UI/UX design references
-└── CLAUDE.md                   # Detailed architecture & conventions
+│       │   ├── request/           # Request DTOs
+│       │   └── response/          # Response DTOs
+│       ├── exception/             # AppException, GlobalExceptionHandler
+│       └── util/                  # SecurityUtils, enums
+├── docker-compose.yml             # PostgreSQL 16 trên port 5435
+├── đặc tả API/                    # API specification docs
+└── UI/                            # UI/UX design references
 ```
 
 ## Role System
-
-5 nhóm admin nội bộ + 2 role外部:
 
 | Role Group | Aliases | Home Path |
 |---|---|---|
@@ -132,3 +125,21 @@ RentFlow/
 | moigioi@rentflow.vn | 123456 | MOI_GIOI |
 | chunha@rentflow.vn | 123456 | CHU_NHA |
 | khachhang@rentflow.vn | 123456 | KHACH_HANG |
+
+## API Endpoints
+
+| Endpoint | Controller | Auth |
+|---|---|---|
+| `/api/auth/*` | AuthController | Public |
+| `/api/bat-dong-san/cong-khai/*` | BatDongSanPublicController | Public |
+| `/api/bat-dong-san/*` | BatDongSanController | Authenticated |
+| `/api/chu-nha/*` | ChuNhaController | Authenticated |
+| `/api/khach-hang/*` | KhachHangController | Authenticated |
+| `/api/hop-dong-ky-gui/*` | HopDongKyGuiController | Authenticated |
+| `/api/hop-dong-thue/*` | HopDongThueController | Authenticated |
+| `/api/lich-hen-khao-sat/*` | LichHenKhaoSatController | Authenticated |
+| `/api/lich-hen-xem-nha/*` | LichHenXemNhaController | Authenticated |
+| `/api/nhan-vien-moi-gioi/*` | NhanVienMoiGioiController | Authenticated |
+| `/api/quan-tri/*` | QuanTriController | Authenticated |
+| `/api/tai-chinh/*` | TaiChinhController | Authenticated |
+| `/api/bao-cao/*` | BaoCaoController | Authenticated |
